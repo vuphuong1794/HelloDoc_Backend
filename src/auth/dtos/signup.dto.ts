@@ -1,4 +1,4 @@
-import { IsEmail, IsString, Matches, MinLength } from "class-validator";
+import { IsEmail, IsNumberString, IsString, Matches, MinLength } from "class-validator";
 
 export class SignupDto {
     @IsString()
@@ -6,6 +6,10 @@ export class SignupDto {
 
     @IsEmail()
     email: string;
+    
+    @IsNumberString({}, { message: 'Phone number must contain only numbers' })
+    @Matches(/^\d{10,11}$/, { message: 'Phone number must be 10-11 digits' })
+    phone: string;
 
     @IsString()
     @MinLength(6)

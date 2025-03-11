@@ -11,7 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 export class AuthService {
     constructor(@InjectModel(User.name) private UserModel: Model<User>, private jwtService: JwtService) {}
     async signUp(signUpData: SignupDto) {
-        const {email, password, name} = signUpData; 
+        const {email, password, name, phone} = signUpData; 
        const emailInUse = await this.UserModel.findOne({email});
        if(emailInUse) {
            throw new BadRequestException('Email already in use');
@@ -23,9 +23,10 @@ export class AuthService {
            email,
            password: hashedPassword,
            name,
+           phone
        });
        return {
-              message: 'User created successfully'
+            message: 'User created successfully'
        }
     }
 
