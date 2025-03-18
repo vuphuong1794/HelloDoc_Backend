@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
+import { AdminModule } from './admin/admin.module';
 import config from './config/config';
 
 @Module({
@@ -18,6 +19,7 @@ import config from './config/config';
     MongooseModule.forRoot(
       'mongodb+srv://pvunguyen84:nQ0ZjjFTjKnLvuwa@cluster0.lk7ml.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
     ),
+    AdminModule,
     AuthModule,
   ],
   controllers: [AppController],

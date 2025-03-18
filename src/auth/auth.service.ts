@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { SignupDto } from './dtos/signup.dto';
-import { User } from './shcemas/user.schema';
+import { SignupDto } from '../dtos/signup.dto';
+import { User } from '../shcemas/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
-import { loginDto } from './dtos/login.dto';
+import { loginDto } from '../dtos/login.dto';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -41,12 +41,12 @@ export class AuthService {
             throw new UnauthorizedException('Password is incorrect');
         }
 
-        return this.generateUserTokens(user._id, user.email, user.name);
+        return this.generateUserTokens(user._id, user.email, user.name, user.role);
        
     }
 
-    async generateUserTokens(userId, email, name) {
-        const accessToken = this.jwtService.sign({userId, email, name}, {expiresIn: '1d'});
+    async generateUserTokens(userId, email, name, role) {
+        const accessToken = this.jwtService.sign({userId, email, name, role}, {expiresIn: '1d'});
         return {
             accessToken
         }
