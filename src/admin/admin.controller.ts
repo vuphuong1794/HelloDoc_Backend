@@ -15,4 +15,5 @@ export class AdminController {
   async postAdmin(@Body() signUpData: SignupDto){
     return this.adminService.postAdmin(signUpData);
   }
+  
 }
