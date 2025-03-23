@@ -34,7 +34,7 @@ export class DoctorService {
       licenseUrl,
     });
     return {
-      message: 'Đăng ký bác sĩ thành công',
+      message: 'Đăng ký bác sĩ thành công, vui lòng chờ xác thực từ admin',
     };
   }
 

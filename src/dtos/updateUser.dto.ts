@@ -22,5 +22,9 @@ export class updateUserDto {
 
     @IsOptional()
     @IsString()
+    role: string;
+    
+    @IsOptional()
+    @IsString()
     licenseUrl?: string;
 }
