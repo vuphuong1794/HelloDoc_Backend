@@ -6,6 +6,9 @@ import { Request } from 'express';
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
 
+  //canActivate sẽ quyết định request có được xử lý tiếp hay không
+  //Nếu trả về true thì request sẽ được xử lý tiếp, ngược lại sẽ bị từ chối
+  //executioContext là một lớp cung cấp thông tin về ngữ cảnh của request hiện tại (http, ws, rpc)  
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
 
