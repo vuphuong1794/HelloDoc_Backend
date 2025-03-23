@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { DoctorController } from './doctor.controller';
-import { Doctor, DoctorSchema } from 'src/shcemas/doctor.schema';
+import { Doctor, DoctorSchema } from 'src/schemas/doctor.schema';
 import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
