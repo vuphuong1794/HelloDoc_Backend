@@ -3,7 +3,6 @@ import { AdminService } from './admin.service';
 import { SignupDto } from 'src/dtos/signup.dto';
 import { updateUserDto } from 'src/dtos/updateUser.dto';
 import { JwtService } from '@nestjs/jwt';
-import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 import { AdminGuard } from 'src/Guard/AdminGuard.guard';
 
@@ -13,11 +12,6 @@ export class AdminController {
     private readonly adminService: AdminService,
     private jwtService: JwtService,
   ) {}
-
-  @Post('login')
-  async loginAdmin(@Body() loginData: loginDto) {
-    return this.adminService.loginAdmin(loginData);
-  }
 
   @Get('users')
   async getUsers() {

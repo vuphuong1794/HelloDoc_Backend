@@ -24,24 +24,6 @@ export class AdminService {
     private jwtService: JwtService,
   ) {}
 
-  async loginAdmin(loginData: loginDto) {
-    const { email, password } = loginData;
-    const admin = await this.AdminModel.findOne({ email });
-    if (!admin) {
-      throw new UnauthorizedException('Email not found');
-    }
-    const passwordMatches = await bcrypt.compare(password, admin.password);
-    if (!passwordMatches) {
-      throw new UnauthorizedException('Wrong password');
-    }
-    return this.generateAdminTokens(
-      admin._id,
-      admin.email,
-      admin.name,
-      admin.role,
-    );
-  }
-
   async getUsers() {
     return await this.UserModel.find();
   }
