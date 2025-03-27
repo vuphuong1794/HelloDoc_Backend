@@ -82,6 +82,12 @@ export class AppointmentService {
         return { message: 'Appointment confirmed successfully', appointment };
     }
 
+    // 📌 Lấy danh sách tất cả lịch hẹn
+    async getAllAppointments() {
+        const appointments = await this.appointmentModel.find().populate('doctor', 'name email').populate('patient', 'name email');
+        return appointments;
+    }
+
     // 📌 Lấy danh sách lịch hẹn của bác sĩ
     async getDoctorAppointments(doctorID: string) {
         const doctor = await this.doctorModel.findById(doctorID);
