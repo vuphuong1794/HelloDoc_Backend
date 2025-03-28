@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Param, Post, Get, Put, UseGuards } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
 import { loginDto } from 'src/dtos/login.dto';
@@ -9,6 +9,11 @@ import { Types } from 'mongoose';
 @Controller('doctor')
 export class DoctorController {
   constructor(private readonly doctorService: DoctorService) {}
+
+  @Get('get-all')
+  async getDoctors() {
+    return this.doctorService.getDoctors();
+  }
 
   @Post('register')
   async register(@Body() signUpData: SignupDto) {

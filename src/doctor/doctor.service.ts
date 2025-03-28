@@ -13,6 +13,10 @@ export class DoctorService {
     @InjectModel(Doctor.name) private DoctorModel: Model<Doctor>,
     private jwtService: JwtService,
   ) {}
+  async getDoctors() {
+    return await this.DoctorModel.find();
+  }
+
   async registerDoctor(signUpData: SignupDto) {
     const { email, password, name, phone, licenseUrl } = signUpData;
     const emailInUse = await this.DoctorModel.findOne({ email });
