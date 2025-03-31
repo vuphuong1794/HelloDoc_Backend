@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
@@ -6,11 +6,15 @@ import { SignupDto } from 'src/dtos/signup.dto';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { loginDto } from 'src/dtos/login.dto';
 import { JwtService } from '@nestjs/jwt';
+import { User } from 'src/schemas/user.schema';
+import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 
 @Injectable()
 export class DoctorService {
   constructor(
     @InjectModel(Doctor.name) private DoctorModel: Model<Doctor>,
+    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(PendingDoctor.name) private pendingDoctorModel: Model<PendingDoctor>,
     private jwtService: JwtService,
   ) {}
   async getDoctors() {
@@ -79,12 +83,12 @@ export class DoctorService {
     if (!Types.ObjectId.isValid(doctorId)) {
       throw new BadRequestException('ID không hợp lệ');
     }
-  
+
     const doctor = await this.DoctorModel.findById(doctorId);
     if (!doctor) {
       throw new BadRequestException('Bác sĩ không tồn tại');
     }
-  
+
     // Danh sách các trường hợp lệ
     const allowedFields = [
       'specialty',
@@ -99,7 +103,7 @@ export class DoctorService {
       'minAge',
       'imageUrl',
     ];
-  
+
     // Lọc dữ liệu hợp lệ
     const filteredUpdateData = {};
     Object.keys(updateData).forEach((key) => {
@@ -107,21 +111,73 @@ export class DoctorService {
         filteredUpdateData[key] = updateData[key];
       }
     });
-  
+
     // Cập nhật thông tin bác sĩ
     const updatedDoctor = await this.DoctorModel.findByIdAndUpdate(
       doctorId,
       { $set: filteredUpdateData }, // Dùng `$set` để cập nhật
-      { new: true } // Trả về dữ liệu mới sau khi cập nhật
+      { new: true }, // Trả về dữ liệu mới sau khi cập nhật
     );
-  
+
     if (!updatedDoctor) {
       throw new BadRequestException('Cập nhật thất bại!');
     }
-  
+
     return {
       message: 'Cập nhật hồ sơ thành công!',
       updatedDoctor,
     };
-}
+  }
+
+    // Đăng ký làm bác sĩ (Lưu vào bảng chờ phê duyệt)
+    async applyForDoctor(userId: string, license: string) {
+      const user = await this.userModel.findById(userId);
+      if (!user) throw new NotFoundException('Người dùng không tồn tại.');
+  
+      await this.pendingDoctorModel.create({
+        userId,
+        license,
+        verified: false,
+      });
+  
+    }
+
+    // Lấy danh sách bác sĩ chưa được xác thực
+    async getPendingDoctors() {
+      return this.pendingDoctorModel.find({ verified: false });
+    }
+  
+    // Xác thực tài khoản bác sĩ bởi admin
+    async verifyDoctor(userId: string) {
+      const pendingDoctor = await this.pendingDoctorModel.findOne({ userId });
+      if (!pendingDoctor) throw new NotFoundException('Người dùng không tồn tại trong bảng chờ phê duyệt.');
+  
+      // Lấy thông tin user từ bảng User
+      const user = await this.userModel.findById(userId);
+      if (!user) throw new NotFoundException('Người dùng không tồn tại.');
+  
+      // Cập nhật user
+      user.isDoctor = true;
+      user.verified = true;
+      await user.save();
+  
+      // Xóa khỏi bảng PendingDoctors và cập nhật bảng Doctors
+      await this.DoctorModel.create({
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        password: user.password,
+        verified: true,
+        licenseUrl: pendingDoctor.license,
+      });
+      await this.pendingDoctorModel.deleteOne({ userId });
+      await this.userModel.deleteOne({  _id: userId });
+  
+      return user;
+    }
+  
+    // Lấy tất cả bác sĩ đã xác thực
+    async getVerifiedDoctors(): Promise<User[]> {
+      return this.userModel.find({ isDoctor: true, verified: true });
+    }
 }

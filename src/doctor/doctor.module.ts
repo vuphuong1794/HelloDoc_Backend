@@ -6,9 +6,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schemas/user.schema';
 
 import { Appointment, AppointmentSchema } from 'src/schemas/Appointment.schema';
+import { PendingDoctor, PendingDoctorSchema } from 'src/schemas/PendingDoctor.shema';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Doctor.name, schema: DoctorSchema }, {name: User.name, schema: UserSchema}, {name: Appointment.name, schema: AppointmentSchema}])],
+  imports: [MongooseModule.forFeature([{ name: Doctor.name, schema: DoctorSchema }, {name: User.name, schema: UserSchema}, {name: Appointment.name, schema: AppointmentSchema}, {name: PendingDoctor.name, schema: PendingDoctorSchema}])],
   controllers: [DoctorController],
   providers: [DoctorService],
 })

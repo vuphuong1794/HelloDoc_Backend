@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Param, Post, Get, Put, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Param, Post, Get, Put, UseGuards, Patch } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
 import { loginDto } from 'src/dtos/login.dto';
@@ -35,5 +35,25 @@ export class DoctorController {
       throw new BadRequestException('ID không hợp lệ');
     }
     return this.doctorService.updateDoctorProfile(id, updateData);
+  }
+
+  @Patch('apply-for-doctor/:id')
+  async applyForDoctor(@Param('id') userId: string, @Body('license') license: string) {
+    return this.doctorService.applyForDoctor(userId, license);
+  }
+
+  @Patch('verify-doctor/:id')
+  async verifyDoctor(@Param('id') userId: string){
+    return this.doctorService.verifyDoctor(userId);
+  }
+
+  @Get('pending-doctors')
+  async getPendingDoctors() {
+    return this.doctorService.getPendingDoctors();    
+  }
+
+  @Get('doctors')
+  async getVerifiedDoctors() {
+    return this.doctorService.getVerifiedDoctors();
   }
 }
