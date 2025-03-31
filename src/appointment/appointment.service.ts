@@ -26,7 +26,10 @@ export class AppointmentService {
         }
 
         // Kiểm tra xem bệnh nhân có tồn tại không
-        const patient = await this.userModel.findById(patientID);
+        let patient = await this.userModel.findById(patientID);
+        if (!patient) {
+            patient = await this.doctorModel.findById(patientID);
+        }
         if (!patient) {
             throw new NotFoundException('Patient not found');
         }

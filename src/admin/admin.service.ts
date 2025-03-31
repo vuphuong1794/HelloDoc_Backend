@@ -28,6 +28,10 @@ export class AdminService {
     return await this.UserModel.find();
   }
 
+  async getDoctors() {
+    return await this.DoctorModel.find();
+  }
+
   async postAdmin(signUpData: SignupDto) {
     const { email, password, name, phone } = signUpData;
 

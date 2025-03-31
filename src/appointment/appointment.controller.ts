@@ -26,7 +26,7 @@ export class AppointmentController {
   }
 
   // API hủy lịch hẹn
-  @Patch('cancel/:id')
+  @Patch('cancel/:id') //patch: cập nhât một phần 
   async cancelAppointment(@Param('id') id: string) {
     try {
       return await this.appointmentService.cancelAppointment(id);

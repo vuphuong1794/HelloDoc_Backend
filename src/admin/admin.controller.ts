@@ -18,6 +18,12 @@ export class AdminController {
     return this.adminService.getUsers();
   }
 
+  
+  @Get('doctors')
+  async getDoctors() {
+    return this.adminService.getDoctors();
+  }
+
   @Post('postadmin')
   async postAdmin(@Body() signUpData: SignupDto) {
     return this.adminService.postAdmin(signUpData);
