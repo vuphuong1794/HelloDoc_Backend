@@ -8,6 +8,10 @@ import { ConfigModule } from '@nestjs/config';
 import { AdminModule } from './admin/admin.module';
 import { DoctorModule } from './doctor/doctor.module';
 import { AppointmentModule } from './appointment/appointment.module';
+import { SpecialtyModule } from './specialty/specialty.module';
+import { MedicalOptionModule } from './medical-option/medical-option.module';
+import { RemoteMedicalOptionModule } from './remote-medical-option/remote-medical-option.module';
+import { FaqitemModule } from './faqitem/faqitem.module';
 import config from './config/config';
 
 @Module({
@@ -25,6 +29,10 @@ import config from './config/config';
     AuthModule,
     DoctorModule,
     AppointmentModule,
+    SpecialtyModule,
+    MedicalOptionModule,
+    RemoteMedicalOptionModule,
+    FaqitemModule,
   ],
   controllers: [AppController],
   providers: [AppService],
