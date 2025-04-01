@@ -1,0 +1,188 @@
+openapi: 3.0.4
+info:
+  title: HelloDoc
+  description: Tài liệu hướng dẫn API cho HelloDoc
+
+  termsOfService: https://swagger.io/terms/
+  contact:
+    email: apiteam@swagger.io
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.12
+externalDocs:
+  description: Find out more about Swagger
+  url: https://swagger.io
+servers:
+  - url: http://localhost:3000
+    description: Local server
+tags:
+  - name: auth
+    description: các API liên quan đến xác thực
+paths:
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Đăng nhập
+      description: Đăng nhập vào hệ thống
+      operationId: login
+      requestBody:
+        description: Thông tin đăng nhập
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/loginBody"
+        required: true
+      responses:
+        "201":
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationSuccess"
+        "401":
+          description: Đăng nhập thất bại
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationError"
+  /appointments/book:
+    post:
+      tags:
+        - appointment
+      summary: Đặt lịch hẹn
+      description: Đặt lịch hẹn với bác sĩ
+      operationId: bookAppointment
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: Thông tin lịch hẹn
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookAppointBody"
+        required: true
+      responses:
+        "201":
+          description: Đặt lịch thành công
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookAppointSuccess"
+        "400":
+          description: Đặt lịch thất bại
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookAppointFail"
+components:
+  schemas:
+    loginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          example: test@gmail.com
+        password:
+          type: string
+          example: 123456
+    AuthenticationSuccess:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2N2VhOWRhOTFhMmRmM2QyMzU3ZmM3NGMiLCJlbWFpbCI6ImN1MkBnbWFpbC5jb20iLCJuYW1lIjoiY3UiLCJyb2xlIjoiZG9jdG9yIiwiaWF0IjoxNzQzNDkwODc4LCJleHAiOjE3NDM1NzcyNzh9.Xs_PESrfURpWFf0moJAEmjuKyhf1Ts3aDuOBWe-DYj0
+    AuthenticationError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: User not found
+        error:
+          type: string
+          example: Unauthorized
+        statusCode:
+          type: integer
+          example: 401
+    BookAppointBody:
+      type: object
+      properties:
+        doctorID:
+          type: string
+          format: MongoId
+          example: 67e64c2d0633b0e42ca9ce04
+        patientID:
+          type: string
+          format: MongoId
+          example: 67dfc74390929bb81e3a2ee5
+        date:
+          type: string
+          example: 2025-04-01
+        time:
+          type: string
+          example: 10:00
+        reason:
+          type: string
+          example: Regular check-up
+        notes:
+          type: string
+          example: Patient has mild fever
+    BookAppointFail:
+      type: object
+      properties:
+        message:
+          type: string
+          example: This time slot is already booked
+        error:
+          type: string
+          example: Bad Request
+        statusCode:
+          type: integer
+          example: 400
+    BookAppointSuccess:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Appointment booked successfully
+        appointment:
+          type: object
+          properties:
+            doctor:
+              type: string
+              example: 67e64c2d0633b0e42ca9ce04
+            patient:
+              type: string
+              example: 67dfc74390929bb81e3a2ee5
+            date:
+              type: string
+              example: 2025-04-01T00:00:00.000Z
+            time:
+              type: string
+              example: 10:00
+            status:
+              type: string
+              example: pending
+            reason:
+              type: string
+              example: Regular check-up
+            notes:
+              type: string
+              example: Patient has mild fever
+            _id:
+              type: string
+              example: 67e64c2d0633b0e42ca9ce04
+            createdAt:
+              type: string
+              format: ISO8601
+              example: 2025-04-01T00:00:00.000Z
+            updatedAt:
+              type: string
+              format: ISO8601
+              example: 2025-04-01T00:00:00.000Z
+  securitySchemes:
+    BearerAuth:
+      type: apiKey
+      in: header
+      name: accessToken

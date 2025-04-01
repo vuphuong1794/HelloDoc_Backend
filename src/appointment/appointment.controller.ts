@@ -6,16 +6,19 @@ import {
   Get,
   Patch,
   NotFoundException,
-  BadRequestException
+  BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
+import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 
 @Controller('appointments')
 export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
   // API đặt lịch hẹn
+  @UseGuards(JwtAuthGuard)
   @Post('book')
   async bookAppointment(@Body() bookData: BookAppointmentDto) {
     try {
@@ -26,7 +29,7 @@ export class AppointmentController {
   }
 
   // API hủy lịch hẹn
-  @Patch('cancel/:id') //patch: cập nhât một phần 
+  @Patch('cancel/:id') //patch: cập nhât một phần
   async cancelAppointment(@Param('id') id: string) {
     try {
       return await this.appointmentService.cancelAppointment(id);
@@ -49,7 +52,7 @@ export class AppointmentController {
   @Get('getAll')
   async getAllAppointments() {
     return await this.appointmentService.getAllAppointments();
-  } 
+  }
 
   // API lấy danh sách lịch hẹn của bác sĩ
   @Get('doctor/:doctorID')
