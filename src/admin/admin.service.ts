@@ -176,7 +176,7 @@ export class AdminService {
     };
   }
 
-  async verifyDoctor(id: string) {
+  /*async verifyDoctor(id: string) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid ID format');
     }
@@ -189,7 +189,7 @@ export class AdminService {
     }
     await this.DoctorModel.findByIdAndUpdate(id, { $set: { verified: true } });
     return { message: 'Doctor verified successfully' };
-  }
+  } */
 
   async deleteUser(id: string) {
     if (!Types.ObjectId.isValid(id)) {

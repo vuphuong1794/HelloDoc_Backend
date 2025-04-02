@@ -15,7 +15,7 @@ export class Doctor extends Document {
   @Prop({ required: true })
   password: string;
 
-  @Prop({ default: 'doctor' }) 
+  @Prop({ default: 'doctor' })
   role: string;
 
   @Prop()
@@ -24,7 +24,7 @@ export class Doctor extends Document {
   @Prop()
   licenseUrl: string; // Giấy phép hành nghề
 
-  @Prop({ default: false }) 
+  @Prop({ default: false })
   verified: boolean; // Xác minh tài khoản bác sĩ
 
   @Prop()
@@ -53,6 +53,12 @@ export class Doctor extends Document {
 
   @Prop()
   imageUrl: string; // Ảnh bác sĩ
+
+  @Prop()
+  gender?: string; // Nam, Nữ hoặc Khác
+
+  @Prop()
+  dob?: Date;
 }
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);
