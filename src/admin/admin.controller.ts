@@ -28,7 +28,6 @@ export class AdminController {
     return this.adminService.getUsers();
   }
 
-  
   @Get('doctors')
   async getDoctors() {
     return this.adminService.getDoctors();
@@ -57,11 +56,12 @@ export class AdminController {
     };
   }
 
+  /*
   @Patch('verify-doctor/:id')
   @UseGuards(JwtAuthGuard, AdminGuard)
   async verifyDoctor(@Param('id') id: string) {
     return this.adminService.verifyDoctor(id);
-  }
+  } */
 
   @Delete('delete-user/:id')
   @UseGuards(JwtAuthGuard, AdminGuard)

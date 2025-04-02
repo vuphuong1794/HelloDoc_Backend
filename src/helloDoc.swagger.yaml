@@ -17,6 +17,42 @@ tags:
   - name: auth
     description: các API liên quan đến xác thực
 paths:
+  /auth/signup:
+    post:
+      tags:
+        - auth
+      summary: Đăng ký
+      description: Đăng ký với hệ thống
+      operationId: signup
+      requestBody:
+        description: Thông tin đăng ký
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/signupBody"
+        required: true
+      responses:
+        "201":
+          description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User created successfully
+        "500":
+          description: Số điện thoại đã tồn tại
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Phone number already exists
+
   /auth/login:
     post:
       tags:
@@ -75,6 +111,21 @@ paths:
                 $ref: "#/components/schemas/BookAppointFail"
 components:
   schemas:
+    signupBody:
+      type: object
+      properties:
+        name:
+          type: string
+          example: user
+        email:
+          type: string
+          example: user@gmail.com
+        phone:
+          type: string
+          example: 0123456789
+        password:
+          type: string
+          example: 123456
     loginBody:
       type: object
       properties:
