@@ -8,14 +8,18 @@ import { Specialty } from 'src/schemas/specialty.schema';
 @Injectable()
 export class SpecialtyService {
   constructor(
-      @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
-    ) {}
+    @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
+  ) {}
   async getSpecialtys() {
     return await this.SpecialtyModel.find();
   }
 
-  create(createSpecialtyDto: CreateSpecialtyDto) {
-    return 'This action adds a new specialty';
+  async create(createSpecialtyDto: CreateSpecialtyDto) {
+    const specialty = await this.SpecialtyModel.create(createSpecialtyDto);
+    if (!specialty) {
+      throw new BadRequestException('Tạo chuyên khoa không thành công');
+    }
+    return specialty;
   }
   findOne(id: number) {
     return `This action returns a #${id} specialty`;

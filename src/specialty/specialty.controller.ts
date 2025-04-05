@@ -20,8 +20,8 @@ export class SpecialtyController {
     return this.specialtyService.getSpecialtys();
   }
 
-  @Post()
-  create(@Body() createSpecialtyDto: CreateSpecialtyDto) {
+  @Post('create')
+  async createSpecialty(@Body() createSpecialtyDto: CreateSpecialtyDto) {
     return this.specialtyService.create(createSpecialtyDto);
   }
 
