@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Type } from 'class-transformer';
+import { Document, Types } from 'mongoose';
+import { Specialty } from './specialty.schema';
 
 @Schema()
 export class Doctor extends Document {
@@ -18,8 +20,8 @@ export class Doctor extends Document {
   @Prop({ default: 'doctor' })
   role: string;
 
-  @Prop()
-  specialty: string; // Chuyên khoa
+  @Prop({ type: Types.ObjectId, ref: 'Specialty' })
+  specialty: Types.ObjectId | Specialty; // Chuyên khoa
 
   @Prop()
   licenseUrl: string; // Giấy phép hành nghề
