@@ -10,8 +10,12 @@ export class SpecialtyService {
   constructor(
     @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
   ) {}
-  async getSpecialtys() {
-    return await this.SpecialtyModel.find();
+
+  async getSpecialties() {
+    return await this.SpecialtyModel.find().populate({
+      path: 'doctors',
+      select: 'name',
+    });
   }
 
   async create(createSpecialtyDto: CreateSpecialtyDto) {
@@ -21,6 +25,7 @@ export class SpecialtyService {
     }
     return specialty;
   }
+
   findOne(id: number) {
     return `This action returns a #${id} specialty`;
   }

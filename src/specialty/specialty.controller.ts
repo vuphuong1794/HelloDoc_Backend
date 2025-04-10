@@ -17,7 +17,7 @@ export class SpecialtyController {
 
   @Get('get-all')
   async getSpecialtys() {
-    return this.specialtyService.getSpecialtys();
+    return this.specialtyService.getSpecialties();
   }
 
   @Post('create')

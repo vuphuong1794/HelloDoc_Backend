@@ -21,11 +21,11 @@ export class DoctorService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(PendingDoctor.name)
     private pendingDoctorModel: Model<PendingDoctor>,
-    @InjectModel('Specialty') private SpecialtyModel: Model<Specialty>, // Thay thế bằng model chuyên khoa thực tế của bạn
+    @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>, // Thay thế bằng model chuyên khoa thực tế của bạn
     private jwtService: JwtService,
   ) {}
   async getDoctors() {
-    return await this.DoctorModel.find();
+    return await this.DoctorModel.find().populate('specialty');
   }
 
   async registerDoctor(signUpData: SignupDto) {
@@ -149,8 +149,8 @@ export class DoctorService {
     const updatedDoctor = await this.DoctorModel.findByIdAndUpdate(
       doctorId,
       { $set: filteredUpdateData }, // Dùng `$set` để cập nhật
-      { new: true }, // Trả về dữ liệu mới sau khi cập nhật
-    );
+      { new: true },
+    ).populate('specialty');
 
     if (!updatedDoctor) {
       throw new BadRequestException('Cập nhật thất bại!');
@@ -214,5 +214,21 @@ export class DoctorService {
   // Lấy tất cả bác sĩ đã xác thực
   async getVerifiedDoctors(): Promise<User[]> {
     return this.userModel.find({ isDoctor: true, verified: true });
+  }
+
+  async getDoctorsBySpecialtyId(specialtyId: string) {
+    const specialty = await this.SpecialtyModel.findById(specialtyId)
+      .populate('doctors')
+      .exec();
+
+    if (!specialty) {
+      throw new NotFoundException('Chuyên khoa không tìm thấy.');
+    }
+
+    if (!specialty.doctors || specialty.doctors.length === 0) {
+      throw new NotFoundException('Không có bác sĩ nào thuộc chuyên khoa này.');
+    }
+
+    return specialty;
   }
 }
