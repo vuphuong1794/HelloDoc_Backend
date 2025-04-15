@@ -24,6 +24,7 @@ export class DoctorService {
     @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>, // Thay thế bằng model chuyên khoa thực tế của bạn
     private jwtService: JwtService,
   ) {}
+
   async getDoctors() {
     return await this.DoctorModel.find().populate('specialty');
   }
