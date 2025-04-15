@@ -13,16 +13,17 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class DoctorService {
   constructor(
     @InjectModel(Doctor.name) private DoctorModel: Model<Doctor>,
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(PendingDoctor.name)
-    private pendingDoctorModel: Model<PendingDoctor>,
-    @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>, // Thay thế bằng model chuyên khoa thực tế của bạn
+    @InjectModel(PendingDoctor.name) private pendingDoctorModel: Model<PendingDoctor>,
+    @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>, 
     private jwtService: JwtService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async getDoctors() {
@@ -120,6 +121,11 @@ export class DoctorService {
       }
     });
 
+    if (updateData.licenseUrl && typeof updateData.licenseUrl === 'object' && updateData.licenseUrl.buffer) {
+      const uploadResult = await this.cloudinaryService.uploadFile(updateData.licenseUrl);
+      filteredUpdateData['licenseUrl'] = uploadResult.secure_url;
+    }
+    
     // Nếu có cập nhật chuyên khoa, kiểm tra và lưu bác sĩ vào chuyên khoa
     if (filteredUpdateData['specialty']) {
       const specialtyId = filteredUpdateData['specialty'];

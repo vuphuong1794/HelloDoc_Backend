@@ -8,12 +8,15 @@ import {
   Put,
   UseGuards,
   Patch,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
 import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 import { Types } from 'mongoose';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('doctor')
 export class DoctorController {
@@ -35,10 +38,15 @@ export class DoctorController {
   }
 
   @UseGuards(JwtAuthGuard) // Bảo vệ API, chỉ cho phép bác sĩ đăng nhập mới có quyền cập nhật
+  @UseInterceptors(FileInterceptor('license'))
   @Put(':id/update-profile')
-  async updateProfile(@Param('id') id: string, @Body() updateData: any) {
+  async updateProfile(@Param('id') id: string,  @UploadedFile() file: Express.Multer.File, @Body() updateData: any) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('ID không hợp lệ');
+    }
+
+    if (file) {
+      updateData.licenseUrl = file;
     }
     return this.doctorService.updateDoctorProfile(id, updateData);
   }

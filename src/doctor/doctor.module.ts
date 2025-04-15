@@ -11,9 +11,11 @@ import {
   PendingDoctorSchema,
 } from 'src/schemas/PendingDoctor.shema';
 import { Specialty, SpecialtySchema } from 'src/schemas/specialty.schema';
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
+    CloudinaryModule,
     MongooseModule.forFeature([
       { name: Doctor.name, schema: DoctorSchema },
       { name: User.name, schema: UserSchema },
