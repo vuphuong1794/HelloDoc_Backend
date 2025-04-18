@@ -7,6 +7,11 @@ export enum AppointmentStatus {
   CANCELLED = 'cancelled',
 }
 
+export enum ConsultationMethod {
+  IN_PERSON = 'in_person',
+  ONLINE = 'online',
+}
+
 @Schema({ timestamps: true })
 export class Appointment extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true })
@@ -27,6 +32,13 @@ export class Appointment extends Document {
     default: AppointmentStatus.PENDING,
   }) // Dùng enum
   status: AppointmentStatus;
+
+  @Prop({
+    required: true,
+    enum: ConsultationMethod,
+    default: ConsultationMethod.IN_PERSON,
+  })
+  consultationMethod: ConsultationMethod;
 
   @Prop()
   reason?: string;

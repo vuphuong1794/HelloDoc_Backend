@@ -170,15 +170,31 @@ export class DoctorService {
   }
 
   // Đăng ký làm bác sĩ (Lưu vào bảng chờ phê duyệt)
-  async applyForDoctor(userId: string, license: string) {
+  async applyForDoctor(userId: string, license: string, specialty: string, hospital: string) {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('Người dùng không tồn tại.');
+
+    const existing = await this.pendingDoctorModel.findOne({ userId });
+    if (existing) {
+      throw new BadRequestException('Bạn đã gửi yêu cầu trở thành bác sĩ trước đó.');
+    }
+
+    const specialtyExists = await this.SpecialtyModel.findById(specialty);
+    if (!specialtyExists) {
+      throw new BadRequestException('Chuyên khoa không tìm thấy.');
+    }
 
     await this.pendingDoctorModel.create({
       userId,
       license,
+      specialty,
+      hospital,
       verified: false,
     });
+    return {
+      message: 'Yêu cầu đăng ký bác sĩ đã được gửi thành công.',
+    };
+    
   }
 
   // Lấy danh sách bác sĩ chưa được xác thực
@@ -211,6 +227,8 @@ export class DoctorService {
       password: user.password,
       verified: true,
       licenseUrl: pendingDoctor.license,
+      specialty: pendingDoctor.specialty,
+      hospital: pendingDoctor.hospital,
     });
     await this.pendingDoctorModel.deleteOne({ userId });
     await this.userModel.deleteOne({ _id: userId });

@@ -176,21 +176,6 @@ export class AdminService {
     };
   }
 
-  /*async verifyDoctor(id: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid ID format');
-    }
-    const doctor = await this.DoctorModel.findById(id);
-    if (!doctor) {
-      throw new NotFoundException('Doctor not found');
-    }
-    if (doctor.verified) {
-      return { message: 'Doctor already verified' };
-    }
-    await this.DoctorModel.findByIdAndUpdate(id, { $set: { verified: true } });
-    return { message: 'Doctor verified successfully' };
-  } */
-
   async deleteUser(id: string) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid ID format');

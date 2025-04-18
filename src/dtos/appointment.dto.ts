@@ -26,6 +26,12 @@ export class BookAppointmentDto {
     status?: string = 'pending'; // Mặc định là 'pending'
 
     @IsOptional()
+    @IsEnum(['in_person', 'online'], {
+        message: 'Consultation method must be in_person or online',
+    })
+    consultationMethod?: string = 'in_person'; // Mặc định là 'in_person'
+
+    @IsOptional()
     @IsString()
     reason?: string;
 

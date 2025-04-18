@@ -55,8 +55,10 @@ export class DoctorController {
   async applyForDoctor(
     @Param('id') userId: string,
     @Body('license') license: string,
+    @Body('specialty') specialty: string,
+    @Body('hospital') hospital: string,
   ) {
-    return this.doctorService.applyForDoctor(userId, license);
+    return this.doctorService.applyForDoctor(userId, license, specialty, hospital);
   }
 
   @Patch('verify-doctor/:id')

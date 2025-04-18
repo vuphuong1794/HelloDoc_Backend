@@ -17,7 +17,7 @@ export class AppointmentService {
 
     // 📌 Đặt lịch hẹn
     async bookAppointment(bookData: BookAppointmentDto) {
-        const { doctorID, patientID, date, time, status, reason, notes } = bookData;
+        const { doctorID, patientID, date, time, status, consultationMethod, reason, notes } = bookData;
 
         // Kiểm tra xem bác sĩ có tồn tại không
         const doctor = await this.doctorModel.findById(doctorID);
@@ -47,6 +47,7 @@ export class AppointmentService {
             date,
             time,
             status: status || AppointmentStatus.PENDING, // Mặc định là "pending"
+            consultationMethod: consultationMethod || 'in_person', // Mặc định là "in_person"
             reason,
             notes,
         });
