@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types, Document } from 'mongoose';
+import mongoose, { Types, Document } from 'mongoose';
 
 export enum AppointmentStatus {
   PENDING = 'pending',
@@ -9,10 +9,10 @@ export enum AppointmentStatus {
 
 @Schema({ timestamps: true })
 export class Appointment extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Doctor', required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true })
   doctor: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   patient: Types.ObjectId;
 
   @Prop({ type: Date, required: true })

@@ -87,8 +87,20 @@ export class AppointmentService {
 
     // 📌 Lấy danh sách tất cả lịch hẹn
     async getAllAppointments() {
-        const appointments = await this.appointmentModel.find().populate('doctor', 'name email').populate('patient', 'name email');
-        return appointments;
+    const appointments = await this.appointmentModel.find()
+        .populate({
+          path: 'doctor',
+          select: 'name specialty hospital address',
+          populate: {
+            path: 'specialty',
+            select: 'name', 
+          },
+        })
+        .populate({
+          path: 'patient',
+          select: 'name',
+        });
+      return appointments;
     }
 
     // 📌 Lấy danh sách lịch hẹn của bác sĩ
@@ -98,9 +110,16 @@ export class AppointmentService {
             throw new NotFoundException('Doctor not found');
         }
 
-        const appointments = await this.appointmentModel.find({ doctor: doctorID }).populate('patient', 'name email');
+        const appointments = await this.appointmentModel.find({ doctor: doctorID }).populate({
+            path: 'patient',
+            select: 'name',
+          });
 
-        return { doctorID, appointments };
+        if (!appointments) {
+            throw new NotFoundException('No appointments found for this doctor');
+        }
+
+        return appointments ;
     }
 
     // 📌 Lấy danh sách lịch hẹn của bệnh nhân
@@ -110,8 +129,11 @@ export class AppointmentService {
             throw new NotFoundException('Patient not found');
         }
 
-        const appointments = await this.appointmentModel.find({ patient: patientID }).populate('doctor', 'name email');
+        const appointments = await this.appointmentModel.find({ patient: patientID }).populate({ path: 'doctor', select: 'name' })
 
-        return { patientID, appointments };
+        if (!appointments) {
+            throw new NotFoundException('No appointments found for this patient');
+        }
+        return appointments;
     }
 }
