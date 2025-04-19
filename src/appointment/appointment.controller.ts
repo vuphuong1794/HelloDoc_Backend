@@ -8,10 +8,12 @@ import {
   NotFoundException,
   BadRequestException,
   UseGuards,
+  Query
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
+import { Appointment } from 'src/schemas/Appointment.schema';
 
 @Controller('appointments')
 export class AppointmentController {
@@ -38,11 +40,20 @@ export class AppointmentController {
     }
   }
 
+  @Get(':id')
+  async getAppointmentbyitsID(
+    @Param('id') id: string
+    )
+    {
+      return await this.appointmentService.getAppointmentsbyitsID(id);
+    }
+
+
   // API xác nhận lịch hẹn
   @Patch('confirm/:id')
-  async confirmAppointment(@Param('id') id: string) {
+  async confirmAppointmentDone(@Param('id') id: string) {
     try {
-      return await this.appointmentService.confirmAppointment(id);
+      return await this.appointmentService.confirmAppointmentDone(id);
     } catch (error) {
       throw new NotFoundException(error.message);
     }
@@ -64,5 +75,14 @@ export class AppointmentController {
   @Get('patient/:patientID')
   async getPatientAppointments(@Param('patientID') patientID: string) {
     return await this.appointmentService.getPatientAppointments(patientID);
+  }
+
+  //API lấy danh sách lịch hẹn theo trạng thái
+  @Get('/:patientID/by-status')
+  async getAppointmentsByStatus(
+    @Param('patientID') patientID: string,
+    @Query('status') status: string
+  ){
+    return await this.appointmentService.getAppointmentsByStatus(patientID,status);
   }
 }

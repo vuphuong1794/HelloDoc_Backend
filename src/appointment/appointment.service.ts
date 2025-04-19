@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
 import { Appointment, AppointmentStatus } from 'src/schemas/Appointment.schema';
-
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 
@@ -74,16 +73,16 @@ export class AppointmentService {
     }
 
     // 📌 Xác nhận lịch hẹn
-    async confirmAppointment(id: string) {
+    async confirmAppointmentDone(id: string) {
         const appointment = await this.appointmentModel.findById(id);
         if (!appointment) {
             throw new NotFoundException('Appointment not found');
         }
 
-        appointment.status = AppointmentStatus.CONFIRMED;
+        appointment.status = AppointmentStatus.DONE;
         await appointment.save();
 
-        return { message: 'Appointment confirmed successfully', appointment };
+        return { message: 'Appointment confirmed done successfully', appointment };
     }
 
     // 📌 Lấy danh sách tất cả lịch hẹn
@@ -137,4 +136,18 @@ export class AppointmentService {
         }
         return appointments;
     }
+
+    async getAppointmentsByStatus(patientID:string, status: string): Promise<Appointment[]> {
+        const appointments = await this.appointmentModel.find({
+            patient: patientID,
+            status: status,
+          }).populate({ path: 'doctor', select: 'name' });
+        return appointments;
+    }
+
+
+    async getAppointmentsbyitsID(id: string){
+        const appointment = await this.appointmentModel.findById(id);
+        return appointment;
+      }
 }
