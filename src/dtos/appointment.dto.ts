@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsMongoId, IsString, IsEnum, IsOptional, IsDateString, Matches } from 'class-validator';
 
 export class BookAppointmentDto {
+    
     @IsNotEmpty()
     @IsMongoId()
     doctorID: string;
@@ -20,8 +21,8 @@ export class BookAppointmentDto {
     time: string; // Chỉ chấp nhận định dạng HH:mm (24h)
 
     @IsOptional()
-    @IsEnum(['pending', 'confirmed', 'cancelled'], {
-        message: 'Status must be pending, confirmed, or cancelled',
+    @IsEnum(['pending', 'done', 'cancelled'], {
+        message: 'Status must be pending, done, or cancelled',
     })
     status?: string = 'pending'; // Mặc định là 'pending'
 

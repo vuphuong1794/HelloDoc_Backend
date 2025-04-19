@@ -3,7 +3,7 @@ import mongoose, { Types, Document } from 'mongoose';
 
 export enum AppointmentStatus {
   PENDING = 'pending',
-  CONFIRMED = 'confirmed',
+  DONE = 'done',
   CANCELLED = 'cancelled',
 }
 
