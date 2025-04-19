@@ -7,9 +7,9 @@ export enum AppointmentStatus {
   CANCELLED = 'cancelled',
 }
 
-export enum ConsultationMethod {
-  IN_PERSON = 'in_person',
-  ONLINE = 'online',
+export enum ExaminationMethod {
+  AT_CLINIC = 'at_clinic',
+  AT_HOME = 'at_home',
 }
 
 @Schema({ timestamps: true })
@@ -20,8 +20,8 @@ export class Appointment extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   patient: Types.ObjectId;
 
-  @Prop({ type: Date, required: true })
-  date: Date;
+  @Prop({ required: true })
+  date: string;
 
   @Prop({ required: true })
   time: string;
@@ -35,16 +35,19 @@ export class Appointment extends Document {
 
   @Prop({
     required: true,
-    enum: ConsultationMethod,
-    default: ConsultationMethod.IN_PERSON,
+    enum: ExaminationMethod,
+    default: ExaminationMethod.AT_CLINIC,
   })
-  consultationMethod: ConsultationMethod;
+  examinationMethod: ExaminationMethod;
 
   @Prop()
   reason?: string;
 
   @Prop()
   notes?: string;
+
+  @Prop()
+  totalCost: string;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
