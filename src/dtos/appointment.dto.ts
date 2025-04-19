@@ -27,10 +27,10 @@ export class BookAppointmentDto {
     status?: string = 'pending'; // Mặc định là 'pending'
 
     @IsOptional()
-    @IsEnum(['at_house', 'at_clinic'], {
-        message: 'Consultation method must be in_person or online',
+    @IsEnum(['at_clinic', 'at_home'], {
+        message: 'Consultation method must be at_clinic or at_home',
     })
-    consultationMethod?: string = 'in_person'; // Mặc định là 'in_person'
+    examinationMethod?: string = 'at_clinic'; // Mặc định là 'at_clinic'
 
     @IsOptional()
     @IsString()
@@ -39,4 +39,8 @@ export class BookAppointmentDto {
     @IsOptional()
     @IsString()
     notes?: string;
+
+    @IsOptional()
+    @IsString()
+    totalCost: string;
 }
