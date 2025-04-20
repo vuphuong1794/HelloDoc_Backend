@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
 import { Appointment, AppointmentStatus } from 'src/schemas/Appointment.schema';
-
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 

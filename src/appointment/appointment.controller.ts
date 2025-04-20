@@ -15,7 +15,7 @@ import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 
 @Controller('appointments')
 export class AppointmentController {
-  constructor(private readonly appointmentService: AppointmentService) {}
+  constructor(private readonly appointmentService: AppointmentService) { }
 
   // API đặt lịch hẹn
   @UseGuards(JwtAuthGuard)
