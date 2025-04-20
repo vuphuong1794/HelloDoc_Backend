@@ -57,6 +57,9 @@ export class Appointment extends Document {
 
   @Prop()
   totalCost: string;
+
+  @Prop()
+  location?: string; // Địa chỉ khám bệnh (nếu có)
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsMongoId, IsString, IsEnum, IsOptional, IsDateString, Matches } from 'class-validator';
 
 export class BookAppointmentDto {
-    
+
     @IsNotEmpty()
     @IsMongoId()
     doctorID: string;
@@ -43,4 +43,7 @@ export class BookAppointmentDto {
     @IsOptional()
     @IsString()
     totalCost: string;
+
+    @IsString()
+    location?: string; // Địa chỉ khám bệnh (nếu có)
 }
