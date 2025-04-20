@@ -8,6 +8,7 @@ import {
   NotFoundException,
   BadRequestException,
   UseGuards,
+  Query
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
@@ -38,20 +39,28 @@ export class AppointmentController {
     }
   }
 
-  // API xác nhận lịch hẹn
-  @Patch('confirm/:id')
-  async confirmAppointment(@Param('id') id: string) {
-    try {
-      return await this.appointmentService.confirmAppointment(id);
-    } catch (error) {
-      throw new NotFoundException(error.message);
-    }
-  }
-
   // API lấy danh sách tất cả lịch hẹn
   @Get('getAll')
   async getAllAppointments() {
     return await this.appointmentService.getAllAppointments();
+  }
+
+  @Get(':id')
+  async getAppointmentbyitsID(
+    @Param('id') id: string
+  ) {
+    return await this.appointmentService.getAppointmentsbyitsID(id);
+  }
+
+
+  // API xác nhận lịch hẹn
+  @Patch('confirm/:id')
+  async confirmAppointmentDone(@Param('id') id: string) {
+    try {
+      return await this.appointmentService.confirmAppointmentDone(id);
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
   // API lấy danh sách lịch hẹn của bác sĩ
@@ -64,5 +73,14 @@ export class AppointmentController {
   @Get('patient/:patientID')
   async getPatientAppointments(@Param('patientID') patientID: string) {
     return await this.appointmentService.getPatientAppointments(patientID);
+  }
+
+  //API lấy danh sách lịch hẹn theo trạng thái
+  @Get('/:patientID/by-status')
+  async getAppointmentsByStatus(
+    @Param('patientID') patientID: string,
+    @Query('status') status: string
+  ) {
+    return await this.appointmentService.getAppointmentsByStatus(patientID, status);
   }
 }
