@@ -14,6 +14,7 @@ import { Model, isValidObjectId, Types } from 'mongoose';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { JwtService } from '@nestjs/jwt';
 import { loginDto } from 'src/dtos/login.dto';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class AdminService {
@@ -21,8 +22,9 @@ export class AdminService {
     @InjectModel(User.name) private UserModel: Model<User>,
     @InjectModel(Admin.name) private AdminModel: Model<Admin>,
     @InjectModel(Doctor.name) private DoctorModel: Model<Doctor>,
+    private cloudinaryService: CloudinaryService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async getUsers() {
     return await this.UserModel.find();
@@ -51,7 +53,7 @@ export class AdminService {
     return { message: 'Admin created successfully' };
   }
 
-  async updateUser(id: string, updateData: updateUserDto) {
+  async updateUser(id: string, updateData: any) {
     // Validate ObjectId format
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid ID format');
@@ -80,6 +82,11 @@ export class AdminService {
       updateFields.password = await bcrypt.hash(updateData.password, 10);
     } else {
       updateFields.password = user.password; // 🔥 Giữ nguyên mật khẩu cũ, không mã hóa lại!
+    }
+
+    if (updateData.userImage) {
+      const upload = await this.cloudinaryService.uploadFile(updateData.userImage);
+      updateFields.userImage = upload.secure_url;
     }
 
     let roleChanged = false;
