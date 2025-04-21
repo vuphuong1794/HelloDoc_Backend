@@ -16,7 +16,7 @@ export class AppointmentService {
 
     // 📌 Đặt lịch hẹn
     async bookAppointment(bookData: BookAppointmentDto) {
-        const { doctorID, patientID, date, time, status, examinationMethod, reason, notes, totalCost } = bookData;
+        const { doctorID, patientID, date, time, status, examinationMethod, reason, notes, totalCost, location } = bookData;
 
         // Kiểm tra xem bác sĩ có tồn tại không
         const doctor = await this.doctorModel.findById(doctorID);
@@ -58,7 +58,8 @@ export class AppointmentService {
             examinationMethod: examinationMethod || 'at_clinic',
             reason,
             notes,
-            totalCost
+            totalCost,
+            location
         });
 
         await newAppointment.save();
