@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AdminModule } from './admin/admin.module';
 import { DoctorModule } from './doctor/doctor.module';
 import { AppointmentModule } from './appointment/appointment.module';
@@ -22,10 +22,17 @@ import config from './config/config';
       cache: true,
       load: [config],
     }),
-    JwtModule.register({global: true, secret: "secretKey"}),
-    MongooseModule.forRoot(
-      'mongodb+srv://pvunguyen84:nQ0ZjjFTjKnLvuwa@cluster0.lk7ml.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-    ),
+    JwtModule.register({ global: true, secret: "secretKey" }),
+    // MongooseModule.forRoot(
+    //   'mongodb+srv://pvunguyen84:nQ0ZjjFTjKnLvuwa@cluster0.lk7ml.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+    // ),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGO_URI'),
+      }),
+      inject: [ConfigService],
+    }),
     AdminModule,
     AuthModule,
     DoctorModule,
@@ -39,4 +46,4 @@ import config from './config/config';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
