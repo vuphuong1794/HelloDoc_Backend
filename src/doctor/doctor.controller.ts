@@ -41,13 +41,7 @@ export class DoctorController {
   @UseInterceptors(FileInterceptor('license'))
   @Put(':id/update-profile')
   async updateProfile(@Param('id') id: string, @UploadedFile() file: Express.Multer.File, @Body() updateData: any) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('ID không hợp lệ');
-    }
 
-    if (file) {
-      updateData.licenseUrl = file;
-    }
     return this.doctorService.updateDoctorProfile(id, updateData);
   }
 
