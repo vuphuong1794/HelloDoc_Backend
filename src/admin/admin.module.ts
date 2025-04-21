@@ -20,9 +20,9 @@ import { Doctor, DoctorSchema } from 'src/schemas/doctor.schema';
     name: Doctor.name,
     schema: DoctorSchema,
   }
-
-])],
+  ]),
+  ],
   controllers: [AdminController],
   providers: [AdminService],
 })
-export class AdminModule {}
+export class AdminModule { }

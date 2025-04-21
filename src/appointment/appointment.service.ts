@@ -12,7 +12,7 @@ export class AppointmentService {
         @InjectModel(Appointment.name) private appointmentModel: Model<Appointment>,
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(Doctor.name) private doctorModel: Model<Doctor>
-    ) {}
+    ) { }
 
     // 📌 Đặt lịch hẹn
     async bookAppointment(bookData: BookAppointmentDto) {
@@ -24,12 +24,20 @@ export class AppointmentService {
             throw new NotFoundException('Doctor not found');
         }
 
-        // Kiểm tra xem bệnh nhân có tồn tại không
+        // Kiểm tra xem bệnh nhân có tồn tại không và xác định model
+        let patientModel: 'User' | 'Doctor' | null = null;
+
         let patient = await this.userModel.findById(patientID);
-        if (!patient) {
+        if (patient) {
+            patientModel = 'User';
+        } else {
             patient = await this.doctorModel.findById(patientID);
+            if (patient) {
+                patientModel = 'Doctor';
+            }
         }
-        if (!patient) {
+
+        if (!patientModel) {
             throw new NotFoundException('Patient not found');
         }
 
@@ -42,11 +50,12 @@ export class AppointmentService {
         // Tạo cuộc hẹn mới
         const newAppointment = new this.appointmentModel({
             doctor: doctorID,
+            patientModel,
             patient: patientID,
             date,
             time,
-            status: status || AppointmentStatus.PENDING, // Mặc định là "pending"
-            examinationMethod: examinationMethod || 'at_clinic', // Mặc định là "at_clinic"
+            status: status || AppointmentStatus.PENDING,
+            examinationMethod: examinationMethod || 'at_clinic',
             reason,
             notes,
             totalCost
@@ -59,6 +68,7 @@ export class AppointmentService {
             appointment: newAppointment,
         };
     }
+
 
     // 📌 Hủy lịch hẹn
     async cancelAppointment(id: string) {
@@ -88,21 +98,25 @@ export class AppointmentService {
 
     // 📌 Lấy danh sách tất cả lịch hẹn
     async getAllAppointments() {
-    const appointments = await this.appointmentModel.find()
-        .populate({
-          path: 'doctor',
-          select: 'name specialty hospital address',
-          populate: {
-            path: 'specialty',
-            select: 'name', 
-          },
-        })
-        .populate({
-          path: 'patient',
-          select: 'name',
-        });
-      return appointments;
+        const appointments = await this.appointmentModel.find()
+            .populate({
+                path: 'doctor',
+                select: 'name specialty hospital address',
+                populate: {
+                    path: 'specialty',
+                    select: 'name',
+                },
+            })
+            .populate({
+                path: 'patient',
+                select: 'name',
+                // Mongoose sẽ tự dùng patientModel do bạn đã khai báo refPath
+            });
+
+        return appointments;
     }
+
+
 
     // 📌 Lấy danh sách lịch hẹn của bác sĩ
     async getDoctorAppointments(doctorID: string) {
@@ -114,13 +128,13 @@ export class AppointmentService {
         const appointments = await this.appointmentModel.find({ doctor: doctorID }).populate({
             path: 'patient',
             select: 'name',
-          });
+        });
 
         if (!appointments) {
             throw new NotFoundException('No appointments found for this doctor');
         }
 
-        return appointments ;
+        return appointments;
     }
 
     // 📌 Lấy danh sách lịch hẹn của bệnh nhân
@@ -138,17 +152,17 @@ export class AppointmentService {
         return appointments;
     }
 
-    async getAppointmentsByStatus(patientID:string, status: string): Promise<Appointment[]> {
+    async getAppointmentsByStatus(patientID: string, status: string): Promise<Appointment[]> {
         const appointments = await this.appointmentModel.find({
             patient: patientID,
             status: status,
-          }).populate({ path: 'doctor', select: 'name' });
+        }).populate({ path: 'doctor', select: 'name' });
         return appointments;
     }
 
 
-    async getAppointmentsbyitsID(id: string){
+    async getAppointmentsbyitsID(id: string) {
         const appointment = await this.appointmentModel.findById(id);
         return appointment;
-      }
+    }
 }

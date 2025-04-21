@@ -17,14 +17,23 @@ export class Appointment extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true })
   doctor: Types.ObjectId;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  // Thêm trường xác định patient là từ model nào
+  @Prop({ type: String, required: true, enum: ['User', 'Doctor'] })
+  patientModel: string;
+
+  // Tham chiếu động đến model tùy theo patientModel
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    refPath: 'patientModel',
+  })
   patient: Types.ObjectId;
 
   @Prop({ required: true })
-  date: string;
+  date: Date;
 
   @Prop({ required: true })
-  time: string;
+  time: String;
 
   @Prop({
     required: true,
@@ -48,6 +57,9 @@ export class Appointment extends Document {
 
   @Prop()
   totalCost: string;
+
+  @Prop()
+  location?: string; // Địa chỉ khám bệnh (nếu có)
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

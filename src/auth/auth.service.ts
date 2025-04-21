@@ -12,6 +12,7 @@ import { loginDto } from '../dtos/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { Admin } from 'src/schemas/admin.schema';
 import { Doctor } from 'src/schemas/doctor.schema';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -19,14 +20,20 @@ export class AuthService {
     @InjectModel(User.name) private UserModel: Model<User>,
     @InjectModel(Admin.name) private AdminModel: Model<Admin>,
     @InjectModel(Doctor.name) private DoctorModel: Model<Doctor>,
+    private configService: ConfigService,
     private jwtService: JwtService,
-  ) {}
-  
+  ) { }
+
   async signUp(signUpData: SignupDto) {
     const { email, password, name, phone } = signUpData;
     const emailInUse = await this.UserModel.findOne({ email });
     if (emailInUse) {
       throw new BadRequestException('Email already in use');
+    }
+
+    const phoneInUse = await this.UserModel.findOne({ phone });
+    if (phoneInUse) {
+      throw new BadRequestException('Phone number already in use');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10); // hash password
