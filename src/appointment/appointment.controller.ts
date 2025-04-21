@@ -13,11 +13,10 @@ import {
 import { AppointmentService } from './appointment.service';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
-import { Appointment } from 'src/schemas/Appointment.schema';
 
 @Controller('appointments')
 export class AppointmentController {
-  constructor(private readonly appointmentService: AppointmentService) {}
+  constructor(private readonly appointmentService: AppointmentService) { }
 
   // API đặt lịch hẹn
   @UseGuards(JwtAuthGuard)
@@ -40,13 +39,18 @@ export class AppointmentController {
     }
   }
 
+  // API lấy danh sách tất cả lịch hẹn
+  @Get('getAll')
+  async getAllAppointments() {
+    return await this.appointmentService.getAllAppointments();
+  }
+
   @Get(':id')
   async getAppointmentbyitsID(
     @Param('id') id: string
-    )
-    {
-      return await this.appointmentService.getAppointmentsbyitsID(id);
-    }
+  ) {
+    return await this.appointmentService.getAppointmentsbyitsID(id);
+  }
 
 
   // API xác nhận lịch hẹn
@@ -57,12 +61,6 @@ export class AppointmentController {
     } catch (error) {
       throw new NotFoundException(error.message);
     }
-  }
-
-  // API lấy danh sách tất cả lịch hẹn
-  @Get('getAll')
-  async getAllAppointments() {
-    return await this.appointmentService.getAllAppointments();
   }
 
   // API lấy danh sách lịch hẹn của bác sĩ
@@ -82,7 +80,7 @@ export class AppointmentController {
   async getAppointmentsByStatus(
     @Param('patientID') patientID: string,
     @Query('status') status: string
-  ){
-    return await this.appointmentService.getAppointmentsByStatus(patientID,status);
+  ) {
+    return await this.appointmentService.getAppointmentsByStatus(patientID, status);
   }
 }
