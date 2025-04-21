@@ -27,4 +27,4 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
   controllers: [DoctorController],
   providers: [DoctorService],
 })
-export class DoctorModule {}
+export class DoctorModule { }

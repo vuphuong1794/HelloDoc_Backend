@@ -21,10 +21,10 @@ export class DoctorService {
     @InjectModel(Doctor.name) private DoctorModel: Model<Doctor>,
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(PendingDoctor.name) private pendingDoctorModel: Model<PendingDoctor>,
-    @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>, 
+    @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
     private jwtService: JwtService,
     private cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   async getDoctors() {
     return await this.DoctorModel.find().populate('specialty');
@@ -100,6 +100,10 @@ export class DoctorService {
 
     // Danh sách các trường hợp lệ
     const allowedFields = [
+      'name',
+      'email',
+      'phone',
+      'password',
       'specialty',
       'licenseUrl',
       'experience',
@@ -125,7 +129,7 @@ export class DoctorService {
       const uploadResult = await this.cloudinaryService.uploadFile(updateData.licenseUrl);
       filteredUpdateData['licenseUrl'] = uploadResult.secure_url;
     }
-    
+
     // Nếu có cập nhật chuyên khoa, kiểm tra và lưu bác sĩ vào chuyên khoa
     if (filteredUpdateData['specialty']) {
       const specialtyId = filteredUpdateData['specialty'];
@@ -194,7 +198,7 @@ export class DoctorService {
     return {
       message: 'Yêu cầu đăng ký bác sĩ đã được gửi thành công.',
     };
-    
+
   }
 
   // Lấy danh sách bác sĩ chưa được xác thực

@@ -20,7 +20,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('doctor')
 export class DoctorController {
-  constructor(private readonly doctorService: DoctorService) {}
+  constructor(private readonly doctorService: DoctorService) { }
 
   @Get('get-all')
   async getDoctors() {
@@ -37,10 +37,10 @@ export class DoctorController {
     return this.doctorService.loginDoctor(loginData);
   }
 
-  @UseGuards(JwtAuthGuard) // Bảo vệ API, chỉ cho phép bác sĩ đăng nhập mới có quyền cập nhật
+  //@UseGuards(JwtAuthGuard) // Bảo vệ API, chỉ cho phép bác sĩ đăng nhập mới có quyền cập nhật
   @UseInterceptors(FileInterceptor('license'))
   @Put(':id/update-profile')
-  async updateProfile(@Param('id') id: string,  @UploadedFile() file: Express.Multer.File, @Body() updateData: any) {
+  async updateProfile(@Param('id') id: string, @UploadedFile() file: Express.Multer.File, @Body() updateData: any) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('ID không hợp lệ');
     }

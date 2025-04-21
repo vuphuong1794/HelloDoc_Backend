@@ -19,8 +19,9 @@ import { Admin, AdminSchema } from 'src/schemas/admin.schema';
     name: Admin.name,
     schema: AdminSchema,
   }
-])],
+  ]),
+  ],
   controllers: [AuthController],
   providers: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }
