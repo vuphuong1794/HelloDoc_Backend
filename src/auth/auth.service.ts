@@ -70,13 +70,12 @@ export class AuthService {
       throw new UnauthorizedException('Password is incorrect');
     }
 
-    return this.generateUserTokens(user._id, user.email, user.name, user.role);
+    return this.generateUserTokens(user._id, user.email, user.name, user.phone, user.role);
   }
 
-  async generateUserTokens(userId, email, name, role) {
-
+  async generateUserTokens(userId, email, name, phone, role) {
     const accessToken = this.jwtService.sign(
-      { userId, email, name, role },
+      { userId, email, name, phone, role },
       { expiresIn: '1d' },
     );
     return {
