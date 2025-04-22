@@ -33,6 +33,11 @@ export class AdminController {
     return this.adminService.getUsers();
   }
 
+  @Get('userbyid/:id')
+  async getUserByID(@Param('id') id: string) {
+    return this.adminService.getUserByID(id);
+  }
+
   @Get('doctors')
   async getDoctors() {
     return this.adminService.getDoctors();

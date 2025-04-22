@@ -30,6 +30,10 @@ export class AdminService {
     return await this.UserModel.find();
   }
 
+  async getUserByID(id: string) {
+    return await this.UserModel.findById(id);
+  }
+
   async getDoctors() {
     return await this.DoctorModel.find();
   }
