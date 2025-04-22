@@ -13,6 +13,7 @@ import { MedicalOptionModule } from './medical-option/medical-option.module';
 import { RemoteMedicalOptionModule } from './remote-medical-option/remote-medical-option.module';
 import { FaqitemModule } from './faqitem/faqitem.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { PostModule } from './post/post.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import config from './config/config';
 
@@ -43,6 +44,7 @@ import config from './config/config';
     RemoteMedicalOptionModule,
     FaqitemModule,
     CloudinaryModule,
+    PostModule,
     FirebaseModule,
   ],
   controllers: [AppController],
