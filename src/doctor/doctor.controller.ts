@@ -10,17 +10,18 @@ import {
   Patch,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
 import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 import { Types } from 'mongoose';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('doctor')
 export class DoctorController {
-  constructor(private readonly doctorService: DoctorService) {}
+  constructor(private readonly doctorService: DoctorService) { }
 
   @Get('get-all')
   async getDoctors() {
@@ -37,16 +38,33 @@ export class DoctorController {
     return this.doctorService.loginDoctor(loginData);
   }
 
-  @UseGuards(JwtAuthGuard) // Bảo vệ API, chỉ cho phép bác sĩ đăng nhập mới có quyền cập nhật
-  @UseInterceptors(FileInterceptor('license'))
+  //@UseGuards(JwtAuthGuard) // Bảo vệ API, chỉ cho phép bác sĩ đăng nhập mới có quyền cập nhật
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'license', maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+    { name: 'frontCccd', maxCount: 1 },
+    { name: 'backCccd', maxCount: 1 },
+  ]))
   @Put(':id/update-profile')
-  async updateProfile(@Param('id') id: string,  @UploadedFile() file: Express.Multer.File, @Body() updateData: any) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('ID không hợp lệ');
+  async updateProfile(
+    @Param('id') id: string,
+    @UploadedFiles() files: { license?: Express.Multer.File[], image?: Express.Multer.File[], frontCccd?: Express.Multer.File[], backCccd?: Express.Multer.File[] },
+    @Body() updateData: any
+  ) {
+    if (files?.license?.[0]) {
+      updateData.license = files.license[0];
     }
 
-    if (file) {
-      updateData.licenseUrl = file;
+    if (files?.image?.[0]) {
+      updateData.image = files.image[0];
+    }
+
+    if (files?.frontCccd?.[0]) {
+      updateData.frontCccd = files.frontCccd[0];
+    }
+
+    if (files?.backCccd?.[0]) {
+      updateData.backCccd = files.backCccd[0];
     }
     return this.doctorService.updateDoctorProfile(id, updateData);
   }

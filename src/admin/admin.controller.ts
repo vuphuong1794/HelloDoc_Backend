@@ -8,6 +8,9 @@ import {
   UseGuards,
   Patch,
   Delete,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { SignupDto } from 'src/dtos/signup.dto';
@@ -15,13 +18,15 @@ import { updateUserDto } from 'src/dtos/updateUser.dto';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 import { AdminGuard } from 'src/Guard/AdminGuard.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Types } from 'mongoose';
 
 @Controller('admin')
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   @Get('users')
   async getUsers() {
@@ -38,11 +43,25 @@ export class AdminController {
     return this.adminService.postAdmin(signUpData);
   }
 
+  @UseInterceptors(FileInterceptor('userImage'))
   @Put('updateUser/:id')
   async updateUser(
     @Param('id') id: string,
-    @Body() updateUserdata: updateUserDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() updateUserdata: any,
   ) {
+
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('ID không hợp lệ');
+    }
+
+    if (file) {
+      updateUserdata.userImage = file;
+    }
+
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('ID không hợp lệ');
+    }
     return this.adminService.updateUser(id, updateUserdata);
   }
 

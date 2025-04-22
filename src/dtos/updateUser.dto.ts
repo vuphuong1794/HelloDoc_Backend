@@ -1,3 +1,4 @@
+import { Type } from "class-transformer";
 import { IsEmail, IsOptional, IsNumberString, IsString, Matches, MinLength } from "class-validator";
 
 export class updateUserDto {
@@ -23,8 +24,8 @@ export class updateUserDto {
     @IsOptional()
     @IsString()
     role: string;
-    
+
     @IsOptional()
-    @IsString()
-    licenseUrl?: string;
+    @Type(() => Object)
+    userImage?: Express.Multer.File;
 }

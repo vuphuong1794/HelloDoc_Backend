@@ -14,6 +14,7 @@ import { RemoteMedicalOptionModule } from './remote-medical-option/remote-medica
 import { FaqitemModule } from './faqitem/faqitem.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { PostModule } from './post/post.module';
+import { FirebaseModule } from './firebase/firebase.module';
 import config from './config/config';
 
 @Module({
@@ -24,10 +25,13 @@ import config from './config/config';
       load: [config],
     }),
     JwtModule.register({ global: true, secret: "secretKey" }),
+    // MongooseModule.forRoot(
+    //   'mongodb+srv://pvunguyen84:nQ0ZjjFTjKnLvuwa@cluster0.lk7ml.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+    // ),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGO_URL'),
+        uri: configService.get<string>('MONGO_URI'),
       }),
       inject: [ConfigService],
     }),
@@ -41,6 +45,7 @@ import config from './config/config';
     FaqitemModule,
     CloudinaryModule,
     PostModule,
+    FirebaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],
