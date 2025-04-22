@@ -42,18 +42,29 @@ export class DoctorController {
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'license', maxCount: 1 },
     { name: 'image', maxCount: 1 },
+    { name: 'frontCccd', maxCount: 1 },
+    { name: 'backCccd', maxCount: 1 },
   ]))
   @Put(':id/update-profile')
   async updateProfile(
     @Param('id') id: string,
-    @UploadedFiles() files: { license?: Express.Multer.File[], image?: Express.Multer.File[] },
+    @UploadedFiles() files: { license?: Express.Multer.File[], image?: Express.Multer.File[], frontCccd?: Express.Multer.File[], backCccd?: Express.Multer.File[] },
     @Body() updateData: any
   ) {
-    if (files.license && files.license[0]) {
+    if (files?.license?.[0]) {
       updateData.license = files.license[0];
     }
-    if (files.image && files.image[0]) {
+
+    if (files?.image?.[0]) {
       updateData.image = files.image[0];
+    }
+
+    if (files?.frontCccd?.[0]) {
+      updateData.frontCccd = files.frontCccd[0];
+    }
+
+    if (files?.backCccd?.[0]) {
+      updateData.backCccd = files.backCccd[0];
     }
     return this.doctorService.updateDoctorProfile(id, updateData);
   }
