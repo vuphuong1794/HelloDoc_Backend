@@ -85,11 +85,11 @@ export class AdminService {
     ) {
       updateFields.password = await bcrypt.hash(updateData.password, 10);
     } else {
-      updateFields.password = user.password; // 🔥 Giữ nguyên mật khẩu cũ, không mã hóa lại!
+      updateFields.password = user.password; //Giữ nguyên mật khẩu cũ, không mã hóa lại!
     }
 
     if (updateData.userImage) {
-      const upload = await this.cloudinaryService.uploadFile(updateData.userImage);
+      const upload = await this.cloudinaryService.uploadFile(updateData.userImage, `Users/${id}/Avatar`);
       updateFields.userImage = upload.secure_url;
     }
 

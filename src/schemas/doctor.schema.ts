@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Type } from 'class-transformer';
 import mongoose, { Document, Types } from 'mongoose';
 import { Specialty } from './specialty.schema';
+import { IsUrl } from 'class-validator';
 
 @Schema()
 export class Doctor extends Document {
@@ -24,6 +25,7 @@ export class Doctor extends Document {
   specialty: Types.ObjectId | Specialty; // Chuyên khoa
 
   @Prop()
+  @IsUrl()
   licenseUrl: string; // Giấy phép hành nghề
 
   @Prop({ default: false })
