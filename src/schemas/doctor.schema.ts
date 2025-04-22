@@ -63,6 +63,15 @@ export class Doctor extends Document {
 
   @Prop()
   dob?: Date;
+
+  @Prop()
+  cccd?: string;
+
+  @Prop()
+  backCccdUrl?: string;
+
+  @Prop()
+  frontCccdUrl?: string;
 }
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);

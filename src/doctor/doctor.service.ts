@@ -110,6 +110,7 @@ export class DoctorService {
       'hospital',
       'address',
       'price',
+      'cccd',
       'insurance',
       'workingHours',
       'minAge',
@@ -144,6 +145,28 @@ export class DoctorService {
       } catch (error) {
         console.error('Lỗi Cloudinary:', error);
         throw new BadRequestException('Lỗi khi tải ảnh hồ sơ lên Cloudinary');
+      }
+    }
+
+    if (updateData.frontCccd) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(updateData.frontCccd, `Doctors/${doctorId}/Info`);
+        filteredUpdateData['frontCccdUrl'] = uploadResult.secure_url;
+        console.log('Front Cccd đã được tải lên Cloudinary:', uploadResult.secure_url);
+      } catch (error) {
+        console.error('Lỗi Cloudinary:', error);
+        throw new BadRequestException('Lỗi khi tải front Cccd lên Cloudinary');
+      }
+    }
+
+    if (updateData.backCccd) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(updateData.backCccd, `Doctors/${doctorId}/Info`);
+        filteredUpdateData['backCccdUrl'] = uploadResult.secure_url;
+        console.log('Back Cccd đã được tải lên Cloudinary:', uploadResult.secure_url);
+      } catch (error) {
+        console.error('Lỗi Cloudinary:', error);
+        throw new BadRequestException('Lỗi khi tải back Cccd lên Cloudinary');
       }
     }
 
