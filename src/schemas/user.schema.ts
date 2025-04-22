@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { IsString, IsEmail, IsBoolean, IsOptional, IsArray, IsNumber, Min, Max, IsUrl } from 'class-validator';
+import mongoose, { Document, Types } from 'mongoose';
+import { IsString, IsEmail, IsBoolean, IsOptional, IsArray, IsNumber, Min, Max, IsUrl, IsMongoId } from 'class-validator';
 
 @Schema({ timestamps: true })
 export class User extends Document {
@@ -89,6 +89,7 @@ export class User extends Document {
     @IsOptional()
     @IsUrl()
     userImage?: string;
+
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
