@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AdminModule } from './admin/admin.module';
 import { DoctorModule } from './doctor/doctor.module';
 import { AppointmentModule } from './appointment/appointment.module';
@@ -13,6 +13,7 @@ import { MedicalOptionModule } from './medical-option/medical-option.module';
 import { RemoteMedicalOptionModule } from './remote-medical-option/remote-medical-option.module';
 import { FaqitemModule } from './faqitem/faqitem.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { PostModule } from './post/post.module';
 import config from './config/config';
 
 @Module({
@@ -22,10 +23,14 @@ import config from './config/config';
       cache: true,
       load: [config],
     }),
-    JwtModule.register({global: true, secret: "secretKey"}),
-    MongooseModule.forRoot(
-      'mongodb+srv://pvunguyen84:nQ0ZjjFTjKnLvuwa@cluster0.lk7ml.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-    ),
+    JwtModule.register({ global: true, secret: "secretKey" }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGO_URL'),
+      }),
+      inject: [ConfigService],
+    }),
     AdminModule,
     AuthModule,
     DoctorModule,
@@ -35,8 +40,9 @@ import config from './config/config';
     RemoteMedicalOptionModule,
     FaqitemModule,
     CloudinaryModule,
+    PostModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
