@@ -10,13 +10,14 @@ import {
   Patch,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
 import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 import { Types } from 'mongoose';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('doctor')
 export class DoctorController {
@@ -38,10 +39,22 @@ export class DoctorController {
   }
 
   //@UseGuards(JwtAuthGuard) // Bảo vệ API, chỉ cho phép bác sĩ đăng nhập mới có quyền cập nhật
-  @UseInterceptors(FileInterceptor('license'))
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'license', maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+  ]))
   @Put(':id/update-profile')
-  async updateProfile(@Param('id') id: string, @UploadedFile() file: Express.Multer.File, @Body() updateData: any) {
-
+  async updateProfile(
+    @Param('id') id: string,
+    @UploadedFiles() files: { license?: Express.Multer.File[], image?: Express.Multer.File[] },
+    @Body() updateData: any
+  ) {
+    if (files.license && files.license[0]) {
+      updateData.license = files.license[0];
+    }
+    if (files.image && files.image[0]) {
+      updateData.image = files.image[0];
+    }
     return this.doctorService.updateDoctorProfile(id, updateData);
   }
 
