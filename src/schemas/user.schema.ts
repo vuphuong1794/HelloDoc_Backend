@@ -88,7 +88,7 @@ export class User extends Document {
     @Prop()
     @IsOptional()
     @IsUrl()
-    imageUrl?: string;
+    userImage?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
