@@ -21,10 +21,10 @@ export class DoctorService {
     @InjectModel(Doctor.name) private DoctorModel: Model<Doctor>,
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(PendingDoctor.name) private pendingDoctorModel: Model<PendingDoctor>,
-    @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>, 
+    @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
     private jwtService: JwtService,
     private cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   async getDoctors() {
     return await this.DoctorModel.find().populate('specialty');
@@ -100,17 +100,20 @@ export class DoctorService {
 
     // Danh sách các trường hợp lệ
     const allowedFields = [
+      'name',
+      'email',
+      'phone',
+      'password',
       'specialty',
-      'licenseUrl',
       'experience',
       'description',
       'hospital',
       'address',
       'price',
+      'cccd',
       'insurance',
       'workingHours',
       'minAge',
-      'imageUrl',
     ];
 
     // Lọc dữ liệu hợp lệ
@@ -121,11 +124,52 @@ export class DoctorService {
       }
     });
 
-    if (updateData.licenseUrl && typeof updateData.licenseUrl === 'object' && updateData.licenseUrl.buffer) {
-      const uploadResult = await this.cloudinaryService.uploadFile(updateData.licenseUrl);
-      filteredUpdateData['licenseUrl'] = uploadResult.secure_url;
+    // Xử lý tải lên giấy phép - sử dụng key 'license' từ form-data
+    if (updateData.license) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(updateData.license, `Doctors/${doctorId}/License`);
+        filteredUpdateData['licenseUrl'] = uploadResult.secure_url;
+        console.log('Giấy phép đã được tải lên Cloudinary:', uploadResult.secure_url);
+      } catch (error) {
+        console.error('Lỗi Cloudinary:', error);
+        throw new BadRequestException('Lỗi khi tải giấy phép lên Cloudinary');
+      }
     }
-    
+
+    // Xử lý tải lên ảnh hồ sơ - sử dụng key 'image' từ form-data nếu có
+    if (updateData.image) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(updateData.image, `Doctors/${doctorId}/Avatar`);
+        filteredUpdateData['imageUrl'] = uploadResult.secure_url;
+        console.log('Ảnh hồ sơ đã được tải lên Cloudinary:', uploadResult.secure_url);
+      } catch (error) {
+        console.error('Lỗi Cloudinary:', error);
+        throw new BadRequestException('Lỗi khi tải ảnh hồ sơ lên Cloudinary');
+      }
+    }
+
+    if (updateData.frontCccd) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(updateData.frontCccd, `Doctors/${doctorId}/Info`);
+        filteredUpdateData['frontCccdUrl'] = uploadResult.secure_url;
+        console.log('Front Cccd đã được tải lên Cloudinary:', uploadResult.secure_url);
+      } catch (error) {
+        console.error('Lỗi Cloudinary:', error);
+        throw new BadRequestException('Lỗi khi tải front Cccd lên Cloudinary');
+      }
+    }
+
+    if (updateData.backCccd) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(updateData.backCccd, `Doctors/${doctorId}/Info`);
+        filteredUpdateData['backCccdUrl'] = uploadResult.secure_url;
+        console.log('Back Cccd đã được tải lên Cloudinary:', uploadResult.secure_url);
+      } catch (error) {
+        console.error('Lỗi Cloudinary:', error);
+        throw new BadRequestException('Lỗi khi tải back Cccd lên Cloudinary');
+      }
+    }
+
     // Nếu có cập nhật chuyên khoa, kiểm tra và lưu bác sĩ vào chuyên khoa
     if (filteredUpdateData['specialty']) {
       const specialtyId = filteredUpdateData['specialty'];
@@ -151,6 +195,13 @@ export class DoctorService {
         { new: true },
       );
     }
+
+    // Log thông tin cập nhật
+    console.log('Thông tin cập nhật bác sĩ:', {
+      doctorId,
+      updatedFields: Object.keys(filteredUpdateData),
+      updatedData: filteredUpdateData
+    });
 
     // Cập nhật thông tin bác sĩ
     const updatedDoctor = await this.DoctorModel.findByIdAndUpdate(
@@ -194,7 +245,7 @@ export class DoctorService {
     return {
       message: 'Yêu cầu đăng ký bác sĩ đã được gửi thành công.',
     };
-    
+
   }
 
   // Lấy danh sách bác sĩ chưa được xác thực

@@ -3,13 +3,13 @@ import mongoose, { Types, Document } from 'mongoose';
 
 export enum AppointmentStatus {
   PENDING = 'pending',
-  CONFIRMED = 'confirmed',
+  DONE = 'done',
   CANCELLED = 'cancelled',
 }
 
-export enum ConsultationMethod {
-  IN_PERSON = 'in_person',
-  ONLINE = 'online',
+export enum ExaminationMethod {
+  AT_CLINIC = 'at_clinic',
+  AT_HOME = 'at_home',
 }
 
 @Schema({ timestamps: true })
@@ -17,14 +17,23 @@ export class Appointment extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true })
   doctor: Types.ObjectId;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  // Thêm trường xác định patient là từ model nào
+  @Prop({ type: String, required: true, enum: ['User', 'Doctor'] })
+  patientModel: string;
+
+  // Tham chiếu động đến model tùy theo patientModel
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    refPath: 'patientModel',
+  })
   patient: Types.ObjectId;
 
-  @Prop({ type: Date, required: true })
+  @Prop({ required: true })
   date: Date;
 
   @Prop({ required: true })
-  time: string;
+  time: String;
 
   @Prop({
     required: true,
@@ -35,16 +44,22 @@ export class Appointment extends Document {
 
   @Prop({
     required: true,
-    enum: ConsultationMethod,
-    default: ConsultationMethod.IN_PERSON,
+    enum: ExaminationMethod,
+    default: ExaminationMethod.AT_CLINIC,
   })
-  consultationMethod: ConsultationMethod;
+  examinationMethod: ExaminationMethod;
 
   @Prop()
   reason?: string;
 
   @Prop()
   notes?: string;
+
+  @Prop()
+  totalCost: string;
+
+  @Prop()
+  location?: string; // Địa chỉ khám bệnh (nếu có)
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);

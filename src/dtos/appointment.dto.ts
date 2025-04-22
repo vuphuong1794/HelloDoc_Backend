@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsMongoId, IsString, IsEnum, IsOptional, IsDateString, Matches } from 'class-validator';
 
 export class BookAppointmentDto {
+
     @IsNotEmpty()
     @IsMongoId()
     doctorID: string;
@@ -20,16 +21,16 @@ export class BookAppointmentDto {
     time: string; // Chỉ chấp nhận định dạng HH:mm (24h)
 
     @IsOptional()
-    @IsEnum(['pending', 'confirmed', 'cancelled'], {
-        message: 'Status must be pending, confirmed, or cancelled',
+    @IsEnum(['pending', 'done', 'cancelled'], {
+        message: 'Status must be pending, done, or cancelled',
     })
     status?: string = 'pending'; // Mặc định là 'pending'
 
     @IsOptional()
-    @IsEnum(['in_person', 'online'], {
-        message: 'Consultation method must be in_person or online',
+    @IsEnum(['at_clinic', 'at_home'], {
+        message: 'Consultation method must be at_clinic or at_home',
     })
-    consultationMethod?: string = 'in_person'; // Mặc định là 'in_person'
+    examinationMethod?: string = 'at_clinic'; // Mặc định là 'at_clinic'
 
     @IsOptional()
     @IsString()
@@ -38,4 +39,11 @@ export class BookAppointmentDto {
     @IsOptional()
     @IsString()
     notes?: string;
+
+    @IsOptional()
+    @IsString()
+    totalCost: string;
+
+    @IsString()
+    location?: string; // Địa chỉ khám bệnh (nếu có)
 }
