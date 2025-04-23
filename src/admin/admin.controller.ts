@@ -93,4 +93,9 @@ export class AdminController {
   async deleteDoctor(@Param('id') id: string) {
     return this.adminService.deleteDoctor(id);
   }
+
+  @Get('get-user/:id')
+  async getUser(@Param('id') id: string) {
+    return this.adminService.getUser(id);
+  }
 }
