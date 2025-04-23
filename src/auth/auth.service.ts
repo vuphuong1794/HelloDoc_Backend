@@ -76,7 +76,6 @@ export class AuthService {
   async generateUserTokens(userId, email, name, phone, role) {
     const accessToken = this.jwtService.sign(
       { userId, email, name, phone, role },
-      { expiresIn: '1d' },
     );
     return {
       accessToken,
