@@ -265,9 +265,6 @@ export class DoctorService {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('Người dùng không tồn tại.');
 
-    // Cập nhật user
-    user.isDoctor = true;
-    user.verified = true;
     await user.save();
 
     // Xóa khỏi bảng PendingDoctors và cập nhật bảng Doctors

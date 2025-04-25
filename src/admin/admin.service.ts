@@ -210,4 +210,11 @@ export class AdminService {
     await this.DoctorModel.findByIdAndDelete(id);
     return { message: 'Doctor deleted successfully' };
   }
+
+  getUser(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid ID format');
+    }
+    return this.UserModel.findById(id);
+  }
 }

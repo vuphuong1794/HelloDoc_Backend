@@ -25,9 +25,6 @@ import config from './config/config';
       load: [config],
     }),
     JwtModule.register({ global: true, secret: "secretKey" }),
-    // MongooseModule.forRoot(
-    //   'mongodb+srv://pvunguyen84:nQ0ZjjFTjKnLvuwa@cluster0.lk7ml.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-    // ),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -46,6 +43,7 @@ import config from './config/config';
     CloudinaryModule,
     PostModule,
     FirebaseModule,
+    PostModule,
   ],
   controllers: [AppController],
   providers: [AppService],
