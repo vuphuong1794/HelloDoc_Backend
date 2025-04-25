@@ -140,12 +140,14 @@ export class AppointmentService {
 
     // 📌 Lấy danh sách lịch hẹn của bệnh nhân
     async getPatientAppointments(patientID: string) {
-        const patient = await this.userModel.findById(patientID);
+        var patient = await this.userModel.findById(patientID);
         if (!patient) {
-            throw new NotFoundException('Patient not found');
+            patient = await this.doctorModel.findById(patientID);
         }
 
-        const appointments = await this.appointmentModel.find({ patient: patientID }).populate({ path: 'doctor', select: 'name' })
+        const appointments = await this.appointmentModel.find({ patient: patientID })
+            .populate({ path: 'doctor', select: 'name' })
+            .populate({ path: 'patient', select: 'name' });
 
         if (!appointments) {
             throw new NotFoundException('No appointments found for this patient');
@@ -160,7 +162,6 @@ export class AppointmentService {
         }).populate({ path: 'doctor', select: 'name' });
         return appointments;
     }
-
 
     async getAppointmentsbyitsID(id: string) {
         const appointment = await this.appointmentModel.findById(id);
