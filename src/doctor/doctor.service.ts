@@ -114,6 +114,10 @@ export class DoctorService {
       'insurance',
       'workingHours',
       'minAge',
+      'certificates',
+      'services',
+      'patientsCount',
+      'ratingsCount',
     ];
 
     // Lọc dữ liệu hợp lệ
@@ -304,4 +308,17 @@ export class DoctorService {
 
     return specialty;
   }
+  // Lấy thông tin chi tiết 1 bác sĩ theo ID
+  async getDoctorById(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('ID không hợp lệ');
+    }
+
+    const doctor = await this.DoctorModel.findById(id).populate('specialty');
+    if (!doctor) {
+      throw new NotFoundException('Không tìm thấy bác sĩ');
+    }
+    return doctor;
+  }
+
 }

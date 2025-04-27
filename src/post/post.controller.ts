@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post as HttpPost } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/dtos/createPost.dto';
 import { UpdatePostDto } from 'src/dtos/updatePost.dto';
@@ -7,7 +7,7 @@ import { UpdatePostDto } from 'src/dtos/updatePost.dto';
 export class PostController {
   constructor(private readonly postService: PostService) { }
 
-  @HttpPost()
+  @Post()
   async create(@Body() createPostDto: CreatePostDto) {
     return this.postService.create(createPostDto);
   }
