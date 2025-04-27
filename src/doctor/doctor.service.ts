@@ -17,6 +17,7 @@ import { Specialty } from 'src/schemas/specialty.schema';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CacheService } from 'src/cache.service';
 
 @Injectable()
 export class DoctorService {
@@ -27,16 +28,14 @@ export class DoctorService {
     @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
     private jwtService: JwtService,
     private cloudinaryService: CloudinaryService,
-
-    //REDIS
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    private cacheService: CacheService,
   ) { }
 
   async getDoctors() {
     const cacheKey = 'all_doctors';
     console.log('Trying to get from cache...');
 
-    const cached = await this.cacheManager.get(cacheKey);
+    const cached = await this.cacheService.getCache(cacheKey);
     if (cached) {
       console.log('Cache HIT');
       return cached;
@@ -46,7 +45,7 @@ export class DoctorService {
     const data = await this.DoctorModel.find().populate('specialty').lean();
 
     console.log('Setting cache...');
-    await this.cacheManager.set(cacheKey, data, 3600 * 1000);
+    await this.cacheService.setCache(cacheKey, data, 3600 * 1000);
     return data;
   }
 
