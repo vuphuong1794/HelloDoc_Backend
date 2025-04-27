@@ -12,6 +12,7 @@ import {
 } from 'src/schemas/PendingDoctor.shema';
 import { Specialty, SpecialtySchema } from 'src/schemas/specialty.schema';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
       { name: PendingDoctor.name, schema: PendingDoctorSchema },
       { name: Specialty.name, schema: SpecialtySchema },
     ]),
+    CacheModule.register(),
   ],
   controllers: [DoctorController],
   providers: [DoctorService],
