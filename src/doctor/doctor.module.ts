@@ -13,6 +13,7 @@ import {
 import { Specialty, SpecialtySchema } from 'src/schemas/specialty.schema';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { CacheModule } from '@nestjs/cache-manager';
+import { CacheService } from 'src/cache.service';
 
 @Module({
   imports: [
@@ -27,6 +28,6 @@ import { CacheModule } from '@nestjs/cache-manager';
     CacheModule.register(),
   ],
   controllers: [DoctorController],
-  providers: [DoctorService],
+  providers: [DoctorService, CacheService],
 })
 export class DoctorModule { }
