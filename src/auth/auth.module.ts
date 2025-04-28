@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../schemas/user.schema';
 import { Doctor, DoctorSchema } from 'src/schemas/doctor.schema';
 import { Admin, AdminSchema } from 'src/schemas/admin.schema';
+import { CacheService } from 'src/cache.service';
 
 @Module({
   imports: [MongooseModule.forFeature([{
@@ -22,6 +23,6 @@ import { Admin, AdminSchema } from 'src/schemas/admin.schema';
   ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, CacheService],
 })
 export class AuthModule { }

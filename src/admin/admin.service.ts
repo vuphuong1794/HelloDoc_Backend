@@ -30,6 +30,19 @@ export class AdminService {
     return await this.UserModel.find();
   }
 
+  async getUserByID(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid ID format');
+    }
+  
+    const user = await this.UserModel.findById(id);
+    if (user) {
+      return user;
+    }
+  
+    return await this.DoctorModel.findById(id);
+  }
+
   async getDoctors() {
     return await this.DoctorModel.find();
   }

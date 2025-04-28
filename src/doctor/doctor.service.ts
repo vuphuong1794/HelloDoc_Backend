@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Inject,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -14,6 +15,9 @@ import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CacheService } from 'src/cache.service';
 
 @Injectable()
 export class DoctorService {
@@ -24,10 +28,25 @@ export class DoctorService {
     @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
     private jwtService: JwtService,
     private cloudinaryService: CloudinaryService,
+    private cacheService: CacheService,
   ) { }
 
   async getDoctors() {
-    return await this.DoctorModel.find().populate('specialty');
+    const cacheKey = 'all_doctors';
+    console.log('Trying to get from cache...');
+
+    const cached = await this.cacheService.getCache(cacheKey);
+    if (cached) {
+      console.log('Cache HIT');
+      return cached;
+    }
+
+    console.log('Cache MISS - querying DB');
+    const data = await this.DoctorModel.find().populate('specialty').lean();
+
+    console.log('Setting cache...');
+    await this.cacheService.setCache(cacheKey, data, 3600 * 1000);
+    return data;
   }
 
   async registerDoctor(signUpData: SignupDto) {
