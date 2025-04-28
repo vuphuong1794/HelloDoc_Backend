@@ -111,7 +111,6 @@ export class AppointmentService {
             .populate({
                 path: 'patient',
                 select: 'name',
-                // Mongoose sẽ tự dùng patientModel do bạn đã khai báo refPath
             });
 
         return appointments;
