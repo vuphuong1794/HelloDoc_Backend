@@ -8,7 +8,12 @@ export class ReviewService {
     constructor(@InjectModel(Review.name) private readonly reviewModel: Model<Review>) { }
 
     async createReview(body: { userId: string; doctorId: string; rating: number; comment: string }) {
-        const review = new this.reviewModel(body);
+        const review = new this.reviewModel({
+            user: body.userId,
+            doctor: body.doctorId,
+            rating: body.rating,
+            comment: body.comment
+        });
         return review.save();
     }
 
