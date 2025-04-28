@@ -17,6 +17,9 @@ import { PostModule } from './post/post.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { ReviewModule } from './review/review.module';
 import config from './config/config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
+import { CacheService } from './cache.service';
 
 @Module({
   imports: [
@@ -33,6 +36,12 @@ import config from './config/config';
       }),
       inject: [ConfigService],
     }),
+    CacheModule.register({
+      store: redisStore,
+      ttl: 3600 * 1000, // mặc định TTL
+      url: 'rediss://red-d071mk9r0fns7383v3j0:DeNbSrFT3rDj2vhGDGoX4Pr2DgHUBP8H@singapore-keyvalue.render.com:6379',
+      isGlobal: true,
+    }),
     AdminModule,
     AuthModule,
     DoctorModule,
@@ -48,6 +57,6 @@ import config from './config/config';
     ReviewModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, CacheService],
 })
 export class AppModule { }
