@@ -18,6 +18,10 @@ export class User extends Document {
 
     @Prop({ required: true })
     @IsString()
+    address: string;
+
+    @Prop({ required: true })
+    @IsString()
     password: string;
 
     @Prop({ default: 'user' })

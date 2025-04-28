@@ -10,7 +10,7 @@ export class Post {
     content: string;
 
     @Prop({ type: [String], default: [] })
-    media: string[];
+    imageUrls?: string[];
 
     // @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] })
     // likes: mongoose.Schema.Types.ObjectId[];
