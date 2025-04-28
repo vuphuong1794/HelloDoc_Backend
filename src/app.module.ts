@@ -15,6 +15,7 @@ import { FaqitemModule } from './faqitem/faqitem.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { PostModule } from './post/post.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { ReviewModule } from './review/review.module';
 import config from './config/config';
 
 @Module({
@@ -44,6 +45,7 @@ import config from './config/config';
     PostModule,
     FirebaseModule,
     PostModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],
