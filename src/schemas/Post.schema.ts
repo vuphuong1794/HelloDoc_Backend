@@ -13,7 +13,7 @@ export class Post {
     content: string;
 
     @Prop({ type: [String], default: [] })
-    media: string[];
+    imageUrls?: string[];
 
     @Prop ({ type: String, required: true })
     createAt: string;
