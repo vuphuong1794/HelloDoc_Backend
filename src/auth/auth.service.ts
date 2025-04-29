@@ -78,7 +78,7 @@ export class AuthService {
     }
 
     // Generate JWT token
-    const tokens = await this.generateUserTokens(user._id, user.email, user.name, user.phone, user.role);
+    const tokens = await this.generateUserTokens(user._id, user.email, user.name, user.phone, user.address, user.role);
 
     // Cache the user data temporarily (for example, 1 hour)
     const cacheKey = `user_${user._id}`;
@@ -95,9 +95,9 @@ export class AuthService {
     };
   }
 
-  async generateUserTokens(userId, email, name, phone, role) {
+  async generateUserTokens(userId, email, name, phone, address, role) {
     const accessToken = this.jwtService.sign(
-      { userId, email, name, phone, role },
+      { userId, email, name, phone, address, role },
     );
     return {
       accessToken,
