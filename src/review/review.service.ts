@@ -20,7 +20,7 @@ export class ReviewService {
     async getReviewsByDoctor(doctorId: string) {
         return this.reviewModel
             .find({ doctor: doctorId })
-            .populate('user', 'name userImage')
+            .populate('user', 'name avatarURL')
             .sort({ createdAt: -1 }); // Mới nhất lên đầu
     }
 
