@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException  } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post } from 'src/schemas/Post.schema';
 import { Model } from 'mongoose';
@@ -16,11 +16,11 @@ export class PostService {
         @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
         @InjectModel(Post.name) private postModel: Model<Post>,
         private cloudinaryService: CloudinaryService,
-    ) {}
+    ) { }
 
     private async findOwnerById(ownerId: string): Promise<User | Doctor> {
-        const owner = await this.userModel.findById(ownerId).lean() 
-                   || await this.doctorModel.findById(ownerId).lean();
+        const owner = await this.userModel.findById(ownerId).lean()
+            || await this.doctorModel.findById(ownerId).lean();
 
         if (!owner) {
             throw new NotFoundException(`Owner with id ${ownerId} not found`);
@@ -33,14 +33,14 @@ export class PostService {
 
         if (createPostDto.images && createPostDto.images.length > 0) {
             for (const file of createPostDto.images) {
-            try {
-                const uploadResult = await this.cloudinaryService.uploadFile(file, `Posts/${createPostDto.userId}`);
-                uploadedMediaUrls.push(uploadResult.secure_url);
-                console.log('Ảnh đã tải lên Cloudinary:', uploadResult.secure_url);
-            } catch (error) {
-                console.error('Lỗi Cloudinary khi upload media:', error);
-                throw new BadRequestException('Lỗi khi tải media lên Cloudinary');
-            }
+                try {
+                    const uploadResult = await this.cloudinaryService.uploadFile(file, `Posts/${createPostDto.userId}`);
+                    uploadedMediaUrls.push(uploadResult.secure_url);
+                    console.log('Ảnh đã tải lên Cloudinary:', uploadResult.secure_url);
+                } catch (error) {
+                    console.error('Lỗi Cloudinary khi upload media:', error);
+                    throw new BadRequestException('Lỗi khi tải media lên Cloudinary');
+                }
             }
         }
 
