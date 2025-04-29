@@ -34,12 +34,12 @@ export class AdminService {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid ID format');
     }
-  
+
     const user = await this.UserModel.findById(id);
     if (user) {
       return user;
     }
-  
+
     return await this.DoctorModel.findById(id);
   }
 
@@ -97,9 +97,9 @@ export class AdminService {
       updateFields.password = user.password; //Giữ nguyên mật khẩu cũ, không mã hóa lại!
     }
 
-    if (updateData.userImage) {
-      const upload = await this.cloudinaryService.uploadFile(updateData.userImage, `Users/${id}/Avatar`);
-      updateFields.userImage = upload.secure_url;
+    if (updateData.avatarURL) {
+      const upload = await this.cloudinaryService.uploadFile(updateData.avatarURL, `Users/${id}/Avatar`);
+      updateFields.avatarURL = upload.secure_url;
     }
 
     let roleChanged = false;

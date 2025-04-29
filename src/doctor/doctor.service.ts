@@ -18,6 +18,8 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CacheService } from 'src/cache.service';
+import { app } from 'firebase-admin';
+import { applyDoctorDto } from 'src/dtos/applyDoctor.dto';
 
 @Injectable()
 export class DoctorService {
@@ -159,7 +161,7 @@ export class DoctorService {
     if (updateData.image) {
       try {
         const uploadResult = await this.cloudinaryService.uploadFile(updateData.image, `Doctors/${doctorId}/Avatar`);
-        filteredUpdateData['imageUrl'] = uploadResult.secure_url;
+        filteredUpdateData['faceURL'] = uploadResult.secure_url;
         console.log('Ảnh hồ sơ đã được tải lên Cloudinary:', uploadResult.secure_url);
       } catch (error) {
         console.error('Lỗi Cloudinary:', error);
@@ -295,7 +297,6 @@ export class DoctorService {
       verified: true,
       licenseUrl: pendingDoctor.license,
       specialty: pendingDoctor.specialty,
-      hospital: pendingDoctor.hospital,
     });
     await this.pendingDoctorModel.deleteOne({ userId });
     await this.userModel.deleteOne({ _id: userId });
@@ -305,7 +306,7 @@ export class DoctorService {
 
   // Lấy tất cả bác sĩ đã xác thực
   async getVerifiedDoctors(): Promise<User[]> {
-    return this.userModel.find({ isDoctor: true, verified: true });
+    return this.userModel.find({ verified: true });
   }
 
   async getDoctorsBySpecialtyId(specialtyId: string) {

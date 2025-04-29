@@ -36,9 +36,7 @@ export class User extends Document {
     minAge?: number;
 
     @Prop()
-    @IsOptional()
-    @IsUrl()
-    userImage?: string;
+    avatarUrl: string; // Ảnh đại diện
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
