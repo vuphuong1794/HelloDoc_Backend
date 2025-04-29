@@ -69,7 +69,7 @@ export class Doctor extends Document {
   minAge: number; // Độ tuổi tối thiểu để khám
 
   @Prop()
-  avatarUrl: string; // Ảnh đại diện
+  avatarURL: string; // Ảnh đại diện
 
   @Prop()
   gender?: string; // Nam, Nữ hoặc Khác
@@ -85,7 +85,6 @@ export class Doctor extends Document {
 
   @Prop()
   frontCccdUrl?: string;
-
 }
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);

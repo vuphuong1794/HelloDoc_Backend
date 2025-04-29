@@ -7,6 +7,7 @@ import { UpdatePostDto } from 'src/dtos/updatePost.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
+import { CacheService } from 'src/cache.service';
 
 @Injectable()
 export class PostService {
@@ -16,6 +17,7 @@ export class PostService {
         @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
         @InjectModel(Post.name) private postModel: Model<Post>,
         private cloudinaryService: CloudinaryService,
+        private cacheService: CacheService,
     ) { }
 
     private async findOwnerById(ownerId: string): Promise<User | Doctor> {
@@ -55,13 +57,27 @@ export class PostService {
     }
 
     async getAll(): Promise<Post[]> {
-        return this.postModel
+        const cacheKey = 'all_posts';
+        console.log('Trying to get from cache...');
+
+        const cached = await this.cacheService.getCache(cacheKey);
+        if (cached) {
+            console.log('Cache HIT');
+            return cached;
+        }
+
+        console.log('Cache MISS - querying DB');
+        const data = await this.postModel
             .find()
             .populate({
                 path: 'user',
                 select: 'name imageUrl avatarURL', // Chỉ cần viết 1 lần, nếu sau này User và Doctor khác nhau thì chỉnh chỗ này
             })
             .exec();
+
+        console.log('Setting cache...');
+        await this.cacheService.setCache(cacheKey, data, 3600 * 1000);
+        return data;
     }
 
     async getOne(id: string): Promise<Post> {
