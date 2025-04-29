@@ -34,12 +34,12 @@ export class AdminService {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid ID format');
     }
-  
+
     const user = await this.UserModel.findById(id);
     if (user) {
       return user;
     }
-  
+
     return await this.DoctorModel.findById(id);
   }
 
@@ -71,9 +71,9 @@ export class AdminService {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid ID format');
     }
-  
+
     const objectId = new Types.ObjectId(id);
-  
+
     // Check if the user exists
     let user = await this.UserModel.findById(objectId);
     if (!user) {
@@ -82,14 +82,14 @@ export class AdminService {
         throw new NotFoundException('User not found');
       }
     }
-  
+
     // Prepare the update object
     const updateFields: Partial<updateUserDto> = {};
-  
+
     if (updateData.email) updateFields.email = updateData.email;
     if (updateData.name) updateFields.name = updateData.name;
     if (updateData.phone) updateFields.phone = updateData.phone;
-    
+
     // 🔥 Only hash password if it is actually changed
     if (
       updateData.password &&
@@ -100,65 +100,65 @@ export class AdminService {
     } else {
       updateFields.password = user.password; // Keep the old password if it's not changed
     }
-  
-    if (updateData.userImage) {
-      const upload = await this.cloudinaryService.uploadFile(updateData.userImage, `Users/${id}/Avatar`);
-      updateFields.userImage = upload.secure_url;
+
+    if (updateData.avatarURL) {
+      const upload = await this.cloudinaryService.uploadFile(updateData.avatarURL, `Users/${id}/Avatar`);
+      updateFields.avatarURL = upload.secure_url;
     }
-  
+
     let roleChanged = false;
     let newRole = user.role; // Keep the old role by default
-  
+
     if (updateData.role && updateData.role !== user.role) {
       roleChanged = true;
       newRole = updateData.role;
     }
-  
+
     // If no fields have changed, return a message
     if (Object.keys(updateFields).length === 0 && !roleChanged) {
       return { message: 'No changes detected' };
     }
-  
+
     // Determine which model to update based on the user's existence in the models
-  if (user instanceof this.UserModel) {
-    // Update the user in UserModel
-    const updatedUser = await this.UserModel.findByIdAndUpdate(
-      objectId,
-      { $set: updateFields },
-      { new: true },
-    );
+    if (user instanceof this.UserModel) {
+      // Update the user in UserModel
+      const updatedUser = await this.UserModel.findByIdAndUpdate(
+        objectId,
+        { $set: updateFields },
+        { new: true },
+      );
 
-    if (!updatedUser) {
-      throw new NotFoundException('Update failed, user not found in UserModel');
+      if (!updatedUser) {
+        throw new NotFoundException('Update failed, user not found in UserModel');
+      }
+
+      // Handle role change if any
+      if (roleChanged) {
+        await this.handleRoleUpdate(objectId, user.role, newRole, updatedUser);
+      }
+
+      return { message: 'User updated successfully in UserModel', user: updatedUser };
+    } else if (user instanceof this.DoctorModel) {
+      // Update the user in DoctorModel
+      const updatedDoctor = await this.DoctorModel.findByIdAndUpdate(
+        objectId,
+        { $set: updateFields },
+        { new: true },
+      );
+
+      if (!updatedDoctor) {
+        throw new NotFoundException('Update failed, user not found in DoctorModel');
+      }
+
+      // Handle role change if any
+      if (roleChanged) {
+        await this.handleRoleUpdate(objectId, user.role, newRole, updatedDoctor);
+      }
+
+      return { message: 'User updated successfully in DoctorModel', user: updatedDoctor };
     }
-
-    // Handle role change if any
-    if (roleChanged) {
-      await this.handleRoleUpdate(objectId, user.role, newRole, updatedUser);
-    }
-
-    return { message: 'User updated successfully in UserModel', user: updatedUser };
-  } else if (user instanceof this.DoctorModel) {
-    // Update the user in DoctorModel
-    const updatedDoctor = await this.DoctorModel.findByIdAndUpdate(
-      objectId,
-      { $set: updateFields },
-      { new: true },
-    );
-
-    if (!updatedDoctor) {
-      throw new NotFoundException('Update failed, user not found in DoctorModel');
-    }
-
-    // Handle role change if any
-    if (roleChanged) {
-      await this.handleRoleUpdate(objectId, user.role, newRole, updatedDoctor);
-    }
-
-    return { message: 'User updated successfully in DoctorModel', user: updatedDoctor };
   }
-}
-  
+
 
   private async handleRoleUpdate(
     userId: Types.ObjectId,

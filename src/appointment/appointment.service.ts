@@ -70,7 +70,6 @@ export class AppointmentService {
         };
     }
 
-
     // 📌 Hủy lịch hẹn
     async cancelAppointment(id: string) {
         const appointment = await this.appointmentModel.findById(id);
@@ -110,13 +109,12 @@ export class AppointmentService {
             })
             .populate({
                 path: 'patient',
-                select: 'name',
+                select: '_id name',
+                // Mongoose sẽ tự dùng patientModel do bạn đã khai báo refPath
             });
 
         return appointments;
     }
-
-
 
     // 📌 Lấy danh sách lịch hẹn của bác sĩ
     async getDoctorAppointments(doctorID: string) {
@@ -126,14 +124,14 @@ export class AppointmentService {
         }
 
         const appointments = await this.appointmentModel.find({ doctor: doctorID })
-        .populate({ 
-            path: 'doctor', 
-            select: 'name'
-        })
-        .populate({
-            path: 'patient',
-            select: 'name',
-        });
+            .populate({
+                path: 'doctor',
+                select: 'name'
+            })
+            .populate({
+                path: 'patient',
+                select: 'name',
+            });
 
         if (!appointments) {
             throw new NotFoundException('No appointments found for this doctor');

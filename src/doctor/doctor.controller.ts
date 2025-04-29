@@ -11,17 +11,29 @@ import {
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
+  NotFoundException,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
 import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
-import { Types } from 'mongoose';
-import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { Model, Types } from 'mongoose';
+import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { app } from 'firebase-admin';
+import { InjectModel } from '@nestjs/mongoose';
+import { User } from 'src/schemas/user.schema';
+import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
+import { Specialty } from 'src/schemas/specialty.schema';
+import { applyDoctorDto } from 'src/dtos/applyDoctor.dto';
 
 @Controller('doctor')
 export class DoctorController {
-  constructor(private readonly doctorService: DoctorService) { }
+  constructor(
+    private readonly doctorService: DoctorService,
+    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
+    @InjectModel(PendingDoctor.name) private pendingDoctorModel: Model<PendingDoctor>,
+  ) { }
 
   @Get('get-all')
   async getDoctors() {
@@ -75,13 +87,46 @@ export class DoctorController {
   }
 
   @Patch('apply-for-doctor/:id')
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'licenseUrl', maxCount: 1 },
+      { name: 'faceUrl', maxCount: 1 },
+      { name: 'frontCccdUrl', maxCount: 1 },
+      { name: 'backCccdUrl', maxCount: 1 },
+    ])
+  )
   async applyForDoctor(
     @Param('id') userId: string,
-    @Body('license') license: string,
-    @Body('specialty') specialty: string,
-    @Body('hospital') hospital: string,
+    @UploadedFiles() files: {
+      licenseUrl?: Express.Multer.File[],
+      faceUrl?: Express.Multer.File[],
+      frontCccdUrl?: Express.Multer.File[],
+      backCccdUrl?: Express.Multer.File[]
+    },
+    @Body() formData: any,
   ) {
-    return this.doctorService.applyForDoctor(userId, license, specialty, hospital);
+    // Create a data object to hold all form fields and file information
+    const doctorData = { ...formData };
+
+    // Add file information if files were uploaded
+    if (files?.licenseUrl?.[0]) {
+      doctorData.licenseUrl = files.licenseUrl[0];
+    }
+
+    if (files?.faceUrl?.[0]) {
+      doctorData.faceUrl = files.faceUrl[0];
+    }
+
+    if (files?.frontCccdUrl?.[0]) {
+      doctorData.frontCccdUrl = files.frontCccdUrl[0];
+    }
+
+    if (files?.backCccdUrl?.[0]) {
+      doctorData.backCccdUrl = files.backCccdUrl[0];
+    }
+
+    // Pass the combined data to the service
+    return this.doctorService.applyForDoctor(userId, doctorData);
   }
 
   @Patch('verify-doctor/:id')
