@@ -15,6 +15,7 @@ import { FaqitemModule } from './faqitem/faqitem.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { PostModule } from './post/post.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { ReviewModule } from './review/review.module';
 import config from './config/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
@@ -53,6 +54,7 @@ import { CacheService } from './cache.service';
     PostModule,
     FirebaseModule,
     PostModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService, CacheService],
