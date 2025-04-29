@@ -4,7 +4,7 @@ import mongoose, { Document, Types } from 'mongoose';
 import { Specialty } from './specialty.schema';
 import { IsUrl } from 'class-validator';
 
-@Schema()
+@Schema({ timestamps: true })
 export class Doctor extends Document {
   @Prop({ required: true })
   name: string;
@@ -21,8 +21,24 @@ export class Doctor extends Document {
   @Prop({ default: 'doctor' })
   role: string;
 
+  @Prop({ default: [] })
+  certificates: string[];
+
+  @Prop({ type: [{ name: String, price: Number }], default: [] })
+  services: { name: string; price: number }[];
+
+  @Prop({ default: 0 })
+  patientsCount: number; // Số lượng bệnh nhân đã khám
+
+  @Prop({ default: 0 })
+  ratingsCount: number;
+
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Specialty' })
   specialty: Types.ObjectId | Specialty; // Chuyên khoa
+
+  @Prop()
+  @IsUrl()
+  faceUrl: string; // Ảnh chân dung
 
   @Prop()
   @IsUrl()
@@ -47,16 +63,13 @@ export class Doctor extends Document {
   price: number; // Giá khám
 
   @Prop()
-  insurance: string[]; // Các loại bảo hiểm áp dụng
-
-  @Prop()
   workingHours: { day: string; slots: string[] }[]; // Lịch khám
 
   @Prop()
   minAge: number; // Độ tuổi tối thiểu để khám
 
   @Prop()
-  imageUrl: string; // Ảnh bác sĩ
+  avatarUrl: string; // Ảnh đại diện
 
   @Prop()
   gender?: string; // Nam, Nữ hoặc Khác
