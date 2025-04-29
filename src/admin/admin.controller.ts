@@ -48,7 +48,7 @@ export class AdminController {
     return this.adminService.postAdmin(signUpData);
   }
 
-  @UseInterceptors(FileInterceptor('userImage'))
+  @UseInterceptors(FileInterceptor('avatarURL'))
   @Put('updateUser/:id')
   async updateUser(
     @Param('id') id: string,
@@ -61,7 +61,7 @@ export class AdminController {
     }
 
     if (file) {
-      updateUserdata.userImage = file;
+      updateUserdata.avatarURL = file;
     }
 
     if (!Types.ObjectId.isValid(id)) {

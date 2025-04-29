@@ -27,5 +27,5 @@ export class updateUserDto {
 
     @IsOptional()
     @Type(() => Object)
-    userImage?: Express.Multer.File;
+    avatarURL?: Express.Multer.File;
 }

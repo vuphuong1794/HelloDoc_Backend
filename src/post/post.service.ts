@@ -21,10 +21,10 @@ export class PostService {
     async getAll(): Promise<Post[]> {
         return this.postModel
             .find()
-            .populate('user', 'name imageUrl')
+            .populate('user', 'name faceURL')
             // .populate({
             //     path: 'comments',
-            //     populate: { path: 'user', select: 'name imageUrl' }
+            //     populate: { path: 'user', select: 'name faceURL' }
             // })
             .exec();
     }
@@ -32,10 +32,10 @@ export class PostService {
     async getOne(id: string): Promise<Post> {
         const post = await this.postModel
             .findById(id)
-            .populate('user', 'name imageUrl');
+            .populate('user', 'name faceURL');
         // .populate({
         //     path: 'comments',
-        //     populate: { path: 'user', select: 'name imageUrl' }
+        //     populate: { path: 'user', select: 'name faceURL' }
         // })
 
         if (!post) {
@@ -56,10 +56,10 @@ export class PostService {
                 },
                 { new: true }
             )
-            .populate('user', 'name imageUrl')
+            .populate('user', 'name faceURL')
         // .populate({
         //     path: 'comments',
-        //     populate: { path: 'user', select: 'name imageUrl' }
+        //     populate: { path: 'user', select: 'name faceURL' }
         // });
 
         if (!updatedPost) {
