@@ -35,6 +35,11 @@ export class PostController {
     return this.postService.getOne(id);
   }
 
+  @Get('getById/:id')
+  async getById(@Param('id') id: string) {
+    return this.postService.getById(id);
+  }
+
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
     return this.postService.update(id, updatePostDto);

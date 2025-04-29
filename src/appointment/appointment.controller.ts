@@ -63,13 +63,13 @@ export class AppointmentController {
     }
   }
 
-  // API lấy danh sách lịch hẹn của bác sĩ
+  // API lấy danh sách lịch hẹn của bác sĩ (Được đặt)
   @Get('doctor/:doctorID')
   async getDoctorAppointments(@Param('doctorID') doctorID: string) {
     return await this.appointmentService.getDoctorAppointments(doctorID);
   }
 
-  // API lấy danh sách lịch hẹn của bệnh nhân
+  // API lấy danh sách lịch hẹn của bệnh nhân (đã đặt)
   @Get('patient/:patientID')
   async getPatientAppointments(@Param('patientID') patientID: string) {
     return await this.appointmentService.getPatientAppointments(patientID);

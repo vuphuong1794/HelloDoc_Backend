@@ -30,6 +30,19 @@ export class AdminService {
     return await this.UserModel.find();
   }
 
+  async getUserByID(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid ID format');
+    }
+  
+    const user = await this.UserModel.findById(id);
+    if (user) {
+      return user;
+    }
+  
+    return await this.DoctorModel.findById(id);
+  }
+
   async getDoctors() {
     return await this.DoctorModel.find();
   }
@@ -58,22 +71,26 @@ export class AdminService {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid ID format');
     }
-
+  
     const objectId = new Types.ObjectId(id);
-
+  
     // Check if the user exists
-    const user = await this.UserModel.findById(objectId);
+    let user = await this.UserModel.findById(objectId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      user = await this.DoctorModel.findById(objectId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
     }
-
+  
     // Prepare the update object
     const updateFields: Partial<updateUserDto> = {};
-
+  
     if (updateData.email) updateFields.email = updateData.email;
     if (updateData.name) updateFields.name = updateData.name;
     if (updateData.phone) updateFields.phone = updateData.phone;
-    // 🔥 Chỉ mã hóa nếu mật khẩu thực sự thay đổi
+    
+    // 🔥 Only hash password if it is actually changed
     if (
       updateData.password &&
       updateData.password.trim() !== '' &&
@@ -81,28 +98,30 @@ export class AdminService {
     ) {
       updateFields.password = await bcrypt.hash(updateData.password, 10);
     } else {
-      updateFields.password = user.password; //Giữ nguyên mật khẩu cũ, không mã hóa lại!
+      updateFields.password = user.password; // Keep the old password if it's not changed
     }
-
+  
     if (updateData.userImage) {
       const upload = await this.cloudinaryService.uploadFile(updateData.userImage, `Users/${id}/Avatar`);
       updateFields.userImage = upload.secure_url;
     }
-
+  
     let roleChanged = false;
-    let newRole = user.role; // Giữ nguyên role cũ mặc định
-
+    let newRole = user.role; // Keep the old role by default
+  
     if (updateData.role && updateData.role !== user.role) {
       roleChanged = true;
       newRole = updateData.role;
     }
-
-    // Nếu không có trường nào thay đổi, trả về thông báo
+  
+    // If no fields have changed, return a message
     if (Object.keys(updateFields).length === 0 && !roleChanged) {
       return { message: 'No changes detected' };
     }
-
-    // Cập nhật user trong UserModel
+  
+    // Determine which model to update based on the user's existence in the models
+  if (user instanceof this.UserModel) {
+    // Update the user in UserModel
     const updatedUser = await this.UserModel.findByIdAndUpdate(
       objectId,
       { $set: updateFields },
@@ -110,16 +129,36 @@ export class AdminService {
     );
 
     if (!updatedUser) {
-      throw new NotFoundException('Update failed, user not found');
+      throw new NotFoundException('Update failed, user not found in UserModel');
     }
 
-    // Nếu role thay đổi, xử lý cập nhật trong collection tương ứng
+    // Handle role change if any
     if (roleChanged) {
       await this.handleRoleUpdate(objectId, user.role, newRole, updatedUser);
     }
 
-    return { message: 'User updated successfully', user: updatedUser };
+    return { message: 'User updated successfully in UserModel', user: updatedUser };
+  } else if (user instanceof this.DoctorModel) {
+    // Update the user in DoctorModel
+    const updatedDoctor = await this.DoctorModel.findByIdAndUpdate(
+      objectId,
+      { $set: updateFields },
+      { new: true },
+    );
+
+    if (!updatedDoctor) {
+      throw new NotFoundException('Update failed, user not found in DoctorModel');
+    }
+
+    // Handle role change if any
+    if (roleChanged) {
+      await this.handleRoleUpdate(objectId, user.role, newRole, updatedDoctor);
+    }
+
+    return { message: 'User updated successfully in DoctorModel', user: updatedDoctor };
   }
+}
+  
 
   private async handleRoleUpdate(
     userId: Types.ObjectId,
