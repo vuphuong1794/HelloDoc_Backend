@@ -38,6 +38,10 @@ export class Doctor extends Document {
 
   @Prop()
   @IsUrl()
+  faceUrl: string; // Ảnh chân dung
+
+  @Prop()
+  @IsUrl()
   licenseUrl: string; // Giấy phép hành nghề
 
   @Prop({ default: false })

@@ -123,10 +123,15 @@ export class AppointmentService {
             throw new NotFoundException('Doctor not found');
         }
 
-        const appointments = await this.appointmentModel.find({ doctor: doctorID }).populate({
-            path: 'patient',
-            select: 'name',
-        });
+        const appointments = await this.appointmentModel.find({ doctor: doctorID })
+            .populate({
+                path: 'doctor',
+                select: 'name'
+            })
+            .populate({
+                path: 'patient',
+                select: 'name',
+            });
 
         if (!appointments) {
             throw new NotFoundException('No appointments found for this doctor');
