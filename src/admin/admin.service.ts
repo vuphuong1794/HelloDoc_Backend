@@ -75,9 +75,12 @@ export class AdminService {
     const objectId = new Types.ObjectId(id);
 
     // Check if the user exists
-    const user = await this.UserModel.findById(objectId);
+    let user = await this.UserModel.findById(objectId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      user = await this.DoctorModel.findById(objectId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
     }
 
     // Prepare the update object
@@ -86,7 +89,8 @@ export class AdminService {
     if (updateData.email) updateFields.email = updateData.email;
     if (updateData.name) updateFields.name = updateData.name;
     if (updateData.phone) updateFields.phone = updateData.phone;
-    // 🔥 Chỉ mã hóa nếu mật khẩu thực sự thay đổi
+
+    // 🔥 Only hash password if it is actually changed
     if (
       updateData.password &&
       updateData.password.trim() !== '' &&
@@ -94,7 +98,7 @@ export class AdminService {
     ) {
       updateFields.password = await bcrypt.hash(updateData.password, 10);
     } else {
-      updateFields.password = user.password; //Giữ nguyên mật khẩu cũ, không mã hóa lại!
+      updateFields.password = user.password; // Keep the old password if it's not changed
     }
 
     if (updateData.avatarURL) {
@@ -103,36 +107,58 @@ export class AdminService {
     }
 
     let roleChanged = false;
-    let newRole = user.role; // Giữ nguyên role cũ mặc định
+    let newRole = user.role; // Keep the old role by default
 
     if (updateData.role && updateData.role !== user.role) {
       roleChanged = true;
       newRole = updateData.role;
     }
 
-    // Nếu không có trường nào thay đổi, trả về thông báo
+    // If no fields have changed, return a message
     if (Object.keys(updateFields).length === 0 && !roleChanged) {
       return { message: 'No changes detected' };
     }
 
-    // Cập nhật user trong UserModel
-    const updatedUser = await this.UserModel.findByIdAndUpdate(
-      objectId,
-      { $set: updateFields },
-      { new: true },
-    );
+    // Determine which model to update based on the user's existence in the models
+    if (user instanceof this.UserModel) {
+      // Update the user in UserModel
+      const updatedUser = await this.UserModel.findByIdAndUpdate(
+        objectId,
+        { $set: updateFields },
+        { new: true },
+      );
 
-    if (!updatedUser) {
-      throw new NotFoundException('Update failed, user not found');
+      if (!updatedUser) {
+        throw new NotFoundException('Update failed, user not found in UserModel');
+      }
+
+      // Handle role change if any
+      if (roleChanged) {
+        await this.handleRoleUpdate(objectId, user.role, newRole, updatedUser);
+      }
+
+      return { message: 'User updated successfully in UserModel', user: updatedUser };
+    } else if (user instanceof this.DoctorModel) {
+      // Update the user in DoctorModel
+      const updatedDoctor = await this.DoctorModel.findByIdAndUpdate(
+        objectId,
+        { $set: updateFields },
+        { new: true },
+      );
+
+      if (!updatedDoctor) {
+        throw new NotFoundException('Update failed, user not found in DoctorModel');
+      }
+
+      // Handle role change if any
+      if (roleChanged) {
+        await this.handleRoleUpdate(objectId, user.role, newRole, updatedDoctor);
+      }
+
+      return { message: 'User updated successfully in DoctorModel', user: updatedDoctor };
     }
-
-    // Nếu role thay đổi, xử lý cập nhật trong collection tương ứng
-    if (roleChanged) {
-      await this.handleRoleUpdate(objectId, user.role, newRole, updatedUser);
-    }
-
-    return { message: 'User updated successfully', user: updatedUser };
   }
+
 
   private async handleRoleUpdate(
     userId: Types.ObjectId,

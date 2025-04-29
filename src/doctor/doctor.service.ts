@@ -161,7 +161,7 @@ export class DoctorService {
     if (updateData.image) {
       try {
         const uploadResult = await this.cloudinaryService.uploadFile(updateData.image, `Doctors/${doctorId}/Avatar`);
-        filteredUpdateData['faceURL'] = uploadResult.secure_url;
+        filteredUpdateData['faceUrl'] = uploadResult.secure_url;
         console.log('Ảnh hồ sơ đã được tải lên Cloudinary:', uploadResult.secure_url);
       } catch (error) {
         console.error('Lỗi Cloudinary:', error);
@@ -242,31 +242,79 @@ export class DoctorService {
   }
 
   // Đăng ký làm bác sĩ (Lưu vào bảng chờ phê duyệt)
-  async applyForDoctor(userId: string, license: string, specialty: string, hospital: string) {
+  async applyForDoctor(userId: string, applyData: any) {
+    // Kiểm tra người dùng tồn tại
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('Người dùng không tồn tại.');
 
+    // Kiểm tra nếu đã đăng ký trước đó
     const existing = await this.pendingDoctorModel.findOne({ userId });
     if (existing) {
       throw new BadRequestException('Bạn đã gửi yêu cầu trở thành bác sĩ trước đó.');
     }
 
-    const specialtyExists = await this.SpecialtyModel.findById(specialty);
-    if (!specialtyExists) {
-      throw new BadRequestException('Chuyên khoa không tìm thấy.');
+    // Danh sách các trường hợp lệ từ form data
+    const allowedFields = [
+      'CCCD',
+      'license',
+      'specialty',
+      'faceUrl',
+      'licenseUrl',
+      'frontCccdUrl',
+      'backCccdUrl',
+    ];
+
+    // Lọc dữ liệu hợp lệ
+    const filteredApplyData = {};
+    Object.keys(applyData).forEach((key) => {
+      if (allowedFields.includes(key)) {
+        filteredApplyData[key] = applyData[key];
+      }
+    });
+
+    if (filteredApplyData['specialty']) {
+      const specialtyId = filteredApplyData['specialty'];
+      const specialtyExists = await this.SpecialtyModel.findById(specialtyId);
+      if (!specialtyExists) {
+        throw new BadRequestException('Chuyên khoa không tìm thấy.');
+      }
     }
 
-    await this.pendingDoctorModel.create({
-      userId,
-      license,
-      specialty,
-      hospital,
-      verified: false,
-    });
-    return {
-      message: 'Yêu cầu đăng ký bác sĩ đã được gửi thành công.',
-    };
+    if (applyData.faceUrl) {
+      const uploadResult = await this.cloudinaryService.uploadFile(applyData.faceUrl, `Doctors/${userId}/Avatar`);
+      filteredApplyData['faceUrl'] = uploadResult.secure_url;
+    }
 
+    if (applyData.licenseUrl) {
+      const uploadResult = await this.cloudinaryService.uploadFile(applyData.licenseUrl, `Doctors/${userId}/License`);
+      filteredApplyData['licenseUrl'] = uploadResult.secure_url;
+    }
+
+    if (applyData.frontCccdUrl) {
+      const uploadResult = await this.cloudinaryService.uploadFile(applyData.frontCccdUrl, `Doctors/${userId}/Info`);
+      filteredApplyData['frontCccdUrl'] = uploadResult.secure_url;
+    }
+
+    if (applyData.backCccdUrl) {
+      const uploadResult = await this.cloudinaryService.uploadFile(applyData.backCccdUrl, `Doctors/${userId}/Info`);
+      filteredApplyData['backCccdUrl'] = uploadResult.secure_url;
+    }
+
+    const pendingDoctor = new this.pendingDoctorModel({
+      userId,
+      ...filteredApplyData,
+    });
+
+    const savedPendingDoctor = await pendingDoctor.save();
+
+    if (!savedPendingDoctor) {
+      throw new BadRequestException('Đăng ký thất bại!');
+    }
+
+    return {
+      message: 'Đăng ký bác sĩ thành công!',
+      savedPendingDoctor,
+    };
   }
 
   // Lấy danh sách bác sĩ chưa được xác thực

@@ -9,24 +9,4 @@ export class applyDoctorDto {
 
     @IsMongoId()
     specialty: string;
-
-    @IsString()
-    address: string;
-
-    @IsString()
-    examinationMethod: string;
-
-    @IsNumber()
-    minPrice: number;
-
-    @IsNumber()
-    maxPrice: number;
-
-    @IsString()
-    description: string;
-
-    @IsString()
-    workingHours: string;
-
-
 }

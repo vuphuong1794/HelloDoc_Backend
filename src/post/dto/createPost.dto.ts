@@ -2,12 +2,11 @@ import { IsString, IsArray, IsOptional } from 'class-validator';
 
 export class CreatePostDto {
     @IsString()
-    content: string;
-
-    @IsArray()
-    @IsOptional()
-    media?: string[];
+    userId: string;
 
     @IsString()
-    userId: string;
+    content: string;
+
+    @IsOptional()
+    images?: Express.Multer.File[];
 }
