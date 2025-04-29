@@ -42,7 +42,7 @@ export class User extends Document {
     @Prop()
     @IsOptional()
     @IsUrl()
-    userImage?: string;
+    avatarURL?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
