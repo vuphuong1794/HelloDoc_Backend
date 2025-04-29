@@ -13,13 +13,7 @@ export class Post {
     content: string;
 
     @Prop({ type: [String], default: [] })
-    imageUrls?: string[];
-
-    @Prop ({ type: String, required: true })
-    createAt: string;
-
-    @Prop ({ type: String, required: true })
-    updateAt: string;
+    media?: string[];
 
     // @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] })
     // likes: mongoose.Schema.Types.ObjectId[];
