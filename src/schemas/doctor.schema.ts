@@ -86,18 +86,6 @@ export class Doctor extends Document {
   @Prop()
   frontCccdUrl?: string;
 
-  @Prop({ type: [String], default: [] })
-  certificates: string[];
-
-  @Prop({ type: [{ name: String, price: Number }], default: [] })
-  services: { name: string; price: number }[];
-
-  @Prop({ default: 0 })
-  patientsCount: number; // Số lượng bệnh nhân đã khám
-
-  @Prop({ default: 0 })
-  ratingsCount: number; // Số lượng lượt đánh giá
-
 }
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);
