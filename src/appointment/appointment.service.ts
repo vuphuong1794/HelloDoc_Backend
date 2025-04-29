@@ -111,7 +111,6 @@ export class AppointmentService {
             .populate({
                 path: 'patient',
                 select: 'name',
-                // Mongoose sẽ tự dùng patientModel do bạn đã khai báo refPath
             });
 
         return appointments;
@@ -126,7 +125,12 @@ export class AppointmentService {
             throw new NotFoundException('Doctor not found');
         }
 
-        const appointments = await this.appointmentModel.find({ doctor: doctorID }).populate({
+        const appointments = await this.appointmentModel.find({ doctor: doctorID })
+        .populate({ 
+            path: 'doctor', 
+            select: 'name'
+        })
+        .populate({
             path: 'patient',
             select: 'name',
         });

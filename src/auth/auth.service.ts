@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -13,6 +14,10 @@ import { JwtService } from '@nestjs/jwt';
 import { Admin } from 'src/schemas/admin.schema';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { ConfigService } from '@nestjs/config';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CacheService } from 'src/cache.service';
+
 
 @Injectable()
 export class AuthService {
@@ -22,6 +27,7 @@ export class AuthService {
     @InjectModel(Doctor.name) private DoctorModel: Model<Doctor>,
     private configService: ConfigService,
     private jwtService: JwtService,
+    private cacheService: CacheService,
   ) { }
 
   async signUp(signUpData: SignupDto) {
@@ -49,6 +55,7 @@ export class AuthService {
     };
   }
 
+
   async login(LoginData: loginDto) {
     const { email, password } = LoginData;
     let user = await this.UserModel.findOne({ email });
@@ -70,7 +77,22 @@ export class AuthService {
       throw new UnauthorizedException('Password is incorrect');
     }
 
-    return this.generateUserTokens(user._id, user.email, user.name, user.phone, user.address, user.role);
+    // Generate JWT token
+    const tokens = await this.generateUserTokens(user._id, user.email, user.name, user.phone, user.address, user.role);
+
+    // Cache the user data temporarily (for example, 1 hour)
+    const cacheKey = `user_${user._id}`;
+    await this.cacheService.setCache(cacheKey, { userId: user._id, name: user.name, email: user.email }, 3600 * 1000); // 1 hour
+
+    const userCache = await this.cacheService.getCache(`user_${user._id}`);
+    if (userCache) {
+      console.log("user cache", userCache); // { userId, name, email }
+    }
+
+    return {
+      accessToken: tokens.accessToken,
+      message: 'Login successful',
+    };
   }
 
   async generateUserTokens(userId, email, name, phone, address, role) {

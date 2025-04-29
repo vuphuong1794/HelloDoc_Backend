@@ -1,16 +1,25 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Post {
-    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-    user: mongoose.Schema.Types.ObjectId;
+    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'userModel' })
+    user: Types.ObjectId;
+    
+    @Prop({ type: String, required: true, enum: ['User', 'Doctor'] })
+    userModel: string;
 
     @Prop({ type: String, required: true })
     content: string;
 
     @Prop({ type: [String], default: [] })
     imageUrls?: string[];
+
+    @Prop ({ type: String, required: true })
+    createAt: string;
+
+    @Prop ({ type: String, required: true })
+    updateAt: string;
 
     // @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] })
     // likes: mongoose.Schema.Types.ObjectId[];
