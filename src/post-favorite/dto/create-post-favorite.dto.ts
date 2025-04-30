@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsMongoId, IsIn, IsString, IsArray, IsOptional } from 'class-validator';
 
-export class CreatePostDto {
+export class CreatePostFavoriteDto {
     @IsNotEmpty()
     @IsMongoId()
     userId: string;
@@ -10,9 +10,7 @@ export class CreatePostDto {
     @IsIn(['User', 'Doctor'])
     userModel: string;
 
-    @IsString()
-    content: string;
-
-    @IsOptional()
-    images?: Express.Multer.File[];
+    @IsNotEmpty()
+    @IsMongoId()
+    postId: string;
 }
