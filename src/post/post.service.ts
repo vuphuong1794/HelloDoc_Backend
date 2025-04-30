@@ -8,6 +8,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 import { CacheService } from 'src/cache.service';
+import mongoose, { Types } from 'mongoose';
 
 @Injectable()
 export class PostService {
@@ -139,4 +140,44 @@ export class PostService {
         }
         return { message: `Post with id ${id} deleted successfully` };
     }
+
+    async toggleLike(postId: string, userId: string) {
+        const post = await this.postModel.findById(postId);
+        if (!post) throw new NotFoundException('Post not found');
+
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        const alreadyLiked = post.likes.some(id => id.toString() === userObjectId.toString());
+
+        if (alreadyLiked) {
+            post.likes = post.likes.filter(id => id.toString() !== userObjectId.toString());
+        } else {
+            post.likes.push(userObjectId as any);  // ép kiểu để tránh lỗi schema
+        }
+
+        await post.save();
+        return { liked: !alreadyLiked, totalLikes: post.likes.length };
+    }
+
+    async addComment(postId: string, userId: string, content: string) {
+        const post = await this.postModel.findById(postId);
+        if (!post) throw new NotFoundException('Post not found');
+
+        post.comments.push({
+            user: new mongoose.Types.ObjectId(userId),
+            content,
+            createdAt: new Date()
+        });
+
+        await post.save();
+        return { message: 'Comment added' };
+    }
+
+    async getComments(postId: string) {
+        const post = await this.postModel.findById(postId).populate({
+            path: 'comments.user',
+            select: 'name avatarURL'
+        });
+        return post?.comments ?? [];
+    }
+
 }
