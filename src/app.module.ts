@@ -20,6 +20,8 @@ import config from './config/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
 import { CacheService } from './cache.service';
+import { PostFavoriteModule } from './post-favorite/post-favorite.module';
+import { PostCommentModule } from './post-comment/post-comment.module';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { CacheService } from './cache.service';
     FirebaseModule,
     PostModule,
     ReviewModule,
+    PostFavoriteModule,
+    PostCommentModule,
   ],
   controllers: [AppController],
   providers: [AppService, CacheService],
