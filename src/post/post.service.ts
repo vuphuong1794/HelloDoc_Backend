@@ -48,7 +48,7 @@ export class PostService {
 
         const createdPost = new this.postModel({
             user: createPostDto.userId,
-            userModel: 'User',
+            userModel: createPostDto.userModel,
             content: createPostDto.content,
             media: uploadedMediaUrls, // lưu các link Cloudinary vào đây
         });
