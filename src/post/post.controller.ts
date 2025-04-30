@@ -49,4 +49,23 @@ export class PostController {
   async delete(@Param('id') id: string) {
     return this.postService.delete(id);
   }
+
+  @Post(':id/like')
+  async likePost(@Param('id') id: string, @Body('userId') userId: string) {
+    return this.postService.toggleLike(id, userId);
+  }
+
+  @Post(':id/comment')
+  async addComment(
+    @Param('id') postId: string,
+    @Body() body: { userId: string; content: string }
+  ) {
+    return this.postService.addComment(postId, body.userId, body.content);
+  }
+
+  @Get(':id/comments')
+  async getComments(@Param('id') postId: string) {
+    return this.postService.getComments(postId);
+  }
+
 }
