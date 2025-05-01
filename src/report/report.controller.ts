@@ -11,6 +11,7 @@ export class ReportController {
     reporterModel: 'User' | 'Doctor';
     content: string;
     type: 'Bác sĩ' | 'Ứng dụng';
+    reportedId: string;
   }) {
     return this.reportService.createReport(body);
   }
@@ -23,7 +24,7 @@ export class ReportController {
   @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,
-    @Body('status') status: 'pending' | 'open' | 'closed',
+    @Body('status') status: 'pending' | 'closed',
   ) {
     return this.reportService.updateStatus(id, status);
   }

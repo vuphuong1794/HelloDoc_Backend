@@ -17,6 +17,10 @@ export class Report extends Document {
 
     @Prop({ default: 'pending', enum: ['pending', 'open', 'closed'] })
     status: string;
+
+    @Prop({ required: true })
+    reportedId: string;
+
 }
 
 export const ReportSchema = SchemaFactory.createForClass(Report);

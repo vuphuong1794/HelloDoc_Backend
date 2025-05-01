@@ -14,12 +14,14 @@ export class ReportService {
         reporterModel: 'User' | 'Doctor';
         content: string;
         type: 'Bác sĩ' | 'Ứng dụng';
+        reportedId: string;
     }) {
         return this.reportModel.create({
             reporter: data.reporter,
             reporterModel: data.reporterModel,
             content: data.content,
             type: data.type,
+            reportedId: data.reportedId,
         });
     }
 
@@ -30,7 +32,7 @@ export class ReportService {
             .sort({ createdAt: -1 });
     }
 
-    async updateStatus(id: string, status: 'pending' | 'open' | 'closed') {
+    async updateStatus(id: string, status: 'pending' | 'closed') {
         const report = await this.reportModel.findById(id);
         if (!report) throw new NotFoundException('Report not found');
         report.status = status;
