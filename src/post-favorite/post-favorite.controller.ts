@@ -1,34 +1,36 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { PostFavoriteService } from './post-favorite.service';
 import { CreatePostFavoriteDto } from './dto/create-post-favorite.dto';
-import { UpdatePostFavoriteDto } from './dto/update-post-favorite.dto';
+import { GetPostFavoriteDto } from './dto/get-post-favorite.dto';
 
-@Controller('post-favorite')
+@Controller('post')
 export class PostFavoriteController {
   constructor(private readonly postFavoriteService: PostFavoriteService) {}
 
-  @Post('create')
-  create(@Body() createPostFavoriteDto: CreatePostFavoriteDto) {
-    return this.postFavoriteService.create(createPostFavoriteDto);
+  @Get(':postId/favorite/get')
+  async getPostFavoritesByPostId(@Param('postId') postId: string, @Query() getPostFavoriteDto: GetPostFavoriteDto) {
+    return this.postFavoriteService.getPostFavoritesByPostId(postId, getPostFavoriteDto);
   }
 
-  @Get()
-  findAll() {
-    return this.postFavoriteService.findAll();
+  @Post(':postId/favorite/update')
+  async updatePostFavoriteByPostId(@Param('postId') postId: string, @Body() createPostFavoriteDto: CreatePostFavoriteDto) {
+    return this.postFavoriteService.updatePostFavoriteByPostId(postId, createPostFavoriteDto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.postFavoriteService.findOne(+id);
-  }
+  // @Get()
+  // findAll() {
+  //   return this.postFavoriteService.findAll();
+  // }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePostFavoriteDto: UpdatePostFavoriteDto) {
-    return this.postFavoriteService.update(+id, updatePostFavoriteDto);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.postFavoriteService.findOne(+id);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.postFavoriteService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('postId') id: string) {
+  //   return this.postFavoriteService.remove(+id);
+  // }
+
+  
 }

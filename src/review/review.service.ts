@@ -23,4 +23,17 @@ export class ReviewService {
             .populate('user', 'name avatarURL')
             .sort({ createdAt: -1 }); // Mới nhất lên đầu
     }
+
+    async updateReview(reviewId: string, body: { rating: number; comment: string }) {
+        return this.reviewModel.findByIdAndUpdate(
+            reviewId,
+            { rating: body.rating, comment: body.comment },
+            { new: true }
+        );
+    }
+
+    async deleteReview(reviewId: string) {
+        return this.reviewModel.findByIdAndDelete(reviewId);
+    }
+
 }
