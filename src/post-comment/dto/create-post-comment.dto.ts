@@ -10,10 +10,10 @@ export class CreatePostCommentDto {
     @IsIn(['User', 'Doctor'])
     userModel: string;
 
-    @IsNotEmpty()
-    @IsMongoId()
-    postId: string;
+    // @IsNotEmpty()
+    // @IsMongoId()
+    // postId: string;
 
     @IsString()
-    comment: string;
+    content: string;
 }

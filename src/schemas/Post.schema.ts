@@ -8,7 +8,7 @@ import { PostFavorite } from './post-favorite.schema';
 export class Post {
     @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'userModel' })
     user: Types.ObjectId;
-    
+
     @Prop({ type: String, required: true, enum: ['User', 'Doctor'] })
     userModel: string;
 
@@ -29,8 +29,6 @@ export class Post {
     // @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] })
     // likes: mongoose.Schema.Types.ObjectId[];
 
-    // @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'Comment', default: [] })
-    // comments: mongoose.Schema.Types.ObjectId[];
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

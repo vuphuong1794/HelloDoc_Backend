@@ -14,7 +14,7 @@ export class PostComment extends Document {
     post: Types.ObjectId | Post;
 
     @Prop({ required: true })
-    comment: string;
+    content: string;
 }
 
 export const PostCommentSchema = SchemaFactory.createForClass(PostComment);

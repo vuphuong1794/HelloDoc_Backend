@@ -8,11 +8,6 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 export class PostController {
   constructor(private readonly postService: PostService) { }
 
-  // @Post('book')
-  // async create(@Body() createPostDto: CreatePostDto) {
-  //   return this.postService.create(createPostDto);
-  // }
-
   @Post('create')
   @UseInterceptors(FilesInterceptor('images')) // 'images' là tên field form-data
   async createPost(
