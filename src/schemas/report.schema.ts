@@ -24,6 +24,12 @@ export class Report extends Document {
     @Prop()
     postId?: string; // báo cáo bài viết mới có
 
+    @Prop()
+    responseContent?: string;// nội dung phản hồi từ admin
+
+    @Prop()
+    responseTime?: string;// thời gian phản hồi
+
 }
 
 export const ReportSchema = SchemaFactory.createForClass(Report);

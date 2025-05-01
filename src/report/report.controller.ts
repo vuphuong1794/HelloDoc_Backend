@@ -29,4 +29,13 @@ export class ReportController {
   ) {
     return this.reportService.updateStatus(id, status);
   }
+
+  @Patch(':id/response')
+  async updateResponse(
+    @Param('id') id: string,
+    @Body() body: { responseContent: string; responseTime: string }
+  ) {
+    return this.reportService.updateResponse(id, body.responseContent, body.responseTime);
+  }
+
 }

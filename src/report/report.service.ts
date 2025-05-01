@@ -40,4 +40,14 @@ export class ReportService {
         report.status = status;
         return report.save();
     }
+
+    async updateResponse(id: string, responseContent: string, responseTime: string) {
+        const report = await this.reportModel.findById(id);
+        if (!report) throw new NotFoundException('Report not found');
+        report.responseContent = responseContent;
+        report.responseTime = responseTime;
+        report.status = 'closed';//đổi trạng thái thành 'closed' sau khi phản hồi
+        return report.save();
+    }
+
 }
