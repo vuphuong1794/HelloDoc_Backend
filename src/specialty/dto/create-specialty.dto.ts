@@ -6,7 +6,7 @@ export class CreateSpecialtyDto {
   name: string;
 
   @IsOptional()
-  icon?: Express.Multer.File[]; // Đường dẫn đến biểu tượng của chuyên khoa
+  image?: Express.Multer.File;
 
   @IsString()
   description: string;

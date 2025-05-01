@@ -364,6 +364,10 @@ export class DoctorService {
     });
     await this.pendingDoctorModel.deleteOne({ userId });
     await this.userModel.deleteOne({ _id: userId });
+    await this.SpecialtyModel.findByIdAndUpdate(
+      pendingDoctor.specialty,
+      { $push: { doctors: userId } },
+    );
 
     return user;
   }
