@@ -23,11 +23,20 @@ export class PendingDoctor extends Document {
   @Prop({ default: false })
   verified: boolean;
 
+  @Prop()
+  certificates: string; // Danh sách chứng chỉ hành nghề
+
+  @Prop()
+  experience: number; // Số năm kinh nghiệm
+
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Specialty', required: true })
   specialty: Types.ObjectId;
 
   @Prop()
   faceUrl: string; // Ảnh chân dung
+
+  @Prop()
+  avatarURL: string; // Ảnh đại diện
 
   @Prop()
   @IsUrl()
