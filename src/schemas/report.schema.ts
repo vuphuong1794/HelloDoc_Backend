@@ -12,14 +12,17 @@ export class Report extends Document {
     @Prop({ required: true })
     content: string;
 
-    @Prop({ required: true, enum: ['Bác sĩ', 'Ứng dụng'] })
+    @Prop({ required: true, enum: ['Bác sĩ', 'Ứng dụng', 'Bài viết'] })
     type: string; // Loại báo cáo
 
-    @Prop({ default: 'pending', enum: ['pending', 'open', 'closed'] })
+    @Prop({ default: 'pending', enum: ['pending', 'closed'] })
     status: string;
 
     @Prop({ required: true })
     reportedId: string;
+
+    @Prop()
+    postId?: string; // báo cáo bài viết mới có
 
 }
 

@@ -10,8 +10,9 @@ export class ReportController {
     reporter: string;
     reporterModel: 'User' | 'Doctor';
     content: string;
-    type: 'Bác sĩ' | 'Ứng dụng';
+    type: 'Bác sĩ' | 'Ứng dụng' | 'Bài viết';
     reportedId: string;
+    postId?: string
   }) {
     return this.reportService.createReport(body);
   }

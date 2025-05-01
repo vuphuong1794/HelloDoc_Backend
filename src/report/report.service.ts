@@ -13,8 +13,9 @@ export class ReportService {
         reporter: string;
         reporterModel: 'User' | 'Doctor';
         content: string;
-        type: 'Bác sĩ' | 'Ứng dụng';
+        type: 'Bác sĩ' | 'Ứng dụng' | 'Bài viết';
         reportedId: string;
+        postId?: string
     }) {
         return this.reportModel.create({
             reporter: data.reporter,
@@ -22,6 +23,7 @@ export class ReportService {
             content: data.content,
             type: data.type,
             reportedId: data.reportedId,
+            postId: data.postId,
         });
     }
 
