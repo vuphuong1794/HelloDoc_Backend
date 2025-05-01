@@ -46,16 +46,45 @@ export class SpecialtyService {
     return specialty;
   }
 
+  async update(id: string, updateSpecialtyDto: UpdateSpecialtyDto) {
+    const specialty = await this.SpecialtyModel.findById(id);
+    if (!specialty) {
+      throw new BadRequestException('Chuyên khoa không tồn tại');
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} specialty`;
+    let uploadedMediaUrl: string = '';
+
+    if (updateSpecialtyDto.image) {
+      const uploadResult = await this.cloudinaryService.uploadFile(
+        updateSpecialtyDto.image,
+        `Specialty/${updateSpecialtyDto.name}/Icon`
+      );
+      uploadedMediaUrl = uploadResult.secure_url;
+    }
+
+    const updatedSpecialty = await this.SpecialtyModel.findByIdAndUpdate(
+      id,
+      {
+        name: updateSpecialtyDto.name,
+        description: updateSpecialtyDto.description,
+        icon: uploadedMediaUrl || specialty.icon,
+        doctors: updateSpecialtyDto.doctors,
+      },
+      { new: true }
+    );
+    if (!updatedSpecialty) {
+      throw new BadRequestException('Cập nhật chuyên khoa không thành công');
+    }
+
+    return updatedSpecialty;
   }
 
-  update(id: number, updateSpecialtyDto: UpdateSpecialtyDto) {
-    return `This action updates a #${id} specialty`;
-  }
+  async remove(id: string) {
+    const specialty = await this.SpecialtyModel.findByIdAndDelete(id);
+    if (!specialty) {
+      throw new BadRequestException('Chuyên khoa không tồn tại');
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} specialty`;
+    return specialty;
   }
 }

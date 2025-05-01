@@ -80,7 +80,7 @@ export class AppointmentService {
         appointment.status = AppointmentStatus.CANCELLED;
         await appointment.save();
 
-        return { message: 'Appointment cancelled successfully', appointment };
+        return { message: 'Appointment cancelled successfully' };
     }
 
     // 📌 Xác nhận lịch hẹn
@@ -168,5 +168,13 @@ export class AppointmentService {
     async getAppointmentsbyitsID(id: string) {
         const appointment = await this.appointmentModel.findById(id);
         return appointment;
+    }
+
+    async updateAppointment(id: string, updateData: Partial<BookAppointmentDto>) {
+        const appointment = await this.appointmentModel.findByIdAndUpdate(id, updateData, { new: true });
+        if (!appointment) {
+            throw new NotFoundException('Appointment not found');
+        }
+        return { message: 'Appointment updated successfully', appointment };
     }
 }

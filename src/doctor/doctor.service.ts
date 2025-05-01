@@ -31,11 +31,11 @@ export class DoctorService {
 
   async getDoctors() {
     const cacheKey = 'all_doctors';
-    console.log('Trying to get from cache...');
+    console.log('Trying to get doctors from cache...');
 
     const cached = await this.cacheService.getCache(cacheKey);
     if (cached) {
-      console.log('Cache HIT');
+      console.log('Cache doctor HIT');
       return cached;
     }
 
