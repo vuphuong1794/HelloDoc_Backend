@@ -6,14 +6,18 @@ import {
   Patch,
   Param,
   Delete,
+  UploadedFile,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { SpecialtyService } from './specialty.service';
 import { CreateSpecialtyDto } from './dto/create-specialty.dto';
 import { UpdateSpecialtyDto } from './dto/update-specialty.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('specialty')
 export class SpecialtyController {
-  constructor(private readonly specialtyService: SpecialtyService) {}
+  constructor(private readonly specialtyService: SpecialtyService) { }
 
   @Get('get-all')
   async getSpecialtys() {
@@ -21,7 +25,14 @@ export class SpecialtyController {
   }
 
   @Post('create')
-  async createSpecialty(@Body() createSpecialtyDto: CreateSpecialtyDto) {
+  @UseInterceptors(FileInterceptor('icon')) // 'icon' là tên field form-data
+  async createSpecialty(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() createSpecialtyDto: CreateSpecialtyDto,
+  ) {
+    if (files && files.length > 0) {
+      createSpecialtyDto.icon = files;
+    }
     return this.specialtyService.create(createSpecialtyDto);
   }
 

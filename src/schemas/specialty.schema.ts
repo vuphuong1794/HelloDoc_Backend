@@ -10,6 +10,9 @@ export class Specialty extends Document {
   @Prop()
   icon: string;
 
+  @Prop()
+  description: string;
+
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor' }] })
   doctors: Doctor[]; // Danh sách bác sĩ thuộc chuyên khoa
 }

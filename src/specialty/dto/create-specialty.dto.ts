@@ -5,8 +5,11 @@ export class CreateSpecialtyDto {
   @IsString()
   name: string;
 
+  @IsOptional()
+  icon?: Express.Multer.File[]; // Đường dẫn đến biểu tượng của chuyên khoa
+
   @IsString()
-  icon: string; // Đường dẫn đến biểu tượng của chuyên khoa
+  description: string;
 
   @IsOptional()
   @IsArray()

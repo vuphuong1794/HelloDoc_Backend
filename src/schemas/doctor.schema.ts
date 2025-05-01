@@ -21,8 +21,8 @@ export class Doctor extends Document {
   @Prop({ default: 'doctor' })
   role: string;
 
-  @Prop({ default: [] })
-  certificates: string[];
+  @Prop({ default: "" })
+  certificates: string;
 
   @Prop({ type: [{ name: String, price: Number }], default: [] })
   services: { name: string; price: number }[];

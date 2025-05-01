@@ -91,6 +91,7 @@ export class DoctorController {
     FileFieldsInterceptor([
       { name: 'licenseUrl', maxCount: 1 },
       { name: 'faceUrl', maxCount: 1 },
+      { name: 'avatarURL', maxCount: 1 },
       { name: 'frontCccdUrl', maxCount: 1 },
       { name: 'backCccdUrl', maxCount: 1 },
     ])
@@ -100,21 +101,24 @@ export class DoctorController {
     @UploadedFiles() files: {
       licenseUrl?: Express.Multer.File[],
       faceUrl?: Express.Multer.File[],
+      avatarURL?: Express.Multer.File[],
       frontCccdUrl?: Express.Multer.File[],
       backCccdUrl?: Express.Multer.File[]
     },
     @Body() formData: any,
   ) {
-    // Create a data object to hold all form fields and file information
     const doctorData = { ...formData };
 
-    // Add file information if files were uploaded
     if (files?.licenseUrl?.[0]) {
       doctorData.licenseUrl = files.licenseUrl[0];
     }
 
     if (files?.faceUrl?.[0]) {
       doctorData.faceUrl = files.faceUrl[0];
+    }
+
+    if (files?.avatarURL?.[0]) {
+      doctorData.avatarURL = files.avatarURL[0];
     }
 
     if (files?.frontCccdUrl?.[0]) {
@@ -125,7 +129,6 @@ export class DoctorController {
       doctorData.backCccdUrl = files.backCccdUrl[0];
     }
 
-    // Pass the combined data to the service
     return this.doctorService.applyForDoctor(userId, doctorData);
   }
 
