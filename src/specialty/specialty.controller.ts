@@ -24,15 +24,17 @@ export class SpecialtyController {
     return this.specialtyService.getSpecialties();
   }
 
+
   @Post('create')
   @UseInterceptors(FileInterceptor('icon')) // 'icon' là tên field form-data
   async createSpecialty(
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFile() file: Express.Multer.File,
     @Body() createSpecialtyDto: CreateSpecialtyDto,
   ) {
-    if (files && files.length > 0) {
-      createSpecialtyDto.icon = files;
+    if (file) {
+      createSpecialtyDto.image = file;
     }
+
     return this.specialtyService.create(createSpecialtyDto);
   }
 

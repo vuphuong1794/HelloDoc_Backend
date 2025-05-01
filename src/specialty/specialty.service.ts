@@ -4,6 +4,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { updateUserDto } from 'src/dtos/updateUser.dto';
 import { Specialty } from 'src/schemas/specialty.schema';
 
 @Injectable()
@@ -21,35 +22,30 @@ export class SpecialtyService {
   }
 
   async create(createSpecialtyDto: CreateSpecialtyDto) {
+    let uploadedMediaUrl: string = '';
 
-    const uploadedMediaUrls: string[] = [];
-    if (createSpecialtyDto.icon && createSpecialtyDto.icon.length > 0) {
-      for (const file of createSpecialtyDto.icon) {
-        try {
-          const uploadResult = await this.cloudinaryService.uploadFile(
-            file,
-            `Specialty/${createSpecialtyDto.name}`,
-          );
-          uploadedMediaUrls.push(uploadResult.secure_url);
-          console.log('Ảnh đã tải lên Cloudinary:', uploadResult.secure_url);
-        } catch (error) {
-          console.error('Lỗi Cloudinary khi upload media:', error);
-          throw new BadRequestException('Lỗi khi tải media lên Cloudinary');
-        }
-      }
+    if (createSpecialtyDto.image) {
+      const uploadResult = await this.cloudinaryService.uploadFile(
+        createSpecialtyDto.image,
+        `Specialty/${createSpecialtyDto.name}/Icon`
+      );
+      uploadedMediaUrl = uploadResult.secure_url;
     }
 
     const specialty = await this.SpecialtyModel.create({
       name: createSpecialtyDto.name,
       description: createSpecialtyDto.description,
-      icon: uploadedMediaUrls,
+      icon: uploadedMediaUrl,
       doctors: createSpecialtyDto.doctors,
     });
+
     if (!specialty) {
       throw new BadRequestException('Tạo chuyên khoa không thành công');
     }
+
     return specialty;
   }
+
 
   findOne(id: number) {
     return `This action returns a #${id} specialty`;

@@ -17,14 +17,13 @@ import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
 import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
-import { Model, Types } from 'mongoose';
-import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { app } from 'firebase-admin';
+import { Model } from 'mongoose';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
-import { applyDoctorDto } from 'src/dtos/applyDoctor.dto';
+
 
 @Controller('doctor')
 export class DoctorController {
@@ -43,7 +42,6 @@ export class DoctorController {
   async getDoctorById(@Param('id') id: string) {
     return this.doctorService.getDoctorById(id);
   }
-
 
   @Post('register')
   async register(@Body() signUpData: SignupDto) {
