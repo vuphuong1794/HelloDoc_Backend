@@ -17,14 +17,13 @@ import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
 import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
-import { Model, Types } from 'mongoose';
-import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { app } from 'firebase-admin';
+import { Model } from 'mongoose';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
-import { applyDoctorDto } from 'src/dtos/applyDoctor.dto';
+
 
 @Controller('doctor')
 export class DoctorController {
@@ -43,7 +42,6 @@ export class DoctorController {
   async getDoctorById(@Param('id') id: string) {
     return this.doctorService.getDoctorById(id);
   }
-
 
   @Post('register')
   async register(@Body() signUpData: SignupDto) {
@@ -91,6 +89,7 @@ export class DoctorController {
     FileFieldsInterceptor([
       { name: 'licenseUrl', maxCount: 1 },
       { name: 'faceUrl', maxCount: 1 },
+      { name: 'avatarURL', maxCount: 1 },
       { name: 'frontCccdUrl', maxCount: 1 },
       { name: 'backCccdUrl', maxCount: 1 },
     ])
@@ -100,21 +99,24 @@ export class DoctorController {
     @UploadedFiles() files: {
       licenseUrl?: Express.Multer.File[],
       faceUrl?: Express.Multer.File[],
+      avatarURL?: Express.Multer.File[],
       frontCccdUrl?: Express.Multer.File[],
       backCccdUrl?: Express.Multer.File[]
     },
     @Body() formData: any,
   ) {
-    // Create a data object to hold all form fields and file information
     const doctorData = { ...formData };
 
-    // Add file information if files were uploaded
     if (files?.licenseUrl?.[0]) {
       doctorData.licenseUrl = files.licenseUrl[0];
     }
 
     if (files?.faceUrl?.[0]) {
       doctorData.faceUrl = files.faceUrl[0];
+    }
+
+    if (files?.avatarURL?.[0]) {
+      doctorData.avatarURL = files.avatarURL[0];
     }
 
     if (files?.frontCccdUrl?.[0]) {
@@ -125,7 +127,6 @@ export class DoctorController {
       doctorData.backCccdUrl = files.backCccdUrl[0];
     }
 
-    // Pass the combined data to the service
     return this.doctorService.applyForDoctor(userId, doctorData);
   }
 

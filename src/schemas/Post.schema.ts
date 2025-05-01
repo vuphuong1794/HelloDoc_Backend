@@ -1,5 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Types } from 'mongoose';
+import { IsString, IsEmail, IsBoolean, IsOptional, IsNumber, Min, IsUrl } from 'class-validator';
+import { PostComment } from './post-comment.schema';
+import { PostFavorite } from './post-favorite.schema';
 
 @Schema({ timestamps: true })
 export class Post {
@@ -15,24 +18,16 @@ export class Post {
     @Prop({ type: [String], default: [] })
     media?: string[];
 
-    @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] })
-    likes: mongoose.Schema.Types.ObjectId[];
+    @IsOptional()
+    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PostComment' }] })
+    postComment: PostComment[];
 
-    @Prop({
-        type: [
-            {
-                user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-                content: { type: String, required: true },
-                createdAt: { type: Date, default: Date.now }
-            }
-        ],
-        default: []
-    })
-    comments: Array<{
-        user: mongoose.Types.ObjectId;
-        content: string;
-        createdAt: Date;
-    }>;
+    @IsOptional()
+    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PostFavorite' }] })
+    postFavorite: PostFavorite[];
+
+    // @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] })
+    // likes: mongoose.Schema.Types.ObjectId[];
 
 }
 
