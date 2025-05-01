@@ -1,4 +1,4 @@
-import { IsEmail, IsMongoId, IsNumber, IsString } from "class-validator";
+import { IsEmail, IsMongoId, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class applyDoctorDto {
     @IsString()
@@ -9,4 +9,16 @@ export class applyDoctorDto {
 
     @IsMongoId()
     specialty: string;
+
+    @IsOptional()
+    licenseUrl?: Express.Multer.File;
+
+    @IsOptional()
+    faceUrl?: Express.Multer.File;
+
+    @IsOptional()
+    frontCccdUrl?: Express.Multer.File;
+
+    @IsOptional()
+    backCccdUrl?: Express.Multer.File;
 }

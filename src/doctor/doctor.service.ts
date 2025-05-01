@@ -15,11 +15,7 @@ import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { Cache } from 'cache-manager';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CacheService } from 'src/cache.service';
-import { app } from 'firebase-admin';
-import { applyDoctorDto } from 'src/dtos/applyDoctor.dto';
 
 @Injectable()
 export class DoctorService {
@@ -251,6 +247,8 @@ export class DoctorService {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('Người dùng không tồn tại.');
 
+    const avatarURL = user.avatarURL;
+
     // Kiểm tra nếu đã đăng ký trước đó
     const existing = await this.pendingDoctorModel.findOne({ userId });
     if (existing) {
@@ -260,9 +258,12 @@ export class DoctorService {
     // Danh sách các trường hợp lệ từ form data
     const allowedFields = [
       'CCCD',
+      'certificates',
+      'experience',
       'license',
       'specialty',
       'faceUrl',
+      'avatarURL',
       'licenseUrl',
       'frontCccdUrl',
       'backCccdUrl',
@@ -285,8 +286,13 @@ export class DoctorService {
     }
 
     if (applyData.faceUrl) {
-      const uploadResult = await this.cloudinaryService.uploadFile(applyData.faceUrl, `Doctors/${userId}/Avatar`);
+      const uploadResult = await this.cloudinaryService.uploadFile(applyData.faceUrl, `Doctors/${userId}/Face`);
       filteredApplyData['faceUrl'] = uploadResult.secure_url;
+    }
+
+    if (applyData.avatarURL) {
+      const uploadResult = await this.cloudinaryService.uploadFile(applyData.avatarURL, `Doctors/${userId}/Avatar`);
+      filteredApplyData['avatarURL'] = uploadResult.secure_url;
     }
 
     if (applyData.licenseUrl) {
@@ -347,7 +353,13 @@ export class DoctorService {
       phone: user.phone,
       password: user.password,
       verified: true,
-      licenseUrl: pendingDoctor.license,
+      cccd: pendingDoctor.CCCD,
+      avatarURL: pendingDoctor.avatarURL,
+      frontCccdUrl: pendingDoctor.frontCccdUrl,
+      backCccdUrl: pendingDoctor.backCccdUrl,
+      licenseUrl: pendingDoctor.licenseUrl,
+      certificates: pendingDoctor.certificates,
+      experience: pendingDoctor.experience,
       specialty: pendingDoctor.specialty,
     });
     await this.pendingDoctorModel.deleteOne({ userId });
