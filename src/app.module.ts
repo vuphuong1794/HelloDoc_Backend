@@ -20,6 +20,7 @@ import config from './config/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
 import { CacheService } from './cache.service';
+import { ReportModule } from './report/report.module';
 import { PostFavoriteModule } from './post-favorite/post-favorite.module';
 import { PostCommentModule } from './post-comment/post-comment.module';
 
@@ -57,6 +58,7 @@ import { PostCommentModule } from './post-comment/post-comment.module';
     FirebaseModule,
     PostModule,
     ReviewModule,
+    ReportModule,
     PostFavoriteModule,
     PostCommentModule,
   ],
