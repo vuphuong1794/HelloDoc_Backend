@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ReportService } from './report.service';
 
 @Controller('report')
@@ -10,7 +10,9 @@ export class ReportController {
     reporter: string;
     reporterModel: 'User' | 'Doctor';
     content: string;
-    type: 'Bác sĩ' | 'Ứng dụng';
+    type: 'Bác sĩ' | 'Ứng dụng' | 'Bài viết';
+    reportedId: string;
+    postId?: string
   }) {
     return this.reportService.createReport(body);
   }
@@ -23,8 +25,22 @@ export class ReportController {
   @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,
-    @Body('status') status: 'pending' | 'open' | 'closed',
+    @Body('status') status: 'opened' | 'closed',
   ) {
     return this.reportService.updateStatus(id, status);
   }
+
+  @Patch(':id/response')
+  async updateResponse(
+    @Param('id') id: string,
+    @Body() body: { responseContent: string; responseTime: string }
+  ) {
+    return this.reportService.updateResponse(id, body.responseContent, body.responseTime);
+  }
+
+  @Delete(':id')
+  async deleteReport(@Param('id') id: string) {
+    return this.reportService.deleteReport(id);
+  }
+
 }
