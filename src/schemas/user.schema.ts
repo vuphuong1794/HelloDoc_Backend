@@ -40,6 +40,14 @@ export class User extends Document {
     minAge?: number;
 
     @Prop()
+    @IsOptional()
+    updateAt?: string;
+
+    @Prop()
+    @IsOptional()
+    createAt?: string;
+
+    @Prop()
     avatarURL: string; // Ảnh đại diện
 }
 
