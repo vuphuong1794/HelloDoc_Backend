@@ -16,29 +16,12 @@ export class AppointmentService {
 
     // 📌 Đặt lịch hẹn
     async bookAppointment(bookData: BookAppointmentDto) {
-        const { doctorID, patientID, date, time, status, examinationMethod, reason, notes, totalCost, location } = bookData;
+        const { doctorID, patientID, patientModel, date, time, status, examinationMethod, reason, notes, totalCost, location } = bookData;
 
         // Kiểm tra xem bác sĩ có tồn tại không
         const doctor = await this.doctorModel.findById(doctorID);
         if (!doctor) {
             throw new NotFoundException('Doctor not found');
-        }
-
-        // Kiểm tra xem bệnh nhân có tồn tại không và xác định model
-        let patientModel: 'User' | 'Doctor' | null = null;
-
-        let patient = await this.userModel.findById(patientID);
-        if (patient) {
-            patientModel = 'User';
-        } else {
-            patient = await this.doctorModel.findById(patientID);
-            if (patient) {
-                patientModel = 'Doctor';
-            }
-        }
-
-        if (!patientModel) {
-            throw new NotFoundException('Patient not found');
         }
 
         // Kiểm tra xem cuộc hẹn đã tồn tại chưa (tránh đặt trùng lịch)
