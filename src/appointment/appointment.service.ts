@@ -104,7 +104,7 @@ export class AppointmentService {
                 select: 'name specialty hospital address',
                 populate: {
                     path: 'specialty',
-                    select: 'name',
+                    select: 'name avatarURL',
                 },
             })
             .populate({
@@ -126,7 +126,7 @@ export class AppointmentService {
         const appointments = await this.appointmentModel.find({ doctor: doctorID })
             .populate({
                 path: 'doctor',
-                select: 'name'
+                select: 'name avatarURL'
             })
             .populate({
                 path: 'patient',
@@ -148,7 +148,7 @@ export class AppointmentService {
         }
 
         const appointments = await this.appointmentModel.find({ patient: patientID })
-            .populate({ path: 'doctor', select: 'name' })
+            .populate({ path: 'doctor', select: 'name avatarURL' })
             .populate({ path: 'patient', select: 'name' });
 
         if (!appointments) {
