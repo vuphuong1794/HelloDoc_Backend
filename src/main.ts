@@ -3,13 +3,13 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import * as admin from 'firebase-admin';
-import * as serviceAccount from './firebase-service-account.json';
 
 async function bootstrap() {
   dotenv.config();
 
+  const serviceAccount = require('./firebase-service-account.json');
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+    credential: admin.credential.cert(serviceAccount),
   });
 
   const app = await NestFactory.create(AppModule);

@@ -151,4 +151,9 @@ export class DoctorController {
       await this.doctorService.getDoctorsBySpecialtyId(specialtyId)
     ).populate('doctors');
   }
+
+  @Put(':id/fcm-token')
+  async updateFcmToken(@Param('id') id: string, @Body('token') token: string) {
+    return this.doctorService.updateFcmToken(id, token);
+  }
 }

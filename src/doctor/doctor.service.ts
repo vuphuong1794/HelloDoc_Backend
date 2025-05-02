@@ -416,4 +416,12 @@ export class DoctorService {
     return doctor;
   }
 
+  async updateFcmToken(userId: string, token: string) {
+    console.log(token);
+    return this.DoctorModel.findByIdAndUpdate(
+      userId,
+      { fcmToken: token },
+      { new: true }
+    );
+  }
 }
