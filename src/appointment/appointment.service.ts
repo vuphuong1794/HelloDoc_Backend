@@ -58,16 +58,18 @@ export class AppointmentService {
         };
     }
 
+    // 📌 Gửi thông báo đến bác sĩ
+
     async notifyDoctor(doctorId: string, message: string) {
         try {
             const doctor = await this.doctorModel.findById(doctorId);
             if (doctor?.fcmToken) {
                 await admin.messaging().send({
-                token: doctor.fcmToken,
-                notification: {
-                    title: 'Thông báo lịch hẹn mới',
-                    body: message,
-                },
+                    token: doctor.fcmToken,
+                    notification: {
+                        title: 'Thông báo lịch hẹn mới',
+                        body: message,
+                    },
                 });
                 console.log(`Đã gửi thông báo đến bác sĩ ${doctorId}`);
             } else {
