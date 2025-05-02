@@ -3,6 +3,7 @@ import { UpdateSpecialtyDto } from './dto/update-specialty.dto';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { CacheService } from 'src/cache.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { updateUserDto } from 'src/dtos/updateUser.dto';
 import { Specialty } from 'src/schemas/specialty.schema';
@@ -12,13 +13,28 @@ export class SpecialtyService {
   constructor(
     @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
     private cloudinaryService: CloudinaryService,
+    private cacheService: CacheService,
   ) { }
 
   async getSpecialties() {
-    return await this.SpecialtyModel.find().populate({
+    const cacheKey = 'all_specialties';
+    console.log('Trying to get specialties from cache...');
+
+    const cached = await this.cacheService.getCache(cacheKey);
+    if (cached) {
+      console.log('Cache specialty HIT');
+      return cached;
+    }
+
+    console.log('Cache MISS - querying DB');
+    const data = await this.SpecialtyModel.find().populate({
       path: 'doctors',
       select: 'name',
     });
+
+    console.log('Setting cache...');
+    await this.cacheService.setCache(cacheKey, data, 3600 * 1000);
+    return data;
   }
 
   async create(createSpecialtyDto: CreateSpecialtyDto) {

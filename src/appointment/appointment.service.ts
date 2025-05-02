@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { CacheService } from 'src/cache.service';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
 import { Appointment, AppointmentStatus } from 'src/schemas/Appointment.schema';
 import { Doctor } from 'src/schemas/doctor.schema';
@@ -11,7 +12,8 @@ export class AppointmentService {
     constructor(
         @InjectModel(Appointment.name) private appointmentModel: Model<Appointment>,
         @InjectModel(User.name) private userModel: Model<User>,
-        @InjectModel(Doctor.name) private doctorModel: Model<Doctor>
+        @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
+        private cacheService: CacheService,
     ) { }
 
     // 📌 Đặt lịch hẹn
@@ -123,6 +125,16 @@ export class AppointmentService {
             throw new NotFoundException('Doctor not found');
         }
 
+        const cacheKey = 'all_doctor_appointments_' + doctorID;
+        console.log('Trying to get doctor appointments from cache...');
+
+        const cached = await this.cacheService.getCache(cacheKey);
+        if (cached) {
+            console.log('Cache doctor appointments HIT');
+            return cached;
+        }
+
+        console.log('Cache MISS - querying DB');
         const appointments = await this.appointmentModel.find({ doctor: doctorID })
             .populate({
                 path: 'doctor',
@@ -137,6 +149,9 @@ export class AppointmentService {
             throw new NotFoundException('No appointments found for this doctor');
         }
 
+        console.log('Setting cache...');
+        await this.cacheService.setCache(cacheKey, appointments, 3600 * 1000); // Cache for 1 hour
+
         return appointments;
     }
 
@@ -147,6 +162,16 @@ export class AppointmentService {
             patient = await this.doctorModel.findById(patientID);
         }
 
+        const cacheKey = 'all_patient_appointments_' + patientID;
+        console.log('Trying to get patient appointments from cache...');
+
+        const cached = await this.cacheService.getCache(cacheKey);
+        if (cached) {
+            console.log('Cache patient appointments HIT');
+            return cached;
+        }
+
+        console.log('Cache MISS - querying DB');
         const appointments = await this.appointmentModel.find({ patient: patientID })
             .populate({ path: 'doctor', select: 'name avatarURL' })
             .populate({ path: 'patient', select: 'name' });
@@ -154,6 +179,10 @@ export class AppointmentService {
         if (!appointments) {
             throw new NotFoundException('No appointments found for this patient');
         }
+
+        console.log('Setting cache...');
+        await this.cacheService.setCache(cacheKey, appointments, 3600 * 1000); // Cache for 1 hour
+
         return appointments;
     }
 

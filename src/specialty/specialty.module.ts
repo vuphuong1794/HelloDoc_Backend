@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Specialty, SpecialtySchema } from 'src/schemas/specialty.schema';
 import { Doctor, DoctorSchema } from 'src/schemas/doctor.schema';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { CacheService } from 'src/cache.service';
 
 @Module({
   imports: [
@@ -14,6 +15,6 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
     ]),
   ],
   controllers: [SpecialtyController],
-  providers: [SpecialtyService, CloudinaryService],
+  providers: [SpecialtyService, CloudinaryService, CacheService],
 })
 export class SpecialtyModule { }

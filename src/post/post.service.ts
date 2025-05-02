@@ -98,6 +98,16 @@ export class PostService {
     async getById(ownerId: string): Promise<Post[]> {
         await this.findOwnerById(ownerId);  // Đảm bảo owner tồn tại
 
+        const cacheKey = `posts_by_owner_${ownerId}`;
+        console.log('Trying to get user posts from cache...');
+
+        const cached = await this.cacheService.getCache(cacheKey);
+        if (cached) {
+            console.log('Cache HIT');
+            return cached;
+        }
+
+        console.log('Cache MISS - querying DB');
         const posts = await this.postModel
             .find({ user: ownerId })
             .populate({
@@ -106,6 +116,8 @@ export class PostService {
             })
             .exec();
 
+        console.log('Setting cache...');
+        await this.cacheService.setCache(cacheKey, posts, 3600 * 1000);
         return posts;
     }
 

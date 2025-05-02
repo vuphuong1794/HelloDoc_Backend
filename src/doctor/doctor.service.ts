@@ -396,10 +396,23 @@ export class DoctorService {
       throw new BadRequestException('ID không hợp lệ');
     }
 
+    const cacheKey = `doctor_${id}`;
+    console.log('Trying to get doctor by id from cache...');
+
+    const cached = await this.cacheService.getCache(cacheKey);
+    if (cached) {
+      console.log('Cache HIT');
+      return cached;
+    }
+
+    console.log('Cache MISS - querying DB');
     const doctor = await this.DoctorModel.findById(id).populate('specialty');
     if (!doctor) {
       throw new NotFoundException('Không tìm thấy bác sĩ');
     }
+
+    console.log('Setting cache...');
+    await this.cacheService.setCache(cacheKey, doctor, 3600 * 1000);
     return doctor;
   }
 
