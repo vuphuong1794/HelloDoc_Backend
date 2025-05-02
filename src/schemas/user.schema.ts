@@ -49,6 +49,9 @@ export class User extends Document {
 
     @Prop()
     avatarURL: string; // Ảnh đại diện
+
+    @Prop()
+    fcmToken: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

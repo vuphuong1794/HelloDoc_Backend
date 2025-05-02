@@ -85,6 +85,9 @@ export class Doctor extends Document {
 
   @Prop()
   frontCccdUrl?: string;
+  
+  @Prop()
+  fcmToken: string;
 }
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);
