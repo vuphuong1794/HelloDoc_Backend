@@ -177,4 +177,12 @@ export class AppointmentService {
         }
         return { message: 'Appointment updated successfully', appointment };
     }
+
+    async deleteAppointment(id: string) {
+        const appointment = await this.appointmentModel.findByIdAndDelete(id);
+        if (!appointment) {
+            throw new NotFoundException('Appointment not found');
+        }
+        return { message: 'Appointment deleted successfully' };
+    }
 }

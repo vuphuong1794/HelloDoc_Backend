@@ -9,7 +9,8 @@ import {
   BadRequestException,
   UseGuards,
   Query,
-  Put
+  Put,
+  Delete
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
@@ -91,5 +92,10 @@ export class AppointmentController {
     @Body() updateData: Partial<BookAppointmentDto>
   ) {
     return await this.appointmentService.updateAppointment(id, updateData);
+  }
+
+  @Delete(':id')
+  async deleteAppointment(@Param('id') id: string) {
+    return await this.appointmentService.deleteAppointment(id);
   }
 }
