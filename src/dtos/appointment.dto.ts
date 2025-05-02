@@ -12,6 +12,10 @@ export class BookAppointmentDto {
 
     @IsNotEmpty()
     @IsString()
+    patientModel: string;
+
+    @IsNotEmpty()
+    @IsString()
     date: string; // Định dạng chuẩn ISO 8601 (YYYY-MM-DD)
 
     @IsNotEmpty()
