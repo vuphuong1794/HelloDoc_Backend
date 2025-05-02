@@ -5,6 +5,7 @@ import { BookAppointmentDto } from 'src/dtos/appointment.dto';
 import { Appointment, AppointmentStatus } from 'src/schemas/Appointment.schema';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
+import * as admin from 'firebase-admin';
 
 @Injectable()
 export class AppointmentService {
@@ -47,11 +48,26 @@ export class AppointmentService {
 
         await newAppointment.save();
 
+        await this.notifyDoctor(doctorID, "Bạn có lịch hẹn mới!");
+
         return {
             message: 'Appointment booked successfully',
             appointment: newAppointment,
         };
     }
+
+    async notifyDoctor(doctorId: string, message: string) {
+        const doctor = await this.doctorModel.findById(doctorId);
+        if (doctor?.fcmToken) {
+          await admin.messaging().send({
+            token: doctor.fcmToken,
+            notification: {
+              title: 'Thông báo lịch hẹn mới',
+              body: message,
+            },
+          });
+        }
+      }
 
     // 📌 Hủy lịch hẹn
     async cancelAppointment(id: string) {

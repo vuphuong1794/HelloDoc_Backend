@@ -24,6 +24,7 @@ import { ReportModule } from './report/report.module';
 import { PostFavoriteModule } from './post-favorite/post-favorite.module';
 import { PostCommentModule } from './post-comment/post-comment.module';
 import { NotificationModule } from './notification/notification.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { NotificationModule } from './notification/notification.module';
     PostFavoriteModule,
     PostCommentModule,
     NotificationModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService, CacheService],
