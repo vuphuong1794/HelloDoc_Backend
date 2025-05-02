@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ReportService } from './report.service';
 
 @Controller('report')
@@ -36,6 +36,11 @@ export class ReportController {
     @Body() body: { responseContent: string; responseTime: string }
   ) {
     return this.reportService.updateResponse(id, body.responseContent, body.responseTime);
+  }
+
+  @Delete(':id')
+  async deleteReport(@Param('id') id: string) {
+    return this.reportService.deleteReport(id);
   }
 
 }

@@ -50,4 +50,10 @@ export class ReportService {
         return report.save();
     }
 
+    async deleteReport(id: string) {
+        const report = await this.reportModel.findByIdAndDelete(id);
+        if (!report) throw new NotFoundException('Report not found');
+        return { message: 'Deleted successfully' };
+    }
+
 }
