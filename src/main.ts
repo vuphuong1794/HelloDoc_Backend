@@ -3,11 +3,12 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import * as admin from 'firebase-admin';
+import * as path from 'path';
 
 async function bootstrap() {
   dotenv.config();
 
-  const serviceAccount = require('./firebase-service-account.json');
+  const serviceAccount = require(path.join(__dirname, '..', 'firebase-service-account.json'));
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
