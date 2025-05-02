@@ -34,7 +34,7 @@ export class ReportService {
             .sort({ createdAt: -1 });
     }
 
-    async updateStatus(id: string, status: 'pending' | 'closed') {
+    async updateStatus(id: string, status: 'opened' | 'closed') {
         const report = await this.reportModel.findById(id);
         if (!report) throw new NotFoundException('Report not found');
         report.status = status;

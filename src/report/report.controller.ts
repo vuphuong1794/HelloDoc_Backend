@@ -25,7 +25,7 @@ export class ReportController {
   @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,
-    @Body('status') status: 'pending' | 'closed',
+    @Body('status') status: 'opened' | 'closed',
   ) {
     return this.reportService.updateStatus(id, status);
   }
