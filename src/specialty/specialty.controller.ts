@@ -3,12 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UploadedFile,
   UseInterceptors,
-  UploadedFiles,
+  Put,
 } from '@nestjs/common';
 import { SpecialtyService } from './specialty.service';
 import { CreateSpecialtyDto } from './dto/create-specialty.dto';
@@ -24,7 +23,6 @@ export class SpecialtyController {
     return this.specialtyService.getSpecialties();
   }
 
-
   @Post('create')
   @UseInterceptors(FileInterceptor('icon')) // 'icon' là tên field form-data
   async createSpecialty(
@@ -38,21 +36,22 @@ export class SpecialtyController {
     return this.specialtyService.create(createSpecialtyDto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.specialtyService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
+  @Put(':id')
+  @UseInterceptors(FileInterceptor('icon')) // 'icon' là tên field form-data
+  async updateSpecialty(
     @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
     @Body() updateSpecialtyDto: UpdateSpecialtyDto,
   ) {
-    return this.specialtyService.update(+id, updateSpecialtyDto);
+    if (file) {
+      updateSpecialtyDto.image = file;
+    }
+
+    return this.specialtyService.update(id, updateSpecialtyDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.specialtyService.remove(+id);
+    return this.specialtyService.remove(id);
   }
 }

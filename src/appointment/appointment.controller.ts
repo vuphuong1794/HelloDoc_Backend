@@ -8,7 +8,9 @@ import {
   NotFoundException,
   BadRequestException,
   UseGuards,
-  Query
+  Query,
+  Put,
+  Delete
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
@@ -82,5 +84,18 @@ export class AppointmentController {
     @Query('status') status: string
   ) {
     return await this.appointmentService.getAppointmentsByStatus(patientID, status);
+  }
+
+  @Put(':id')
+  async updateAppointment(
+    @Param('id') id: string,
+    @Body() updateData: Partial<BookAppointmentDto>
+  ) {
+    return await this.appointmentService.updateAppointment(id, updateData);
+  }
+
+  @Delete(':id')
+  async deleteAppointment(@Param('id') id: string) {
+    return await this.appointmentService.deleteAppointment(id);
   }
 }

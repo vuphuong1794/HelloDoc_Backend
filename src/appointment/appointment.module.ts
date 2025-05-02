@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Appointment, AppointmentSchema } from 'src/schemas/Appointment.schema';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { Doctor, DoctorSchema } from 'src/schemas/doctor.schema';
+import { CacheService } from 'src/cache.service';
 
 @Module({
   imports: [
@@ -15,6 +16,6 @@ import { Doctor, DoctorSchema } from 'src/schemas/doctor.schema';
     ]),
   ],
   controllers: [AppointmentController],
-  providers: [AppointmentService],
+  providers: [AppointmentService, CacheService],
 })
 export class AppointmentModule { }

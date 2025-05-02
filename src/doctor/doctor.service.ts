@@ -31,11 +31,11 @@ export class DoctorService {
 
   async getDoctors() {
     const cacheKey = 'all_doctors';
-    console.log('Trying to get from cache...');
+    console.log('Trying to get doctors from cache...');
 
     const cached = await this.cacheService.getCache(cacheKey);
     if (cached) {
-      console.log('Cache HIT');
+      console.log('Cache doctor HIT');
       return cached;
     }
 
@@ -247,84 +247,82 @@ export class DoctorService {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('Người dùng không tồn tại.');
 
-    const avatarURL = user.avatarURL;
-
     // Kiểm tra nếu đã đăng ký trước đó
     const existing = await this.pendingDoctorModel.findOne({ userId });
     if (existing) {
       throw new BadRequestException('Bạn đã gửi yêu cầu trở thành bác sĩ trước đó.');
-    }
+    } else {
 
-    // Danh sách các trường hợp lệ từ form data
-    const allowedFields = [
-      'CCCD',
-      'certificates',
-      'experience',
-      'license',
-      'specialty',
-      'faceUrl',
-      'avatarURL',
-      'licenseUrl',
-      'frontCccdUrl',
-      'backCccdUrl',
-    ];
+      // Danh sách các trường hợp lệ từ form data
+      const allowedFields = [
+        'CCCD',
+        'certificates',
+        'experience',
+        'license',
+        'specialty',
+        'faceUrl',
+        'avatarURL',
+        'licenseUrl',
+        'frontCccdUrl',
+        'backCccdUrl',
+      ];
 
-    // Lọc dữ liệu hợp lệ
-    const filteredApplyData = {};
-    Object.keys(applyData).forEach((key) => {
-      if (allowedFields.includes(key)) {
-        filteredApplyData[key] = applyData[key];
+      // Lọc dữ liệu hợp lệ
+      const filteredApplyData = {};
+      Object.keys(applyData).forEach((key) => {
+        if (allowedFields.includes(key)) {
+          filteredApplyData[key] = applyData[key];
+        }
+      });
+
+      if (filteredApplyData['specialty']) {
+        const specialtyId = filteredApplyData['specialty'];
+        const specialtyExists = await this.SpecialtyModel.findById(specialtyId);
+        if (!specialtyExists) {
+          throw new BadRequestException('Chuyên khoa không tìm thấy.');
+        }
       }
-    });
 
-    if (filteredApplyData['specialty']) {
-      const specialtyId = filteredApplyData['specialty'];
-      const specialtyExists = await this.SpecialtyModel.findById(specialtyId);
-      if (!specialtyExists) {
-        throw new BadRequestException('Chuyên khoa không tìm thấy.');
+      if (applyData.faceUrl) {
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.faceUrl, `PendingDoctors/${userId}/Face`);
+        filteredApplyData['faceUrl'] = uploadResult.secure_url;
       }
+
+      if (applyData.avatarURL) {
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.avatarURL, `PendingDoctors/${userId}/Avatar`);
+        filteredApplyData['avatarURL'] = uploadResult.secure_url;
+      }
+
+      if (applyData.licenseUrl) {
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.licenseUrl, `PendingDoctors/${userId}/License`);
+        filteredApplyData['licenseUrl'] = uploadResult.secure_url;
+      }
+
+      if (applyData.frontCccdUrl) {
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.frontCccdUrl, `PendingDoctors/${userId}/Info`);
+        filteredApplyData['frontCccdUrl'] = uploadResult.secure_url;
+      }
+
+      if (applyData.backCccdUrl) {
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.backCccdUrl, `PendingDoctors/${userId}/Info`);
+        filteredApplyData['backCccdUrl'] = uploadResult.secure_url;
+      }
+
+      const pendingDoctor = new this.pendingDoctorModel({
+        userId,
+        ...filteredApplyData,
+      });
+
+      const savedPendingDoctor = await pendingDoctor.save();
+
+      if (!savedPendingDoctor) {
+        throw new BadRequestException('Đăng ký thất bại!');
+      }
+
+      return {
+        message: 'Đăng ký bác sĩ thành công!'
+      };
     }
-
-    if (applyData.faceUrl) {
-      const uploadResult = await this.cloudinaryService.uploadFile(applyData.faceUrl, `Doctors/${userId}/Face`);
-      filteredApplyData['faceUrl'] = uploadResult.secure_url;
-    }
-
-    if (applyData.avatarURL) {
-      const uploadResult = await this.cloudinaryService.uploadFile(applyData.avatarURL, `Doctors/${userId}/Avatar`);
-      filteredApplyData['avatarURL'] = uploadResult.secure_url;
-    }
-
-    if (applyData.licenseUrl) {
-      const uploadResult = await this.cloudinaryService.uploadFile(applyData.licenseUrl, `Doctors/${userId}/License`);
-      filteredApplyData['licenseUrl'] = uploadResult.secure_url;
-    }
-
-    if (applyData.frontCccdUrl) {
-      const uploadResult = await this.cloudinaryService.uploadFile(applyData.frontCccdUrl, `Doctors/${userId}/Info`);
-      filteredApplyData['frontCccdUrl'] = uploadResult.secure_url;
-    }
-
-    if (applyData.backCccdUrl) {
-      const uploadResult = await this.cloudinaryService.uploadFile(applyData.backCccdUrl, `Doctors/${userId}/Info`);
-      filteredApplyData['backCccdUrl'] = uploadResult.secure_url;
-    }
-
-    const pendingDoctor = new this.pendingDoctorModel({
-      userId,
-      ...filteredApplyData,
-    });
-
-    const savedPendingDoctor = await pendingDoctor.save();
-
-    if (!savedPendingDoctor) {
-      throw new BadRequestException('Đăng ký thất bại!');
-    }
-
-    return {
-      message: 'Đăng ký bác sĩ thành công!',
-      savedPendingDoctor,
-    };
   }
 
   // Lấy danh sách bác sĩ chưa được xác thực
@@ -398,10 +396,23 @@ export class DoctorService {
       throw new BadRequestException('ID không hợp lệ');
     }
 
+    const cacheKey = `doctor_${id}`;
+    console.log('Trying to get doctor by id from cache...');
+
+    const cached = await this.cacheService.getCache(cacheKey);
+    if (cached) {
+      console.log('Cache HIT');
+      return cached;
+    }
+
+    console.log('Cache MISS - querying DB');
     const doctor = await this.DoctorModel.findById(id).populate('specialty');
     if (!doctor) {
       throw new NotFoundException('Không tìm thấy bác sĩ');
     }
+
+    console.log('Setting cache...');
+    await this.cacheService.setCache(cacheKey, doctor, 3600 * 1000);
     return doctor;
   }
 
