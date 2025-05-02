@@ -284,27 +284,27 @@ export class DoctorService {
       }
 
       if (applyData.faceUrl) {
-        const uploadResult = await this.cloudinaryService.uploadFile(applyData.faceUrl, `Doctors/${userId}/Face`);
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.faceUrl, `PendingDoctors/${userId}/Face`);
         filteredApplyData['faceUrl'] = uploadResult.secure_url;
       }
 
       if (applyData.avatarURL) {
-        const uploadResult = await this.cloudinaryService.uploadFile(applyData.avatarURL, `Doctors/${userId}/Avatar`);
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.avatarURL, `PendingDoctors/${userId}/Avatar`);
         filteredApplyData['avatarURL'] = uploadResult.secure_url;
       }
 
       if (applyData.licenseUrl) {
-        const uploadResult = await this.cloudinaryService.uploadFile(applyData.licenseUrl, `Doctors/${userId}/License`);
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.licenseUrl, `PendingDoctors/${userId}/License`);
         filteredApplyData['licenseUrl'] = uploadResult.secure_url;
       }
 
       if (applyData.frontCccdUrl) {
-        const uploadResult = await this.cloudinaryService.uploadFile(applyData.frontCccdUrl, `Doctors/${userId}/Info`);
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.frontCccdUrl, `PendingDoctors/${userId}/Info`);
         filteredApplyData['frontCccdUrl'] = uploadResult.secure_url;
       }
 
       if (applyData.backCccdUrl) {
-        const uploadResult = await this.cloudinaryService.uploadFile(applyData.backCccdUrl, `Doctors/${userId}/Info`);
+        const uploadResult = await this.cloudinaryService.uploadFile(applyData.backCccdUrl, `PendingDoctors/${userId}/Info`);
         filteredApplyData['backCccdUrl'] = uploadResult.secure_url;
       }
 
