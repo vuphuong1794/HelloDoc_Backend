@@ -10,6 +10,7 @@ export class UserService {
   ) {}
   
   async updateFcmToken(userId: string, token: string) {
+    console.log(token);
     return this.UserModel.findByIdAndUpdate(
       userId,
       { fcmToken: token },
