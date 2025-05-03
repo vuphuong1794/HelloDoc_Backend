@@ -194,6 +194,7 @@ export class AppointmentService {
         return appointments;
     }
 
+    // 📌 Lấy danh sách lịch hẹn theo status
     async getAppointmentsByStatus(patientID: string, status: string): Promise<Appointment[]> {
         const appointments = await this.appointmentModel.find({
             patient: patientID,
