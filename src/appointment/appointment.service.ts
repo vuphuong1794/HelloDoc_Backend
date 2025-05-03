@@ -118,6 +118,27 @@ export class AppointmentService {
         }
     }
 
+    // 📌 Gửi thông báo đến bệnh nhân
+    async notifyPatient(patientId: string, message: string) {
+        try {
+            const patient = await this.userModel.findById(patientId);
+            if (patient?.fcmToken) {
+                await admin.messaging().send({
+                    token: patient.fcmToken,
+                    notification: {
+                        title: 'Thông báo lịch hẹn mới',
+                        body: message,
+                    },
+                });
+                console.log(`Đã gửi thông báo đến bệnh nhân ${patientId}`);
+            } else {
+                console.warn(`Bệnh nhân ${patientId} không có fcmToken`);
+            }
+        } catch (error) {
+            console.error(`Lỗi khi gửi thông báo đến bệnh nhân ${patientId}:`, error);
+        }
+    }
+
     // 📌 Hủy lịch hẹn
     async cancelAppointment(id: string) {
         const appointment = await this.appointmentModel.findById(id);
@@ -136,7 +157,8 @@ export class AppointmentService {
         await this.cacheService.deleteCache(patientCacheKey);
         await this.cacheService.deleteCache(doctorCacheKey);
 
-        await this.notifyDoctor(doctorID, "Bệnh nhân hủy lịch hẹn!");
+        //await this.notifyDoctor(doctorID, "Bệnh nhân hủy lịch hẹn!");
+        await this.notifyPatient(patientID, "Bạn đã hủy lịch hẹn!");
         await appointment.save();
 
         return { message: 'Appointment cancelled successfully' };
