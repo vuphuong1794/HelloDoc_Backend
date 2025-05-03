@@ -5,7 +5,7 @@ import { UpdatePostCommentDto } from './dto/update-post-comment.dto';
 
 @Controller('post')
 export class PostCommentController {
-  constructor(private readonly postCommentService: PostCommentService) {}
+  constructor(private readonly postCommentService: PostCommentService) { }
 
   @Post(':postId/comment/create')
   async createCommentByPostId(
@@ -39,5 +39,15 @@ export class PostCommentController {
   // remove(@Param('id') id: string) {
   //   return this.postCommentService.remove(+id);
   // }
+
+  @Patch(':commentId/comment/update')
+  updateComment(@Param('commentId') commentId: string, @Body() updatePostCommentDto: UpdatePostCommentDto) {
+    return this.postCommentService.update(commentId, updatePostCommentDto);
+  }
+
+  @Delete(':commentId/comment/delete')
+  removeComment(@Param('commentId') commentId: string) {
+    return this.postCommentService.remove(commentId);
+  }
 
 }
