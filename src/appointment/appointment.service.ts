@@ -230,8 +230,18 @@ export class AppointmentService {
         if (!appointment) {
             throw new NotFoundException('Appointment not found');
         }
+
+        const patientID = appointment.patient.toString();
+        const doctorID = appointment.doctor.toString();
+
+        const patientCacheKey = 'all_patient_appointments_' + patientID;
+        const doctorCacheKey = 'all_doctor_appointments_' + doctorID;
+        await this.cacheService.deleteCache(patientCacheKey);
+        await this.cacheService.deleteCache(doctorCacheKey);
+
         return { message: 'Appointment updated successfully', appointment };
     }
+
 
     async deleteAppointment(id: string) {
         const appointment = await this.appointmentModel.findById(id);
