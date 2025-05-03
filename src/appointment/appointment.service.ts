@@ -33,6 +33,10 @@ export class AppointmentService {
             throw new BadRequestException('This time slot is already booked');
         }
 
+        //xoa cache lịch hẹn của benh nhan
+        const patientCacheKey = 'all_patient_appointments_' + patientID;
+        await this.cacheService.deleteCache(patientCacheKey);
+
         // Tạo cuộc hẹn mới
         const newAppointment = new this.appointmentModel({
             doctor: doctorID,
@@ -51,6 +55,10 @@ export class AppointmentService {
         await newAppointment.save();
 
         await this.notifyDoctor(doctorID, "Bạn có lịch hẹn mới!");
+
+        // 🚩 Xóa cache cũ của bác sĩ
+        const doctorCacheKey = 'all_doctor_appointments_' + doctorID;
+        await this.cacheService.deleteCache(doctorCacheKey);
 
         return {
             message: 'Appointment booked successfully',
@@ -87,7 +95,16 @@ export class AppointmentService {
             throw new NotFoundException('Appointment not found');
         }
 
+        const patientID = appointment.patient.toString();
+        const doctorID = appointment.doctor.toString();
+
         appointment.status = AppointmentStatus.CANCELLED;
+
+        // Xóa cache bệnh nhân & bác sĩ
+        const patientCacheKey = 'all_patient_appointments_' + patientID;
+        const doctorCacheKey = 'all_doctor_appointments_' + doctorID;
+        await this.cacheService.deleteCache(patientCacheKey);
+        await this.cacheService.deleteCache(doctorCacheKey);
         await appointment.save();
 
         return { message: 'Appointment cancelled successfully' };
@@ -217,10 +234,23 @@ export class AppointmentService {
     }
 
     async deleteAppointment(id: string) {
-        const appointment = await this.appointmentModel.findByIdAndDelete(id);
+        const appointment = await this.appointmentModel.findById(id);
         if (!appointment) {
             throw new NotFoundException('Appointment not found');
         }
+
+        const patientID = appointment.patient.toString();
+        const doctorID = appointment.doctor.toString();
+
+        // Xóa lịch hẹn
+        await this.appointmentModel.findByIdAndDelete(id);
+
+        // Xóa cache bệnh nhân & bác sĩ
+        const patientCacheKey = 'all_patient_appointments_' + patientID;
+        const doctorCacheKey = 'all_doctor_appointments_' + doctorID;
+        await this.cacheService.deleteCache(patientCacheKey);
+        await this.cacheService.deleteCache(doctorCacheKey);
+
         return { message: 'Appointment deleted successfully' };
     }
 }
