@@ -3,6 +3,8 @@ import { Type } from 'class-transformer';
 import mongoose, { Document, Types } from 'mongoose';
 import { Specialty } from './specialty.schema';
 import { IsUrl } from 'class-validator';
+import { ServiceOutput } from './service.schema';
+import { IsEmail, IsNotEmpty, IsString, IsArray, ValidateNested, IsNumber } from 'class-validator';
 
 @Schema({ timestamps: true })
 export class Doctor extends Document {
@@ -24,8 +26,8 @@ export class Doctor extends Document {
   @Prop({ default: "" })
   certificates: string;
 
-  @Prop({ type: [{ name: String, price: Number }], default: [] })
-  services: { name: string; price: number }[];
+  @Prop({ type: [ServiceOutput], default: [] })
+  services: ServiceOutput[];  
 
   @Prop({ default: 0 })
   patientsCount: number; // Số lượng bệnh nhân đã khám
@@ -62,9 +64,22 @@ export class Doctor extends Document {
   @Prop()
   price: number; // Giá khám
 
-  @Prop()
-  workingHours: { day: string; slots: string[] }[]; // Lịch khám
-
+  @Prop({
+    type: [
+      {
+        dayOfWeek: Number,
+        hour: Number,
+        minute: Number
+      }
+    ],
+    default: []
+  })
+  workingHours: {
+    dayOfWeek: number;
+    hour: number;
+    minute: number;
+  }[];
+  
   @Prop()
   minAge: number; // Độ tuổi tối thiểu để khám
 
@@ -89,5 +104,6 @@ export class Doctor extends Document {
   @Prop()
   fcmToken: string;
 }
+
 
 export const DoctorSchema = SchemaFactory.createForClass(Doctor);
