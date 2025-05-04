@@ -69,6 +69,7 @@ export class PostService {
         console.log('Cache MISS - querying DB');
         const data = await this.postModel
             .find()
+            .sort({ createdAt: -1 })
             .populate({
                 path: 'user',
                 select: 'name imageUrl avatarURL', // Chỉ cần viết 1 lần, nếu sau này User và Doctor khác nhau thì chỉnh chỗ này
@@ -110,6 +111,7 @@ export class PostService {
         console.log('Cache MISS - querying DB');
         const posts = await this.postModel
             .find({ user: ownerId })
+            .sort({ createdAt: -1 })
             .populate({
                 path: 'user',
                 select: 'name imageUrl avatarURL',
