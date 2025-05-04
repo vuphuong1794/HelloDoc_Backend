@@ -49,6 +49,8 @@ export class AuthService {
       password: hashedPassword,
       name,
       phone,
+      avatarURL: 'https://www.svgrepo.com/show/452030/avatar-default.svg', // default avatar URL
+      address: 'Chưa có địa chỉ',
     });
     return {
       message: 'User created successfully',
