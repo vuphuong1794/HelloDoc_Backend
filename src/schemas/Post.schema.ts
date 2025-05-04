@@ -18,14 +18,6 @@ export class Post {
     @Prop({ type: [String], default: [] })
     media?: string[];
 
-    @IsOptional()
-    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PostComment' }] })
-    postComment: PostComment[];
-
-    @IsOptional()
-    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PostFavorite' }] })
-    postFavorite: PostFavorite[];
-
     // @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] })
     // likes: mongoose.Schema.Types.ObjectId[];
 
