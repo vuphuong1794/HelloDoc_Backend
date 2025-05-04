@@ -26,4 +26,14 @@ export class PostCommentController {
   }
 
 
+  @Patch(':commentId/comment/update')
+  updateComment(@Param('commentId') commentId: string, @Body() updatePostCommentDto: UpdatePostCommentDto) {
+    return this.postCommentService.update(commentId, updatePostCommentDto);
+  }
+
+  @Delete(':commentId/comment/delete')
+  removeComment(@Param('commentId') commentId: string) {
+    return this.postCommentService.remove(commentId);
+  }
+
 }
