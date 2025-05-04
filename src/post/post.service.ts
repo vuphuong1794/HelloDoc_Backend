@@ -46,6 +46,8 @@ export class PostService {
             }
         }
 
+        await this.deleteCache(createPostDto.userId);
+
         const createdPost = new this.postModel({
             user: createPostDto.userId,
             userModel: createPostDto.userModel,
@@ -152,5 +154,10 @@ export class PostService {
             throw new NotFoundException(`Post with id ${id} not found`);
         }
         return { message: `Post with id ${id} deleted successfully` };
+    }
+
+    async deleteCache(ownerId: string) {
+        const cacheKey = `posts_by_owner_${ownerId}`;
+        await this.cacheService.deleteCache(cacheKey);
     }
 }
