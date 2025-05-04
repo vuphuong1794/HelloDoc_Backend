@@ -60,4 +60,12 @@ export class PostCommentService {
     }
   }
 
+  async update(id: string, updatePostCommentDto: UpdatePostCommentDto) {
+    return this.postCommentModel.findByIdAndUpdate(id, updatePostCommentDto, { new: true });
+  }
+
+  async remove(id: string) {
+    return this.postCommentModel.findByIdAndDelete(id);
+  }
+
 }

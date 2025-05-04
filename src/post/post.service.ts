@@ -46,12 +46,17 @@ export class PostService {
             }
         }
 
+        await this.deleteCache(createPostDto.userId);
+
         const createdPost = new this.postModel({
             user: createPostDto.userId,
             userModel: createPostDto.userModel,
             content: createPostDto.content,
             media: uploadedMediaUrls, // lưu các link Cloudinary vào đây
         });
+
+        //xóa cache posts của owner
+        await this.deleteCache(createPostDto.userId);
 
         return createdPost.save();
     }
@@ -69,6 +74,7 @@ export class PostService {
         console.log('Cache MISS - querying DB');
         const data = await this.postModel
             .find()
+            .sort({ createdAt: -1 })
             .populate({
                 path: 'user',
                 select: 'name imageUrl avatarURL', // Chỉ cần viết 1 lần, nếu sau này User và Doctor khác nhau thì chỉnh chỗ này
@@ -95,6 +101,12 @@ export class PostService {
         return post;
     }
 
+    //xóa cache posts của owner 
+    async deleteCache(ownerId: string) {
+        const cacheKey = `posts_by_owner_${ownerId}`;
+        await this.cacheService.deleteCache(cacheKey);
+    }
+
     async getById(ownerId: string): Promise<Post[]> {
         await this.findOwnerById(ownerId);  // Đảm bảo owner tồn tại
 
@@ -110,6 +122,7 @@ export class PostService {
         console.log('Cache MISS - querying DB');
         const posts = await this.postModel
             .find({ user: ownerId })
+            .sort({ createdAt: -1 })
             .populate({
                 path: 'user',
                 select: 'name imageUrl avatarURL',
