@@ -20,25 +20,11 @@ export class PostCommentController {
     return this.postCommentService.getCommentsByPostId(postId);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.postCommentService.findAll();
-  // }
+  @Get('user/:userId/comment/get')
+  async getCommentByUserId(@Param('userId') userId: string) {
+    return this.postCommentService.getCommentByUserId(userId);
+  }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.postCommentService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updatePostCommentDto: UpdatePostCommentDto) {
-  //   return this.postCommentService.update(+id, updatePostCommentDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.postCommentService.remove(+id);
-  // }
 
   @Patch(':commentId/comment/update')
   updateComment(@Param('commentId') commentId: string, @Body() updatePostCommentDto: UpdatePostCommentDto) {

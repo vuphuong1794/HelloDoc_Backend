@@ -60,6 +60,7 @@ export class DoctorController {
     { name: 'frontCccd', maxCount: 1 },
     { name: 'backCccd', maxCount: 1 },
   ]))
+  
   @Put(':id/update-profile')
   async updateProfile(
     @Param('id') id: string,

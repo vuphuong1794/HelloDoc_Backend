@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CacheService } from 'src/cache.service';
 import { BookAppointmentDto } from 'src/dtos/appointment.dto';
-import { Appointment, AppointmentStatus } from 'src/schemas/Appointment.schema';
+import { Appointment, AppointmentStatus, ExaminationMethod } from 'src/schemas/Appointment.schema';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 import * as admin from 'firebase-admin';
@@ -21,50 +21,78 @@ export class AppointmentService {
     async bookAppointment(bookData: BookAppointmentDto) {
         const { doctorID, patientID, patientModel, date, time, status, examinationMethod, reason, notes, totalCost, location } = bookData;
 
-        // Kiểm tra xem bác sĩ có tồn tại không
         const doctor = await this.doctorModel.findById(doctorID);
         if (!doctor) {
             throw new NotFoundException('Doctor not found');
         }
 
-        // Kiểm tra xem cuộc hẹn đã tồn tại chưa (tránh đặt trùng lịch)
-        const existingAppointment = await this.appointmentModel.findOne({ doctor: doctorID, date, time });
-        if (existingAppointment) {
+        // Chặn nếu đã có lịch PENDING
+        const pendingAppointment = await this.appointmentModel.findOne({
+            doctor: doctorID,
+            date,
+            time,
+            status: AppointmentStatus.PENDING,
+        });
+
+        if (pendingAppointment) {
             throw new BadRequestException('This time slot is already booked');
         }
 
-        //xoa cache lịch hẹn của benh nhan
-        const patientCacheKey = 'all_patient_appointments_' + patientID;
-        await this.cacheService.deleteCache(patientCacheKey);
+        // Xóa cache lịch hẹn bệnh nhân
+        this.clearPatientAppointmentCache(patientID);
 
-        // Tạo cuộc hẹn mới
-        const newAppointment = new this.appointmentModel({
+        // Tìm lịch đã hủy để tái sử dụng
+        const cancelledAppointment = await this.appointmentModel.findOne({
             doctor: doctorID,
-            patientModel,
             patient: patientID,
             date,
             time,
-            status: status || AppointmentStatus.PENDING,
-            examinationMethod: examinationMethod || 'at_clinic',
-            reason,
-            notes,
-            totalCost,
-            location
+            status: AppointmentStatus.CANCELLED,
         });
 
-        await newAppointment.save();
+        let appointment;
 
+        if (cancelledAppointment) {
+            // Cập nhật lại lịch đã huỷ
+            cancelledAppointment.status = AppointmentStatus.PENDING;
+            cancelledAppointment.examinationMethod = examinationMethod as ExaminationMethod || 'at_clinic';
+            cancelledAppointment.reason = reason;
+            cancelledAppointment.notes = notes;
+            cancelledAppointment.totalCost = totalCost;
+            cancelledAppointment.location = location;
+
+            await cancelledAppointment.save();
+            appointment = cancelledAppointment;
+        } else {
+            // Tạo cuộc hẹn mới
+            const newAppointment = new this.appointmentModel({
+                doctor: doctorID,
+                patientModel,
+                patient: patientID,
+                date,
+                time,
+                status: status || AppointmentStatus.PENDING,
+                examinationMethod: examinationMethod || 'at_clinic',
+                reason,
+                notes,
+                totalCost,
+                location,
+            });
+
+            await newAppointment.save();
+            appointment = newAppointment;
+        }
+
+        // Thông báo và xóa cache
         await this.notifyDoctor(doctorID, "Bạn có lịch hẹn mới!");
-
-        // 🚩 Xóa cache cũ của bác sĩ
-        const doctorCacheKey = 'all_doctor_appointments_' + doctorID;
-        await this.cacheService.deleteCache(doctorCacheKey);
+        this.clearDoctorAppointmentCache(doctorID);
 
         return {
             message: 'Appointment booked successfully',
-            appointment: newAppointment,
+            appointment,
         };
     }
+
 
     // 📌 Gửi thông báo đến bác sĩ
 
@@ -88,6 +116,39 @@ export class AppointmentService {
         }
     }
 
+    // 📌 Gửi thông báo đến bệnh nhân
+    async notifyPatient(patientId: string, message: string) {
+        try {
+            const patient = await this.userModel.findById(patientId);
+            if (patient?.fcmToken) {
+                await admin.messaging().send({
+                    token: patient.fcmToken,
+                    notification: {
+                        title: 'Thông báo lịch hẹn mới',
+                        body: message,
+                    },
+                });
+                console.log(`Đã gửi thông báo đến bệnh nhân ${patientId}`);
+            } else {
+                console.warn(`Bệnh nhân ${patientId} không có fcmToken`);
+            }
+        } catch (error) {
+            console.error(`Lỗi khi gửi thông báo đến bệnh nhân ${patientId}:`, error);
+        }
+    }
+
+    // hàm hủy cache bác sĩ
+    async clearDoctorAppointmentCache(doctorID: string) {
+        const doctorCacheKey = 'all_doctor_appointments_' + doctorID;
+        await this.cacheService.deleteCache(doctorCacheKey);
+    }
+
+    // hàm hủy cache bệnh nhân
+    async clearPatientAppointmentCache(patientID: string) {
+        const patientCacheKey = 'all_patient_appointments_' + patientID;
+        await this.cacheService.deleteCache(patientCacheKey);
+    }
+
     // 📌 Hủy lịch hẹn
     async cancelAppointment(id: string) {
         const appointment = await this.appointmentModel.findById(id);
@@ -101,10 +162,11 @@ export class AppointmentService {
         appointment.status = AppointmentStatus.CANCELLED;
 
         // Xóa cache bệnh nhân & bác sĩ
-        const patientCacheKey = 'all_patient_appointments_' + patientID;
-        const doctorCacheKey = 'all_doctor_appointments_' + doctorID;
-        await this.cacheService.deleteCache(patientCacheKey);
-        await this.cacheService.deleteCache(doctorCacheKey);
+        await this.clearPatientAppointmentCache(patientID);
+        await this.clearDoctorAppointmentCache(doctorID);
+
+        await this.notifyDoctor(doctorID, "Bệnh nhân hủy lịch hẹn!");
+        await this.notifyPatient(patientID, "Bạn đã hủy lịch hẹn!");
         await appointment.save();
 
         return { message: 'Appointment cancelled successfully' };
@@ -117,7 +179,17 @@ export class AppointmentService {
             throw new NotFoundException('Appointment not found');
         }
 
+        const patientID = appointment.patient.toString();
+        const doctorID = appointment.doctor.toString();
+
+        // Xóa cache bệnh nhân & bác sĩ
+        await this.clearPatientAppointmentCache(patientID);
+        await this.clearDoctorAppointmentCache(doctorID);
+
         appointment.status = AppointmentStatus.DONE;
+
+        await this.notifyDoctor(doctorID, "Lịch hẹn đã hoàn thành!");
+        await this.notifyPatient(patientID, "Lịch hẹn của bạn đã hoàn thành!");
         await appointment.save();
 
         return { message: 'Appointment confirmed done successfully', appointment };

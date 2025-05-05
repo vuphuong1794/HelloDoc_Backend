@@ -5,7 +5,7 @@ import { GetPostFavoriteDto } from './dto/get-post-favorite.dto';
 
 @Controller('post')
 export class PostFavoriteController {
-  constructor(private readonly postFavoriteService: PostFavoriteService) {}
+  constructor(private readonly postFavoriteService: PostFavoriteService) { }
 
   @Get(':postId/favorite/get')
   async getPostFavoritesByPostId(@Param('postId') postId: string, @Query() getPostFavoriteDto: GetPostFavoriteDto) {
@@ -17,20 +17,8 @@ export class PostFavoriteController {
     return this.postFavoriteService.updatePostFavoriteByPostId(postId, createPostFavoriteDto);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.postFavoriteService.findAll();
-  // }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.postFavoriteService.findOne(+id);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('postId') id: string) {
-  //   return this.postFavoriteService.remove(+id);
-  // }
-
-  
+  @Get('user/:userId/favorite/get')
+  async getPostFavoritesByUserId(@Param('userId') userId: string) {
+    return this.postFavoriteService.getPostFavoritesByUserId(userId);
+  }
 }

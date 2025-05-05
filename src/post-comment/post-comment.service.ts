@@ -41,21 +41,24 @@ export class PostCommentService {
     }
   }
 
-  // async findAll() {
-  //   return `This action returns all postComment`;
-  // }
-
-  // async findOne(id: number) {
-  //   return `This action returns a #${id} postComment`;
-  // }
-
-  // async update(id: number, updatePostCommentDto: UpdatePostCommentDto) {
-  //   return `This action updates a #${id} postComment`;
-  // }
-
-  // async remove(id: number) {
-  //   return `This action removes a #${id} postComment`;
-  // }
+  async getCommentByUserId(userId: string) {
+    try {
+      const postComments = await this.postCommentModel.find({ user: userId })
+        .populate({
+          path: 'post',
+          select: 'media content',
+        })
+        .populate({
+          path: 'user',
+          select: 'name avatarURL'
+        })
+        .exec();
+      const validComments = postComments.filter(comment => comment.user !== null);
+      return validComments;
+    } catch (error) {
+      throw new Error('Không thể lấy danh sách bình luận');
+    }
+  }
 
   async update(id: string, updatePostCommentDto: UpdatePostCommentDto) {
     return this.postCommentModel.findByIdAndUpdate(id, updatePostCommentDto, { new: true });

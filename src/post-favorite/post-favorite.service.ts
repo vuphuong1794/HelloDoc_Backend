@@ -8,8 +8,8 @@ import { GetPostFavoriteDto } from './dto/get-post-favorite.dto';
 @Injectable()
 export class PostFavoriteService {
   constructor(
-            @InjectModel(PostFavorite.name) private postFavoriteModel: Model<PostFavorite>,
-        ) { }
+    @InjectModel(PostFavorite.name) private postFavoriteModel: Model<PostFavorite>,
+  ) { }
 
   async getPostFavoritesByPostId(postId: string, getPostFavoriteDto: GetPostFavoriteDto) {
     const postFavorite = await this.postFavoriteModel.findOne({
@@ -54,16 +54,23 @@ export class PostFavoriteService {
     }
   }
 
-  // async findAll() {
-  //   return `This action returns all postFavorite`;
-  // }
-
-  // async findOne(id: number) {
-  //   return `This action returns a #${id} postFavorite`;
-  // }
-
-  // async remove(id: number) {
-  //   return `This action removes a #${id} postFavorite`;
-  // }
+  async getPostFavoritesByUserId(userId: string) {
+    try {
+      const postFavorites = await this.postFavoriteModel.find({ user: userId })
+        .populate({
+          path: 'post',
+          select: 'media content',
+        })
+        .populate({
+          path: 'user',
+          select: 'name avatarURL'
+        })
+        .exec();
+      return postFavorites;
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách bình luận:', error);
+      throw new InternalServerErrorException('Không thể lấy danh sách bình luận');
+    }
+  }
 
 }

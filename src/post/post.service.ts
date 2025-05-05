@@ -46,13 +46,18 @@ export class PostService {
             }
         }
 
+        await this.deleteCache(createPostDto.userId);
+
         const createdPost = new this.postModel({
             user: createPostDto.userId,
             userModel: createPostDto.userModel,
             content: createPostDto.content,
             media: uploadedMediaUrls, // lưu các link Cloudinary vào đây
         });
+
+        //xóa cache posts của owner
         await this.deleteCache(createPostDto.userId);
+
         return createdPost.save();
     }
     async deleteCache(ownerId: string) {
@@ -98,6 +103,12 @@ export class PostService {
             throw new NotFoundException(`Post with id ${id} not found`);
         }
         return post;
+    }
+
+    //xóa cache posts của owner 
+    async deleteCache(ownerId: string) {
+        const cacheKey = `posts_by_owner_${ownerId}`;
+        await this.cacheService.deleteCache(cacheKey);
     }
 
     async getById(ownerId: string): Promise<Post[]> {
