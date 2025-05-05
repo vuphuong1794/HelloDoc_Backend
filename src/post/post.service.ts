@@ -60,10 +60,6 @@ export class PostService {
 
         return createdPost.save();
     }
-    async deleteCache(ownerId: string) {
-        const cacheKey = `posts_by_owner_${ownerId}`;
-        await this.cacheService.deleteCache(cacheKey);
-    }
 
     async getAll(): Promise<Post[]> {
         const cacheKey = 'all_posts';
