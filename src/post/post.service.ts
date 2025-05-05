@@ -73,7 +73,7 @@ export class PostService {
 
         console.log('Cache MISS - querying DB');
         const data = await this.postModel
-            .find()
+            .find({ $or: [{ isHidden: false }, { isHidden: { $exists: false } }] })
             .sort({ createdAt: -1 })
             .populate({
                 path: 'user',
@@ -121,7 +121,13 @@ export class PostService {
 
         console.log('Cache MISS - querying DB');
         const posts = await this.postModel
-            .find({ user: ownerId })
+            .find({
+                user: ownerId,
+                $or: [
+                    { isHidden: false },
+                    { isHidden: { $exists: false } } //để xử lý các bài viết cũ chưa có trường này
+                ]
+            })
             .sort({ createdAt: -1 })
             .populate({
                 path: 'user',
@@ -158,10 +164,15 @@ export class PostService {
     }
 
     async delete(id: string): Promise<{ message: string }> {
-        const result = await this.postModel.findByIdAndDelete(id);
-        if (!result) {
+        const updated = await this.postModel.findByIdAndUpdate(
+            id,
+            { isHidden: true },
+            { new: true }
+        );
+        if (!updated) {
             throw new NotFoundException(`Post with id ${id} not found`);
         }
+        await this.deleteCache(updated.user.toString());
         return { message: `Post with id ${id} deleted successfully` };
     }
 }
