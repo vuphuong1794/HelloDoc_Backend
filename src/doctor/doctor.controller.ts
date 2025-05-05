@@ -12,6 +12,7 @@ import {
   UploadedFile,
   UploadedFiles,
   NotFoundException,
+  Delete,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
@@ -139,6 +140,16 @@ export class DoctorController {
   @Get('pending-doctors')
   async getPendingDoctors() {
     return this.doctorService.getPendingDoctors();
+  }
+
+  @Get('pending-doctor/:id')
+  async getPendingDoctorById(@Param('id') id: string) {
+    return this.doctorService.getPendingDoctorById(id);
+  }
+
+  @Delete('pending-doctor/:id')
+  async deletePendingDoctor(@Param('id') id: string) {
+    return this.doctorService.deletePendingDoctor(id);
   }
 
   @Get('doctors')

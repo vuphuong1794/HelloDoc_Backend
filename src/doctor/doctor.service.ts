@@ -275,6 +275,10 @@ export class DoctorService {
         }
       });
 
+      filteredApplyData['email'] = user.email;
+      filteredApplyData['phone'] = user.phone;
+      filteredApplyData['name'] = user.name;
+
       if (filteredApplyData['specialty']) {
         const specialtyId = filteredApplyData['specialty'];
         const specialtyExists = await this.SpecialtyModel.findById(specialtyId);
@@ -337,7 +341,8 @@ export class DoctorService {
     }
 
     console.log('Cache MISS - querying DB');
-    const data = await this.pendingDoctorModel.find({ verified: false });
+    const data = await this.pendingDoctorModel.find({ verified: false })
+
 
     if (!data) {
       throw new NotFoundException('Không có bác sĩ nào trong danh sách chờ phê duyệt.');
@@ -346,6 +351,32 @@ export class DoctorService {
       await this.cacheService.setCache(cacheKey, data, 30 * 1000);
       return data;
     }
+  }
+
+  // Xóa bác sĩ khỏi danh sách chờ phê duyệt
+  async deletePendingDoctor(userId: string) {
+    const pendingDoctor = await this.pendingDoctorModel.findOne({ userId });
+    if (!pendingDoctor) {
+      throw new NotFoundException('Người dùng không tồn tại trong bảng chờ phê duyệt.');
+    }
+
+    //xoa cache 
+    const cacheKey = 'pending_doctors';
+    await this.cacheService.deleteCache(cacheKey);
+
+    // Xóa khỏi bảng PendingDoctors
+    await this.pendingDoctorModel.deleteOne({ userId });
+
+    return { message: 'Xóa bác sĩ khỏi danh sách chờ phê duyệt thành công!' };
+  }
+
+  // Lấy thông tin bác sĩ từ bảng PendingDoctors
+  async getPendingDoctorById(userId: string) {
+    const pendingDoctor = await this.pendingDoctorModel.findOne({ userId });
+    if (!pendingDoctor) {
+      throw new NotFoundException('Người dùng không tồn tại trong bảng chờ phê duyệt.');
+    }
+    return pendingDoctor;
   }
 
   // Xác thực tài khoản bác sĩ bởi admin
@@ -387,7 +418,13 @@ export class DoctorService {
       { $push: { doctors: userId } },
     );
 
-    return user;
+    //xoa cache
+    const cacheKey = 'pending_doctors';
+    await this.cacheService.deleteCache(cacheKey);
+
+    return {
+      message: 'Xác thực bác sĩ thành công!',
+    };
   }
 
   // Lấy tất cả bác sĩ đã xác thực
