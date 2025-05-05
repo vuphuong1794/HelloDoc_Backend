@@ -43,7 +43,7 @@ export class DoctorService {
     const data = await this.DoctorModel.find().populate('specialty').lean();
 
     console.log('Setting cache...');
-    await this.cacheService.setCache(cacheKey, data, 3600 * 1000);
+    await this.cacheService.setCache(cacheKey, data, 30 * 1000);
     return data;
   }
 
@@ -327,7 +327,25 @@ export class DoctorService {
 
   // Lấy danh sách bác sĩ chưa được xác thực
   async getPendingDoctors() {
-    return this.pendingDoctorModel.find({ verified: false });
+    const cacheKey = 'pending_doctors';
+    console.log('Trying to get pending doctors from cache...');
+
+    const cached = await this.cacheService.getCache(cacheKey);
+    if (cached) {
+      console.log('Cache HIT');
+      return cached;
+    }
+
+    console.log('Cache MISS - querying DB');
+    const data = await this.pendingDoctorModel.find({ verified: false });
+
+    if (!data) {
+      throw new NotFoundException('Không có bác sĩ nào trong danh sách chờ phê duyệt.');
+    } else {
+      console.log('Setting cache...');
+      await this.cacheService.setCache(cacheKey, data, 30 * 1000);
+      return data;
+    }
   }
 
   // Xác thực tài khoản bác sĩ bởi admin
@@ -346,6 +364,7 @@ export class DoctorService {
 
     // Xóa khỏi bảng PendingDoctors và cập nhật bảng Doctors
     await this.DoctorModel.create({
+      _id: userId,
       name: user.name,
       email: user.email,
       phone: user.phone,
@@ -355,6 +374,7 @@ export class DoctorService {
       avatarURL: pendingDoctor.avatarURL,
       frontCccdUrl: pendingDoctor.frontCccdUrl,
       backCccdUrl: pendingDoctor.backCccdUrl,
+      address: "chua co dia chi",
       licenseUrl: pendingDoctor.licenseUrl,
       certificates: pendingDoctor.certificates,
       experience: pendingDoctor.experience,

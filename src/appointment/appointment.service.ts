@@ -29,6 +29,11 @@ export class AppointmentService {
             throw new BadRequestException('You cannot book an appointment for yourself')
         }
 
+        //bác sĩ không được đặt lịch hẹn cho chính mình
+        if (doctorID === patientID) {
+            throw new BadRequestException('You cannot book an appointment for yourself');
+        }
+
         // Chặn nếu đã có lịch PENDING
         const pendingAppointment = await this.appointmentModel.findOne({
             doctor: doctorID,
