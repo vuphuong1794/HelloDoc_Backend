@@ -4,11 +4,13 @@ import { PostFavorite } from 'src/schemas/post-favorite.schema';
 import { Model } from 'mongoose';
 import { CreatePostFavoriteDto } from './dto/create-post-favorite.dto';
 import { GetPostFavoriteDto } from './dto/get-post-favorite.dto';
+import { CacheService } from 'src/cache.service';
 
 @Injectable()
 export class PostFavoriteService {
   constructor(
     @InjectModel(PostFavorite.name) private postFavoriteModel: Model<PostFavorite>,
+    private cacheService: CacheService,
   ) { }
 
   async getPostFavoritesByPostId(postId: string, getPostFavoriteDto: GetPostFavoriteDto) {
@@ -56,6 +58,16 @@ export class PostFavoriteService {
 
   async getPostFavoritesByUserId(userId: string) {
     try {
+      const postIdFavoritesCacheKey = `userIdFavorites_${userId}`;
+      console.log('try to get post favorites from cache:', postIdFavoritesCacheKey);
+
+      const cached = await this.cacheService.getCache(postIdFavoritesCacheKey)
+      if (cached) {
+        console.log('Cache HIT');
+        return cached;
+      }
+
+      console.log('Cache MISS - fetching from DB...');
       const postFavorites = await this.postFavoriteModel.find({ user: userId })
         .populate({
           path: 'post',
@@ -66,6 +78,10 @@ export class PostFavoriteService {
           select: 'name avatarURL'
         })
         .exec();
+
+      console.log('setting cache...');
+      await this.cacheService.setCache(postIdFavoritesCacheKey, postFavorites, 30 * 1000);
+
       return postFavorites;
     } catch (error) {
       console.error('Lỗi khi lấy danh sách bình luận:', error);

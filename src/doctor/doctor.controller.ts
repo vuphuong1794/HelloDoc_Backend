@@ -40,7 +40,8 @@ export class DoctorController {
   async getDoctors() {
     return this.doctorService.getDoctors();
   }
-  @Get(':id')
+
+  @Get('get-by-id/:id')
   async getDoctorById(@Param('id') id: string) {
     return this.doctorService.getDoctorById(id);
   }
