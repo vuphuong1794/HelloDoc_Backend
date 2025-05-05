@@ -364,6 +364,7 @@ export class DoctorService {
 
     // Xóa khỏi bảng PendingDoctors và cập nhật bảng Doctors
     await this.DoctorModel.create({
+      _id: userId,
       name: user.name,
       email: user.email,
       phone: user.phone,
@@ -373,6 +374,7 @@ export class DoctorService {
       avatarURL: pendingDoctor.avatarURL,
       frontCccdUrl: pendingDoctor.frontCccdUrl,
       backCccdUrl: pendingDoctor.backCccdUrl,
+      address: "chua co dia chi",
       licenseUrl: pendingDoctor.licenseUrl,
       certificates: pendingDoctor.certificates,
       experience: pendingDoctor.experience,
