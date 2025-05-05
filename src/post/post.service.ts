@@ -52,8 +52,12 @@ export class PostService {
             content: createPostDto.content,
             media: uploadedMediaUrls, // lưu các link Cloudinary vào đây
         });
-
+        await this.deleteCache(createPostDto.userId);
         return createdPost.save();
+    }
+    async deleteCache(ownerId: string) {
+        const cacheKey = `posts_by_owner_${ownerId}`;
+        await this.cacheService.deleteCache(cacheKey);
     }
 
     async getAll(): Promise<Post[]> {
