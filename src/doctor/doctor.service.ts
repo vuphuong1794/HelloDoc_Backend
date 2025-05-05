@@ -16,6 +16,7 @@ import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { CacheService } from 'src/cache.service';
+import { Clinic } from 'src/schemas/clinic.schema';
 
 @Injectable()
 export class DoctorService {
@@ -104,6 +105,99 @@ export class DoctorService {
       accessToken,
     };
   }
+
+  async updateClinic(doctorId: string, updateData: any) {
+    if (!Types.ObjectId.isValid(doctorId)) {
+      throw new BadRequestException('ID không hợp lệ');
+    }
+  
+    const doctor = await this.DoctorModel.findById(doctorId);
+    if (!doctor) {
+      throw new BadRequestException('Bác sĩ không tồn tại');
+    }
+  
+    const allowedFields = ['description', 'address', 'services', 'workingHours'];
+    const filteredUpdateData: any = {};
+  
+    Object.keys(updateData).forEach((key) => {
+      if (allowedFields.includes(key)) {
+        filteredUpdateData[key] = updateData[key];
+      }
+    });
+
+    // Xử lý tải lên giấy phép - sử dụng key 'license' từ form-data
+    if (updateData['services'].serviceImage) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(updateData.license, `Doctors/${doctorId}/Clinic`);
+        filteredUpdateData['imageService'] = uploadResult.secure_url;
+        console.log('Hinhf dich vu đã được tải lên Cloudinary:', uploadResult.secure_url);
+      } catch (error) {
+        console.error('Lỗi Cloudinary:', error);
+        throw new BadRequestException('Lỗi khi tải giấy phép lên Cloudinary');
+      }
+    }
+  
+    // ✅ Chỉ thêm mới service nếu _id không tồn tại
+    if (filteredUpdateData.services && Array.isArray(filteredUpdateData.services)) {
+      const existingServices = doctor.services || [];
+  
+      filteredUpdateData.services.forEach((newService) => {
+        const exists = existingServices.some(
+          (s) => s._id?.toString() === newService._id?.toString()
+        );
+  
+        if (!exists) {
+          const newServiceData = {
+            _id: new Types.ObjectId().toString(), // ← chuyển thành string
+            description: newService.description,
+            maxprice: Number(newService.maxprice),
+            minprice: Number(newService.minprice),
+            imageService: newService.imageService,
+            specialtyID: newService.specialtyID,
+            specialtyName: newService.specialtyName,
+          };          
+          existingServices.push(newServiceData);
+        }
+      });
+  
+      filteredUpdateData.services = existingServices;
+    }
+  
+    // ✅ Merge workingHours: không cho trùng dayOfWeek + hour + minute
+    if (filteredUpdateData.workingHours && Array.isArray(filteredUpdateData.workingHours)) {
+      const existingWH = doctor.workingHours || [];
+  
+      filteredUpdateData.workingHours.forEach((newWH) => {
+        const isDuplicate = existingWH.some(
+          (wh) =>
+            wh.dayOfWeek === newWH.dayOfWeek &&
+            wh.hour === newWH.hour &&
+            wh.minute === newWH.minute
+        );
+  
+        if (!isDuplicate) {
+          existingWH.push({
+            dayOfWeek: Number(newWH.dayOfWeek),
+            hour: Number(newWH.hour),
+            minute: Number(newWH.minute),
+          });
+        }
+      });
+  
+      filteredUpdateData.workingHours = existingWH;
+    }
+  
+    // ✅ Gán và lưu
+    Object.assign(doctor, filteredUpdateData);
+    await doctor.save();
+  
+    return {
+      message: 'Cập nhật thông tin phòng khám thành công',
+      data: doctor,
+    };
+  }
+  
+
 
   async updateDoctorProfile(doctorId: string, updateData: any) {
     if (!Types.ObjectId.isValid(doctorId)) {

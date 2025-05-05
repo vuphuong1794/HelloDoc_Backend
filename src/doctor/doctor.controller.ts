@@ -19,10 +19,12 @@ import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 import { Model } from 'mongoose';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
+import { Clinic } from 'src/schemas/clinic.schema';
 
 
 @Controller('doctor')
@@ -60,7 +62,7 @@ export class DoctorController {
     { name: 'frontCccd', maxCount: 1 },
     { name: 'backCccd', maxCount: 1 },
   ]))
-  
+
   @Put(':id/update-profile')
   async updateProfile(
     @Param('id') id: string,
@@ -84,6 +86,37 @@ export class DoctorController {
     }
     return this.doctorService.updateDoctorProfile(id, updateData);
   }
+
+    @Put(':id/updateclinic')
+  @UseInterceptors(FilesInterceptor('serviceImage')) // nếu bạn dùng Multer
+  async updateClinic(
+    @Param('id') id: string,
+    @UploadedFiles() files: { serviceImage?: Express.Multer.File[] },
+    @Body() updateData: any
+  ) {
+    const clinicData = { ...updateData };
+
+    // Gán ảnh vào service mới nếu có
+    if (files?.serviceImage?.[0]) {
+      if (!clinicData.services || !Array.isArray(clinicData.services)) {
+        clinicData.services = [];
+      }
+
+      // Chỉ thêm ảnh vào service mới không có _id
+      clinicData.services = clinicData.services.map((service, index) => {
+        if (!service._id) {
+          return {
+            ...service,
+            imageService: files.serviceImage?.[index]?.path || '', // hoặc dùng .filename nếu có cấu hình Multer
+          };
+        }
+        return service; // giữ nguyên nếu có _id (không cho chỉnh sửa)
+      });
+    }
+
+    return this.doctorService.updateClinic(id, clinicData);
+  }
+
 
   @Patch('apply-for-doctor/:id')
   @UseInterceptors(

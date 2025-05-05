@@ -17,9 +17,9 @@ export class ServiceOutput {
     @Prop()
     minprice: number;
   
-    @Prop()
-    imageService: string;
-  
+    @Prop({ type: [String], default: [] })
+    imageService: string[]; 
+    
     @Prop()
     specialtyID: string;
   

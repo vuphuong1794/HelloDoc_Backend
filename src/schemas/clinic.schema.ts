@@ -1,44 +1,39 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { IsOptional, IsUrl } from 'class-validator';
 import mongoose, { Document, Types } from 'mongoose';
+import { ServiceOutput } from './service.schema';
 
-export enum ExaminationMethod {
-    AT_CLINIC = 'at_clinic',
-    AT_HOME = 'at_home',
-}
+@Schema({ timestamps: true })
 export class Clinic extends Document {
-    @Prop()
-    certificates: string[]
-
-    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Specialty', required: true })
-    specialty: Types.ObjectId;
-
-    @Prop()
     @IsOptional()
-    @IsUrl()
-    anhBiaUrl?: string; // Ảnh bìa
-
-    @Prop()
-    address?: string; // Địa chỉ khám
-
     @Prop({
-        required: true,
-        enum: ExaminationMethod,
-        default: ExaminationMethod.AT_CLINIC,
-    })
-    examinationMethod: ExaminationMethod;
-
+        type: [
+          {
+            dayOfWeek: Number,
+            hour: Number,
+            minute: Number
+          }
+        ],
+        default: []
+      })
+      workingHours: {
+        dayOfWeek: number;
+        hour: number;
+        minute: number;
+      }[];
+    
+    @IsOptional()
     @Prop()
-    minPrice?: number; // Giá khám
-
+    description: string; // Mô tả chi tiết
+    
+    @IsOptional()
     @Prop()
-    maxPrice?: number; // Giá khám
+    address: string; // Địa chỉ khám
 
-    @Prop()
-    description?: string; // thôn tin giới thiệu
-
-    @Prop()
-    workingHours?: { day: string; slots: string[] }[]; // Lịch khám
+    @IsOptional()
+    @Prop({ type: [ServiceOutput], default: [] })
+    services: ServiceOutput[];  
+     
 }
 
 export const ClinicSchema = SchemaFactory.createForClass(Clinic);
