@@ -52,6 +52,10 @@ export class User extends Document {
 
     @Prop()
     fcmToken: string;
+
+    @Prop({ default: false })
+    @IsBoolean()
+    isDeleted: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
