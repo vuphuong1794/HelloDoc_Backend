@@ -26,6 +26,7 @@ import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
 import { Clinic } from 'src/schemas/clinic.schema';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 
 
 @Controller('doctor')
@@ -90,38 +91,32 @@ export class DoctorController {
   }
 
   @Post(':id/updateclinic')
-  @UseInterceptors(FilesInterceptor('imageService'))
-  async updateClinic(
-    @Param('id') id: string,
-    @UploadedFiles() files: Express.Multer.File[],
-    @Body() updateData: any
-  ) {
-    console.log('Uploaded files:', files);
-    console.log('Is file available?', !!files?.[0]);
-  
-    // Parse JSON nếu cần
-    const clinicData = this.parseUpdateData(updateData);
-    return this.doctorService.updateClinic(id, clinicData, { serviceImage: files });
-  }
-  private parseUpdateData(data: any) {
+@UseInterceptors(AnyFilesInterceptor())
+async updateClinic(
+  @Param('id') id: string,
+  @UploadedFiles() files: Express.Multer.File[],
+  @Body() updateData: any
+) {
+  console.log('Uploaded files:', files.map(f => f.originalname));
+
+  const clinicData = this.parseUpdateData(updateData);
+  return this.doctorService.updateClinic(id, clinicData, { serviceImage: files });
+}
+
+private parseUpdateData(data: any) {
+  try {
     if (typeof data.services === 'string') {
-      try {
-        data.services = JSON.parse(data.services);
-      } catch {
-        throw new BadRequestException('services không đúng định dạng JSON');
-      }
+      data.services = JSON.parse(data.services);
     }
-  
     if (typeof data.workingHours === 'string') {
-      try {
-        data.workingHours = JSON.parse(data.workingHours);
-      } catch {
-        throw new BadRequestException('workingHours không đúng định dạng JSON');
-      }
+      data.workingHours = JSON.parse(data.workingHours);
     }
-  
-    return data;
+  } catch {
+    throw new BadRequestException('Dữ liệu JSON không hợp lệ');
   }
+  return data;
+}
+
 
   @Patch('apply-for-doctor/:id')
   @UseInterceptors(
