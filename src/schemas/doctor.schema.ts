@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Type } from 'class-transformer';
 import mongoose, { Document, Types } from 'mongoose';
 import { Specialty } from './specialty.schema';
-import { IsUrl } from 'class-validator';
+import { IsBoolean, IsUrl } from 'class-validator';
 import { ServiceOutput } from './service.schema';
 import { IsEmail, IsNotEmpty, IsString, IsArray, ValidateNested, IsNumber } from 'class-validator';
 
@@ -100,9 +100,13 @@ export class Doctor extends Document {
 
   @Prop()
   frontCccdUrl?: string;
-  
+
   @Prop()
   fcmToken: string;
+
+  @Prop({ default: false })
+  @IsBoolean()
+  isDeleted: boolean;
 }
 
 

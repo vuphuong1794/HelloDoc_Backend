@@ -85,13 +85,6 @@ export class AdminController {
     };
   }
 
-  /*
-  @Patch('verify-doctor/:id')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  async verifyDoctor(@Param('id') id: string) {
-    return this.adminService.verifyDoctor(id);
-  } */
-
   @Delete('delete-user/:id')
   @UseGuards(JwtAuthGuard, AdminGuard)
   async deleteUser(@Param('id') id: string) {
