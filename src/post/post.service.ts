@@ -110,7 +110,7 @@ export class PostService {
     async getById(ownerId: string): Promise<Post[]> {
         await this.findOwnerById(ownerId);  // Đảm bảo owner tồn tại
 
-        const cacheKey = `posts_by_owner_${ownerId}`;
+        const cacheKey = 'posts_by_owner';
         console.log('Trying to get user posts from cache...');
 
         const cached = await this.cacheService.getCache(cacheKey);
@@ -162,6 +162,8 @@ export class PostService {
         if (updatePostDto.content) {
             existingPost.content = updatePostDto.content;
         }
+        const all_posts = 'posts_by_owner';
+        await this.cacheService.deleteCache(all_posts);
 
         return await existingPost.save();
     }
