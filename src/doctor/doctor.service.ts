@@ -144,8 +144,6 @@ export class DoctorService {
     };
   }
   
-
-  
   private filterAllowedFields(data: any) {
     const allowed = ['description', 'address', 'services', 'workingHours'];
     const filtered: any = {};
