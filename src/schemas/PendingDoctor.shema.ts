@@ -11,7 +11,7 @@ export enum ExaminationMethod {
 
 @Schema()
 export class PendingDoctor extends Document {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
   @Prop({ required: true })
@@ -19,6 +19,15 @@ export class PendingDoctor extends Document {
 
   @Prop({ required: true })
   license: string;
+
+  @Prop({ required: true })
+  name: string; // Tên bác sĩ
+
+  @Prop({ required: true })
+  phone: string; // Số điện thoại
+
+  @Prop({ required: true })
+  email: string; // Email
 
   @Prop({ default: false })
   verified: boolean;

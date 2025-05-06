@@ -202,9 +202,10 @@ export class AppointmentService {
 
     // 📌 Lấy danh sách tất cả lịch hẹn
     async getAllAppointments() {
-        const appointments = await this.appointmentModel.find()
+        const appointmentsRaw = await this.appointmentModel.find()
             .populate({
                 path: 'doctor',
+                match: { isDeleted: false },
                 select: 'name specialty hospital address',
                 populate: {
                     path: 'specialty',
@@ -213,10 +214,11 @@ export class AppointmentService {
             })
             .populate({
                 path: 'patient',
+                match: { isDeleted: false },
                 select: '_id name',
-                // Mongoose sẽ tự dùng patientModel do bạn đã khai báo refPath
             });
 
+        const appointments = appointmentsRaw.filter(appt => appt.doctor && appt.patient);
         return appointments;
     }
 
@@ -237,22 +239,29 @@ export class AppointmentService {
         }
 
         console.log('Cache MISS - querying DB');
-        const appointments = await this.appointmentModel.find({ doctor: doctorID })
+        const appointmentsRaw = await this.appointmentModel.find({ doctor: doctorID })
             .populate({
                 path: 'doctor',
+                match: { isDeleted: false },
                 select: 'name avatarURL'
             })
             .populate({
                 path: 'patient',
-                select: 'name',
+                match: { isDeleted: false },
+                select: 'name'
             });
+
+        const appointments = appointmentsRaw.filter(
+            (appt) => appt.doctor !== null && appt.patient !== null
+        );
+
 
         if (!appointments) {
             throw new NotFoundException('No appointments found for this doctor');
         }
 
         console.log('Setting cache...');
-        await this.cacheService.setCache(cacheKey, appointments, 3600 * 1000); // Cache for 1 hour
+        await this.cacheService.setCache(cacheKey, appointments, 30 * 1000); // Cache for 1 hour
 
         return appointments;
     }
@@ -274,28 +283,38 @@ export class AppointmentService {
         }
 
         console.log('Cache MISS - querying DB');
-        const appointments = await this.appointmentModel.find({ patient: patientID })
-            .populate({ path: 'doctor', select: 'name avatarURL' })
+        const appointmentsRaw = await this.appointmentModel.find({ patient: patientID })
+            .populate({ path: 'doctor', match: { isDeleted: false }, select: 'name avatarURL' })
             .populate({ path: 'patient', select: 'name' });
+
+        const appointments = appointmentsRaw.filter(appt => appt.doctor !== null);
+
 
         if (!appointments) {
             throw new NotFoundException('No appointments found for this patient');
         }
 
         console.log('Setting cache...');
-        await this.cacheService.setCache(cacheKey, appointments, 3600 * 1000); // Cache for 1 hour
+        await this.cacheService.setCache(cacheKey, appointments, 30 * 1000); // Cache for 1 hour
 
         return appointments;
     }
 
     // 📌 Lấy danh sách lịch hẹn theo status
     async getAppointmentsByStatus(patientID: string, status: string): Promise<Appointment[]> {
-        const appointments = await this.appointmentModel.find({
+        const rawAppointments = await this.appointmentModel.find({
             patient: patientID,
             status: status,
-        }).populate({ path: 'doctor', select: 'name' });
+        }).populate({
+            path: 'doctor',
+            match: { isDeleted: false },
+            select: 'name',
+        });
+
+        const appointments = rawAppointments.filter(appt => appt.doctor !== null);
         return appointments;
     }
+
 
     async getAppointmentsbyitsID(id: string) {
         const appointment = await this.appointmentModel.findById(id);

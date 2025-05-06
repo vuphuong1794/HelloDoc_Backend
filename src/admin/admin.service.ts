@@ -35,10 +35,10 @@ export class AdminService {
       this.UserModel.find(),
       this.DoctorModel.find()
     ]);
-  
+
     return { users, doctors };
   }
-  
+
   async getUserByID(id: string) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid ID format');
@@ -235,13 +235,21 @@ export class AdminService {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid ID format');
     }
+
     const user = await this.UserModel.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    await this.UserModel.findByIdAndDelete(id);
-    return { message: 'User deleted successfully' };
+
+    if (user.isDeleted) {
+      return { message: 'User already deleted' };
+    }
+
+    await this.UserModel.findByIdAndUpdate(id, { isDeleted: true });
+
+    return { message: 'User soft-deleted successfully' };
   }
+
 
   async deleteDoctor(id: string) {
     if (!Types.ObjectId.isValid(id)) {
@@ -251,7 +259,10 @@ export class AdminService {
     if (!doctor) {
       throw new NotFoundException('Doctor not found');
     }
-    await this.DoctorModel.findByIdAndDelete(id);
+    if (doctor.isDeleted) {
+      return { message: 'Doctor already deleted' };
+    }
+    await this.DoctorModel.findByIdAndDelete(id, { isDeleted: true });
     return { message: 'Doctor deleted successfully' };
   }
 
