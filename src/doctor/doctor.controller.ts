@@ -88,35 +88,22 @@ export class DoctorController {
     return this.doctorService.updateDoctorProfile(id, updateData);
   }
 
-    @Put(':id/updateclinic')
-  @UseInterceptors(FilesInterceptor('serviceImage')) // nếu bạn dùng Multer
+  @Post(':id/updateclinic')
+  @UseInterceptors(FilesInterceptor('imageService')) // Multer sẽ gán tất cả ảnh vào mảng "files"
   async updateClinic(
     @Param('id') id: string,
-    @UploadedFiles() files: { serviceImage?: Express.Multer.File[] },
+    @UploadedFiles() files: Express.Multer.File[], 
     @Body() updateData: any
   ) {
+    console.log('Uploaded files:', files);              // ✅ In ra file nhận được
+    console.log('Is file available?', !!files?.[0]);     // ✅ Kiểm tra có file chưa
+  
     const clinicData = { ...updateData };
-
-    // Gán ảnh vào service mới nếu có
-    if (files?.serviceImage?.[0]) {
-      if (!clinicData.services || !Array.isArray(clinicData.services)) {
-        clinicData.services = [];
-      }
-
-      // Chỉ thêm ảnh vào service mới không có _id
-      clinicData.services = clinicData.services.map((service, index) => {
-        if (!service._id) {
-          return {
-            ...service,
-            imageService: files.serviceImage?.[index]?.path || '', // hoặc dùng .filename nếu có cấu hình Multer
-          };
-        }
-        return service; // giữ nguyên nếu có _id (không cho chỉnh sửa)
-      });
-    }
-
-    return this.doctorService.updateClinic(id, clinicData);
+    console.log('Uploaded data:', clinicData);              
+  
+    return this.doctorService.updateClinic(id, clinicData, { serviceImage: files });
   }
+  
 
 
   @Patch('apply-for-doctor/:id')

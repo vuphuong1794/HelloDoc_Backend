@@ -106,7 +106,11 @@ export class DoctorService {
     };
   }
 
-  async updateClinic(doctorId: string, updateData: any) {
+  async updateClinic(
+    doctorId: string, 
+    updateData: any,   
+    files?: { serviceImage?: Express.Multer.File[] } // ← thêm dòng này
+  ) {
     if (!Types.ObjectId.isValid(doctorId)) {
       throw new BadRequestException('ID không hợp lệ');
     }
@@ -115,7 +119,29 @@ export class DoctorService {
     if (!doctor) {
       throw new BadRequestException('Bác sĩ không tồn tại');
     }
-  
+    console.log('Nội dung services truoc khi parse:', updateData);
+    console.log('Typeof updateData:', typeof updateData.service);
+
+    // Chuyển đổi nếu services là chuỗi JSON
+    if (typeof updateData.services === 'undefined') {
+      try {
+        updateData.services = JSON.parse(updateData.services);
+      } catch (e) {
+        throw new BadRequestException('services không đúng định dạng JSON');
+      }
+      finally{
+        console.log('Nội dung services sau khi parse:', updateData.service);
+      }
+    }
+    // Chuyển đổi nếu workingHours là chuỗi JSON
+    if (typeof updateData.workingHours === 'string') {
+      try {
+        updateData.workingHours = JSON.parse(updateData.workingHours);
+      } catch (e) {
+        throw new BadRequestException('workingHours không đúng định dạng JSON');
+      }
+    }
+    console.log('Kiểu của services:', typeof updateData.services);
     const allowedFields = ['description', 'address', 'services', 'workingHours'];
     const filteredUpdateData: any = {};
   
@@ -124,44 +150,51 @@ export class DoctorService {
         filteredUpdateData[key] = updateData[key];
       }
     });
+    console.log('Chưa đi vào khâu upload ảnh');
 
-    // Xử lý tải lên giấy phép - sử dụng key 'license' từ form-data
-    if (updateData['services'].serviceImage) {
-      try {
-        const uploadResult = await this.cloudinaryService.uploadFile(updateData.license, `Doctors/${doctorId}/Clinic`);
-        filteredUpdateData['imageService'] = uploadResult.secure_url;
-        console.log('Hinhf dich vu đã được tải lên Cloudinary:', uploadResult.secure_url);
-      } catch (error) {
-        console.error('Lỗi Cloudinary:', error);
-        throw new BadRequestException('Lỗi khi tải giấy phép lên Cloudinary');
-      }
-    }
-  
-    // ✅ Chỉ thêm mới service nếu _id không tồn tại
-    if (filteredUpdateData.services && Array.isArray(filteredUpdateData.services)) {
+    if (filteredUpdateData.services || Array.isArray(filteredUpdateData.services)) {
       const existingServices = doctor.services || [];
-  
-      filteredUpdateData.services.forEach((newService) => {
-        const exists = existingServices.some(
-          (s) => s._id?.toString() === newService._id?.toString()
-        );
-  
-        if (!exists) {
-          const newServiceData = {
-            _id: new Types.ObjectId().toString(), // ← chuyển thành string
-            description: newService.description,
-            maxprice: Number(newService.maxprice),
-            minprice: Number(newService.minprice),
-            imageService: newService.imageService,
-            specialtyID: newService.specialtyID,
-            specialtyName: newService.specialtyName,
-          };          
-          existingServices.push(newServiceData);
+      console.log('đi vào khâu upload ảnh');
+
+      let uploadIndex = 0; // dùng để khớp file ảnh với service mới
+    
+      // Upload ảnh nếu có file
+      const uploadedImages: string[] = [];
+      if (files?.serviceImage?.length) {
+        try {
+          for (const file of files.serviceImage) {
+            const uploadResult = await this.cloudinaryService.uploadFile(file, `Doctors/${doctorId}/Services`);
+            uploadedImages.push(uploadResult.secure_url);
+            console.log('Ảnh dịch vụ đã được tải lên Cloudinary:', uploadedImages);
+          }
+        } catch (error) {
+          console.error('Lỗi Cloudinary:', error);
+          throw new BadRequestException('Lỗi khi tải ảnh dịch vụ lên Cloudinary');
         }
+      }
+      console.log('filteredUpdateData:', JSON.stringify(filteredUpdateData.services, null, 2));
+      console.log('Type of services:', typeof filteredUpdateData.services);
+      console.log('IsArray:', Array.isArray(filteredUpdateData.services));
+      filteredUpdateData.services.forEach((newService) => {    
+        console.log('existingServices: '+existingServices);   
+        const newServiceData = {
+          _id: new Types.ObjectId().toString(),
+          description: newService.description,
+          maxprice: Number(newService.maxprice),
+          minprice: Number(newService.minprice),
+          imageService: uploadedImages[uploadIndex] ? [uploadedImages[uploadIndex]]:newService.imageService? newService.imageService:'',
+          specialtyID: newService.specialtyID,
+          specialtyName: newService.specialtyName,
+        };          
+        console.log('Ảnh trong uploadImage ở thứ tự: '+uploadIndex+": "+ uploadedImages[uploadIndex]);
+        uploadIndex++; // tăng chỉ số ảnh cho service tiếp theo
+        existingServices.push(newServiceData);
+        
       });
-  
+    
       filteredUpdateData.services = existingServices;
     }
+    
   
     // ✅ Merge workingHours: không cho trùng dayOfWeek + hour + minute
     if (filteredUpdateData.workingHours && Array.isArray(filteredUpdateData.workingHours)) {
