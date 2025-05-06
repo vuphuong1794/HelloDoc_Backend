@@ -16,6 +16,7 @@ import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { CacheService } from 'src/cache.service';
+import { Clinic } from 'src/schemas/clinic.schema';
 
 @Injectable()
 export class DoctorService {
@@ -104,6 +105,116 @@ export class DoctorService {
       accessToken,
     };
   }
+
+  async updateClinic(
+    doctorId: string,
+    updateData: any,
+    files?: { serviceImage?: Express.Multer.File[] }
+  ) {
+    if (!Types.ObjectId.isValid(doctorId)) {
+      throw new BadRequestException('ID không hợp lệ');
+    }
+  
+    const doctor = await this.DoctorModel.findById(doctorId);
+    if (!doctor) {
+      throw new BadRequestException('Bác sĩ không tồn tại');
+    }
+  
+    // Parse & filter dữ liệu đầu vào
+    const filteredData = this.filterAllowedFields(updateData);
+    const uploadedImages = await this.uploadServiceImages(files?.serviceImage, doctorId);
+  
+    // Xử lý services nếu có
+    if (Array.isArray(filteredData.services)) {
+      filteredData.services = this.mergeServices(doctor.services, filteredData.services, uploadedImages);
+    }
+  
+    // Xử lý workingHours nếu có
+    if (Array.isArray(filteredData.workingHours)) {
+      filteredData.workingHours = this.mergeWorkingHours(doctor.workingHours, filteredData.workingHours);
+    }
+  
+    // Gán và lưu
+    Object.assign(doctor, filteredData);
+    await doctor.save();
+  
+    return {
+      message: 'Cập nhật thông tin phòng khám thành công',
+      data: doctor,
+    };
+  }
+  
+  private filterAllowedFields(data: any) {
+    const allowed = ['description', 'address', 'services', 'workingHours'];
+    const filtered: any = {};
+    for (const key of allowed) {
+      if (key in data) filtered[key] = data[key];
+    }
+    return filtered;
+  }
+  
+  private async uploadServiceImages(files: Express.Multer.File[] = [], doctorId: string): Promise<string[]> {
+    const uploaded: string[] = [];
+  
+    for (const file of files) {
+      const result = await this.cloudinaryService.uploadFile(file, `Doctors/${doctorId}/Services`);
+      uploaded.push(result.secure_url);
+    }
+  
+    return uploaded;
+  }
+  
+  private mergeServices(existingServices: any[], newServices: any[], uploadedImages: string[]): any[] {
+    const updatedServices = [...existingServices];
+    let uploadIndex = 0;
+  
+    for (const service of newServices) {
+      const imageList = uploadedImages?.length
+        ? uploadedImages.filter(Boolean)
+        : service.imageService ?? [];
+  
+      const newService = {
+        _id: new Types.ObjectId().toString(),
+        description: service.description,
+        maxprice: Number(service.maxprice),
+        minprice: Number(service.minprice),
+        imageService: imageList,
+        specialtyID: service.specialtyID,
+        specialtyName: service.specialtyName,
+      };
+  
+      uploadIndex++;
+      updatedServices.push(newService);
+    }
+  
+    return updatedServices;
+  }
+  
+  private mergeWorkingHours(existingWH: any[], newWHList: any[]): any[] {
+    const updatedWH = [...(existingWH || [])];
+  
+    for (const newWH of newWHList) {
+      const isDuplicate = updatedWH.some(
+        (wh) =>
+          wh.dayOfWeek === newWH.dayOfWeek &&
+          wh.hour === newWH.hour &&
+          wh.minute === newWH.minute
+      );
+  
+      if (!isDuplicate) {
+        updatedWH.push({
+          dayOfWeek: Number(newWH.dayOfWeek),
+          hour: Number(newWH.hour),
+          minute: Number(newWH.minute),
+        });
+      }
+    }
+  
+    return updatedWH;
+  }
+  
+  
+
 
   async updateDoctorProfile(doctorId: string, updateData: any) {
     if (!Types.ObjectId.isValid(doctorId)) {

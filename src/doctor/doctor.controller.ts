@@ -20,10 +20,12 @@ import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 import { Model } from 'mongoose';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
+import { Clinic } from 'src/schemas/clinic.schema';
 
 
 @Controller('doctor')
@@ -62,6 +64,7 @@ export class DoctorController {
     { name: 'frontCccd', maxCount: 1 },
     { name: 'backCccd', maxCount: 1 },
   ]))
+
   @Put(':id/update-profile')
   async updateProfile(
     @Param('id') id: string,
@@ -84,6 +87,40 @@ export class DoctorController {
       updateData.backCccd = files.backCccd[0];
     }
     return this.doctorService.updateDoctorProfile(id, updateData);
+  }
+
+  @Post(':id/updateclinic')
+  @UseInterceptors(FilesInterceptor('imageService'))
+  async updateClinic(
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() updateData: any
+  ) {
+    console.log('Uploaded files:', files);
+    console.log('Is file available?', !!files?.[0]);
+  
+    // Parse JSON nếu cần
+    const clinicData = this.parseUpdateData(updateData);
+    return this.doctorService.updateClinic(id, clinicData, { serviceImage: files });
+  }
+  private parseUpdateData(data: any) {
+    if (typeof data.services === 'string') {
+      try {
+        data.services = JSON.parse(data.services);
+      } catch {
+        throw new BadRequestException('services không đúng định dạng JSON');
+      }
+    }
+  
+    if (typeof data.workingHours === 'string') {
+      try {
+        data.workingHours = JSON.parse(data.workingHours);
+      } catch {
+        throw new BadRequestException('workingHours không đúng định dạng JSON');
+      }
+    }
+  
+    return data;
   }
 
   @Patch('apply-for-doctor/:id')
