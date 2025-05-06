@@ -140,28 +140,33 @@ export class PostService {
         return posts;
     }
 
-    async update(id: string, updatePostDto: UpdatePostDto): Promise<Post> {
-        const updatedPost = await this.postModel
-            .findByIdAndUpdate(
-                id,
-                {
-                    user: updatePostDto.userId,
-                    content: updatePostDto.content,
-                    media: updatePostDto.media || [],
-                },
-                { new: true }
-            )
-            .populate({
-                path: 'user',
-                select: 'name imageUrl avatarURL',
-            })
-            .exec();
+    async update(id: string, updatePostDto: UpdatePostDto) {
+        const existingPost = await this.postModel.findById(id);
+        if (!existingPost) throw new NotFoundException('Post not found');
 
-        if (!updatedPost) {
-            throw new NotFoundException(`Post with id ${id} not found`);
+        const uploadedMediaUrls: string[] = [];
+
+        const images = updatePostDto.images as Express.Multer.File[];
+
+        if (images && images.length > 0) {
+            for (const file of images) {
+                const uploadResult = await this.cloudinaryService.uploadFile(file, `Posts/${existingPost.user}`);
+                uploadedMediaUrls.push(uploadResult.secure_url);
+            }
+            existingPost.media = uploadedMediaUrls; // cập nhật ảnh mới
+        } else {
+            // Nếu client không gửi ảnh mới nào (người dùng đã gỡ hết)
+            existingPost.media = []; // xoá hết ảnh cũ
         }
-        return updatedPost;
+
+        if (updatePostDto.content) {
+            existingPost.content = updatePostDto.content;
+        }
+
+        return await existingPost.save();
     }
+
+
 
     async delete(id: string): Promise<{ message: string }> {
         const updated = await this.postModel.findByIdAndUpdate(
