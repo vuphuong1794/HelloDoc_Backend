@@ -20,10 +20,13 @@ import { loginDto } from 'src/dtos/login.dto';
 import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 import { Model } from 'mongoose';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
+import { Clinic } from 'src/schemas/clinic.schema';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 
 
 @Controller('doctor')
@@ -62,6 +65,7 @@ export class DoctorController {
     { name: 'frontCccd', maxCount: 1 },
     { name: 'backCccd', maxCount: 1 },
   ]))
+
   @Put(':id/update-profile')
   async updateProfile(
     @Param('id') id: string,
@@ -85,6 +89,34 @@ export class DoctorController {
     }
     return this.doctorService.updateDoctorProfile(id, updateData);
   }
+
+  @Post(':id/updateclinic')
+@UseInterceptors(AnyFilesInterceptor())
+async updateClinic(
+  @Param('id') id: string,
+  @UploadedFiles() files: Express.Multer.File[],
+  @Body() updateData: any
+) {
+  console.log('Uploaded files:', files.map(f => f.originalname));
+
+  const clinicData = this.parseUpdateData(updateData);
+  return this.doctorService.updateClinic(id, clinicData, { serviceImage: files });
+}
+
+private parseUpdateData(data: any) {
+  try {
+    if (typeof data.services === 'string') {
+      data.services = JSON.parse(data.services);
+    }
+    if (typeof data.workingHours === 'string') {
+      data.workingHours = JSON.parse(data.workingHours);
+    }
+  } catch {
+    throw new BadRequestException('Dữ liệu JSON không hợp lệ');
+  }
+  return data;
+}
+
 
   @Patch('apply-for-doctor/:id')
   @UseInterceptors(
