@@ -89,22 +89,38 @@ export class DoctorController {
   }
 
   @Post(':id/updateclinic')
-  @UseInterceptors(FilesInterceptor('imageService')) // Multer sẽ gán tất cả ảnh vào mảng "files"
+  @UseInterceptors(FilesInterceptor('imageService'))
   async updateClinic(
     @Param('id') id: string,
-    @UploadedFiles() files: Express.Multer.File[], 
+    @UploadedFiles() files: Express.Multer.File[],
     @Body() updateData: any
   ) {
-    console.log('Uploaded files:', files);              // ✅ In ra file nhận được
-    console.log('Is file available?', !!files?.[0]);     // ✅ Kiểm tra có file chưa
+    console.log('Uploaded files:', files);
+    console.log('Is file available?', !!files?.[0]);
   
-    const clinicData = { ...updateData };
-    console.log('Uploaded data:', clinicData);              
-  
+    // Parse JSON nếu cần
+    const clinicData = this.parseUpdateData(updateData);
     return this.doctorService.updateClinic(id, clinicData, { serviceImage: files });
   }
+  private parseUpdateData(data: any) {
+    if (typeof data.services === 'string') {
+      try {
+        data.services = JSON.parse(data.services);
+      } catch {
+        throw new BadRequestException('services không đúng định dạng JSON');
+      }
+    }
   
-
+    if (typeof data.workingHours === 'string') {
+      try {
+        data.workingHours = JSON.parse(data.workingHours);
+      } catch {
+        throw new BadRequestException('workingHours không đúng định dạng JSON');
+      }
+    }
+  
+    return data;
+  }
 
   @Patch('apply-for-doctor/:id')
   @UseInterceptors(
