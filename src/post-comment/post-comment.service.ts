@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException,InternalServerErrorException } from '@nestjs/common';
 import { CreatePostCommentDto } from './dto/create-post-comment.dto';
 import { UpdatePostCommentDto } from './dto/update-post-comment.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -15,19 +15,21 @@ export class PostCommentService {
   ) { }
 
   async createCommentByPostId(postId: string, createPostCommentDto: CreatePostCommentDto) {
-    const createdPostComment = new this.postCommentModel({
-      user: createPostCommentDto.userId,
-      userModel: createPostCommentDto.userModel,
-      post: postId,
-      content: createPostCommentDto.content,
-    });
-
-    //xóa cache comments của postId
-    const postIdCommentsCacheKey = `postIdComments_${postId}`;
-    await this.cacheService.deleteCache(postIdCommentsCacheKey);
-
-    return createdPostComment.save();
-    // return { message: 'Comment added' };
+    try {
+      const createdPostComment = new this.postCommentModel({
+        user: createPostCommentDto.userId,
+        userModel: createPostCommentDto.userModel,
+        post: postId,
+        content: createPostCommentDto.content,
+      });
+  
+      const postIdCommentsCacheKey = `postIdComments_${postId}`;
+      await this.cacheService.deleteCache(postIdCommentsCacheKey);
+  
+      return await createdPostComment.save();
+    } catch (error) {
+      throw new InternalServerErrorException('Lỗi khi tạo bình luận');
+    }
   }
 
   async getCommentsByPostId(postId: string) {
@@ -94,16 +96,40 @@ export class PostCommentService {
 
       return validComments;
     } catch (error) {
-      throw new Error('Không thể lấy danh sách bình luận');
+      throw new InternalServerErrorException('Lỗi khi lấy thông tin danh sách bình luận');
     }
   }
 
   async update(id: string, updatePostCommentDto: UpdatePostCommentDto) {
-    return this.postCommentModel.findByIdAndUpdate(id, updatePostCommentDto, { new: true });
+    try {
+      const updatedComment = await this.postCommentModel.findByIdAndUpdate(
+        id,
+        updatePostCommentDto,
+        { new: true }
+      );
+  
+      if (!updatedComment) {
+        throw new NotFoundException(`Không tìm thấy comment với id ${id}`);
+      }
+  
+      return updatedComment;
+    } catch (error) {
+      throw new InternalServerErrorException('Lỗi khi cập nhật bình luận');
+    }
   }
-
+  
   async remove(id: string) {
-    return this.postCommentModel.findByIdAndDelete(id);
+    try {
+      const deletedComment = await this.postCommentModel.findByIdAndDelete(id);
+  
+      if (!deletedComment) {
+        throw new NotFoundException(`Không tìm thấy comment để xóa với id ${id}`);
+      }
+  
+      return { message: 'Xóa bình luận thành công' };
+    } catch (error) {
+      throw new InternalServerErrorException('Lỗi khi xóa bình luận');
+    }
   }
 
 }

@@ -11,7 +11,11 @@ export class MedicalOptionService {
       @InjectModel(MedicalOption.name) private MedicalOptionModel: Model<MedicalOption>,
     ) {}
   async getMedicalOptions() {
-    return await this.MedicalOptionModel.find();
+    try {
+      return await this.MedicalOptionModel.find();
+    } catch (error) {
+      throw new Error('Đã xảy ra lỗi khi lấy danh sách dịch vụ khám');
+    }
   }
   
   create(createMedicalOptionDto: CreateMedicalOptionDto) {

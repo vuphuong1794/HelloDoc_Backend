@@ -5,26 +5,34 @@ import { Model } from 'mongoose';
 import { CreatePostFavoriteDto } from './dto/create-post-favorite.dto';
 import { GetPostFavoriteDto } from './dto/get-post-favorite.dto';
 import { CacheService } from 'src/cache.service';
+import { Doctor } from 'src/schemas/doctor.schema';
+import { User } from 'src/schemas/user.schema';
+import * as admin from 'firebase-admin';
 
 @Injectable()
 export class PostFavoriteService {
   constructor(
     @InjectModel(PostFavorite.name) private postFavoriteModel: Model<PostFavorite>,
+    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
     private cacheService: CacheService,
   ) { }
 
   async getPostFavoritesByPostId(postId: string, getPostFavoriteDto: GetPostFavoriteDto) {
-    const postFavorite = await this.postFavoriteModel.findOne({
-      user: getPostFavoriteDto.userId,
-      post: postId,
-    });
-    const totalFavorites = await this.postFavoriteModel.countDocuments({ post: postId });
-    if (postFavorite) {
-      // Nếu đã like thì trả trạng thái đã like
-      return { isFavorited: true, totalFavorites };
-    } else {
-      // Nếu chưa like thì trả trạng thái chưa like
-      return { isFavorited: false, totalFavorites };
+    try {
+      const postFavorite = await this.postFavoriteModel.findOne({
+        user: getPostFavoriteDto.userId,
+        post: postId,
+      });
+  
+      const totalFavorites = await this.postFavoriteModel.countDocuments({ post: postId });
+  
+      return {
+        isFavorited: !!postFavorite,
+        totalFavorites,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException('Lỗi khi lấy thông tin lượt yêu thích bài viết');
     }
   }
 
@@ -89,4 +97,23 @@ export class PostFavoriteService {
     }
   }
 
+  async notifyFavorite(doctorId: string, message: string) {
+      try {
+          const doctor = await this.doctorModel.findById(doctorId);
+          if (doctor?.fcmToken) {
+              await admin.messaging().send({
+                  token: doctor.fcmToken,
+                  notification: {
+                      title: 'Thông báo lịch hẹn mới',
+                      body: message,
+                  },
+              });
+              console.log(`Đã gửi thông báo đến bác sĩ ${doctorId}`);
+          } else {
+              console.warn(`Bác sĩ ${doctorId} không có fcmToken`);
+          }
+      } catch (error) {
+          console.error(`Lỗi khi gửi thông báo đến bác sĩ ${doctorId}:`, error);
+      }
+  }
 }
