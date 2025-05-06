@@ -137,7 +137,8 @@ export class DoctorService {
     // Gán và lưu
     Object.assign(doctor, filteredData);
     await doctor.save();
-  
+    await this.cacheService.deleteCache(`doctor_${doctorId}`);
+
     return {
       message: 'Cập nhật thông tin phòng khám thành công',
       data: doctor,
@@ -345,7 +346,6 @@ export class DoctorService {
     if (!updatedDoctor) {
       throw new BadRequestException('Cập nhật thất bại!');
     }
-
     return {
       message: 'Cập nhật hồ sơ thành công!',
       updatedDoctor,

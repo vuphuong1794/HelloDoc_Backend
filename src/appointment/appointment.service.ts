@@ -25,6 +25,9 @@ export class AppointmentService {
         if (!doctor) {
             throw new NotFoundException('Doctor not found');
         }
+        if (doctorID === patientID) {
+            throw new BadRequestException('You cannot book an appointment for yourself')
+        }
 
         //bác sĩ không được đặt lịch hẹn cho chính mình
         if (doctorID === patientID) {

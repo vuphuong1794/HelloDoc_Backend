@@ -36,9 +36,16 @@ export class PostController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
+  @UseInterceptors(FilesInterceptor('images'))
+  async updatePost(
+    @Param('id') id: string,
+    @UploadedFiles() images: Express.Multer.File[],
+    @Body() updatePostDto: UpdatePostDto,
+  ) {
+    updatePostDto.images = images;
     return this.postService.update(id, updatePostDto);
   }
+
 
   @Delete(':id')
   async delete(@Param('id') id: string) {
