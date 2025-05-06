@@ -30,7 +30,7 @@ export class ReviewController {
     const data = await this.reviewService.getReviewsByDoctor(doctorId);
 
     console.log('Setting cache...');
-    await this.cacheService.setCache(cacheKey, data, 3600 * 1000); // Cache for 1 hour
+    await this.cacheService.setCache(cacheKey, data, 30 * 1000); // Cache for 1 hour
     return data;
   }
 

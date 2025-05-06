@@ -469,7 +469,7 @@ export class DoctorService {
     }
 
     console.log('Setting cache...');
-    await this.cacheService.setCache(cacheKey, doctor, 3600 * 1000);
+    await this.cacheService.setCache(cacheKey, doctor, 30 * 1000);
     return doctor;
   }
 

@@ -33,7 +33,7 @@ export class SpecialtyService {
     });
 
     console.log('Setting cache...');
-    await this.cacheService.setCache(cacheKey, data, 3600 * 1000);
+    await this.cacheService.setCache(cacheKey, data, 30 * 1000);
     return data;
   }
 

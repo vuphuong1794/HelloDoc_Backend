@@ -130,7 +130,7 @@ export class PostService {
             .exec();
 
         console.log('Setting cache...');
-        await this.cacheService.setCache(cacheKey, posts, 3600 * 1000);
+        await this.cacheService.setCache(cacheKey, posts, 30 * 1000);
         return posts;
     }
 
