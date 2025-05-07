@@ -1,4 +1,5 @@
 import { IsEmail, IsMongoId, IsNumber, IsOptional, IsString } from "class-validator";
+import { Express } from 'express';
 
 export class applyDoctorDto {
     @IsString()

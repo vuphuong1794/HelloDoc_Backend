@@ -8,6 +8,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 import { CacheService } from 'src/cache.service';
+import { Express } from 'express';
 
 @Injectable()
 export class PostService {
@@ -80,11 +81,11 @@ export class PostService {
 
             console.log('Cache MISS - querying DB');
             const data = await this.postModel
-                .find()
+                .find({ $or: [{ isHidden: false }, { isHidden: { $exists: false } }] })
                 .sort({ createdAt: -1 })
                 .populate({
                     path: 'user',
-                    select: 'name imageUrl avatarURL',
+                    select: 'name imageUrl avatarURL', // Chỉ cần viết 1 lần, nếu sau này User và Doctor khác nhau thì chỉnh chỗ này
                 })
                 .exec();
 
@@ -130,17 +131,25 @@ export class PostService {
         try {
             await this.findOwnerById(ownerId);
 
-            const cacheKey = `posts_by_owner_${ownerId}`;
+            const cacheKey = 'posts_by_owner';
             console.log('Trying to get user posts from cache...');
+
             const cached = await this.cacheService.getCache(cacheKey);
             if (cached) {
                 console.log('Cache HIT');
                 return cached;
             }
+        
 
             console.log('Cache MISS - querying DB');
             const posts = await this.postModel
-                .find({ user: ownerId })
+                .find({
+                    user: ownerId,
+                    $or: [
+                        { isHidden: false },
+                        { isHidden: { $exists: false } } //để xử lý các bài viết cũ chưa có trường này
+                    ]
+                })
                 .sort({ createdAt: -1 })
                 .populate({
                     path: 'user',
@@ -149,7 +158,7 @@ export class PostService {
                 .exec();
 
             console.log('Setting cache...');
-            await this.cacheService.setCache(cacheKey, posts, 3600 * 1000);
+            await this.cacheService.setCache(cacheKey, posts, 30 * 1000);
             return posts;
         } catch (error) {
             console.error('Error getting posts by owner:', error);
@@ -157,43 +166,54 @@ export class PostService {
         }
     }
 
-    async update(id: string, updatePostDto: UpdatePostDto): Promise<Post> {
+    async update(id: string, updatePostDto: UpdatePostDto) {
         try {
-            const updatedPost = await this.postModel
-                .findByIdAndUpdate(
-                    id,
-                    {
-                        user: updatePostDto.userId,
-                        content: updatePostDto.content,
-                        media: updatePostDto.media || [],
-                    },
-                    { new: true }
-                )
-                .populate({
-                    path: 'user',
-                    select: 'name imageUrl avatarURL',
-                })
-                .exec();
+            const existingPost = await this.postModel.findById(id);
+            if (!existingPost) throw new NotFoundException('Post not found');
 
-            if (!updatedPost) {
-                throw new NotFoundException(`Không tìm thấy bài viết với id ${id}`);
+            const uploadedMediaUrls: string[] = [];
+
+            const images = updatePostDto.images as Express.Multer.File[];
+
+            if (images && images.length > 0) {
+                for (const file of images) {
+                    const uploadResult = await this.cloudinaryService.uploadFile(file, `Posts/${existingPost.user}`);
+                    uploadedMediaUrls.push(uploadResult.secure_url);
+                }
+                existingPost.media = uploadedMediaUrls; // cập nhật ảnh mới
+            } else if (updatePostDto.media && updatePostDto.media.length > 0) {
+                //Nếu có gửi lại danh sách media cũ → giữ nguyên
+                existingPost.media = updatePostDto.media;
+            } else {
+
             }
 
-            return updatedPost;
+            if (updatePostDto.content) {
+                existingPost.content = updatePostDto.content;
+            }
+            const all_posts = 'posts_by_owner';
+            await this.cacheService.deleteCache(all_posts);
+
+            return await existingPost.save();
         } catch (error) {
             console.error('Error updating post:', error);
             throw new InternalServerErrorException('Lỗi khi cập nhật bài viết');
         }
     }
 
+
+
     async delete(id: string): Promise<{ message: string }> {
         try {
-            const result = await this.postModel.findByIdAndDelete(id);
-            if (!result) {
+            const updated = await this.postModel.findByIdAndUpdate(
+                id,
+                { isHidden: true },
+                { new: true }
+            );
+            if (!updated) {
                 throw new NotFoundException(`Post with id ${id} not found`);
             }
-
-            await this.deleteCache(result.user.toString());
+            await this.deleteCache(updated.user.toString());
             return { message: `Post with id ${id} deleted successfully` };
         } catch (error) {
             console.error('Error deleting post:', error);

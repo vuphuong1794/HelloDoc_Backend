@@ -94,6 +94,17 @@ export class AdminService {
 
     // Prepare the update object
     const updateFields: Partial<updateUserDto> = {};
+    // Xử lý tải lên giấy phép - sử dụng key 'license' từ form-data
+    if (updateData.avatarURL) {
+      try {
+        const uploadResult = await this.cloudinaryService.uploadFile(updateData.avatarURL, `Doctors/${id}/License`);
+        updateFields.avatarURL = uploadResult.secure_url;
+        console.log('Avatar da tai len:', updateData.avatarURL);
+      } catch (error) {
+        console.error('Lỗi Cloudinary:', error);
+        throw new BadRequestException('Lỗi khi tải avatar lên Cloudinary');
+      }
+    }
 
     if (updateData.email) updateFields.email = updateData.email;
     if (updateData.name) updateFields.name = updateData.name;
@@ -110,10 +121,6 @@ export class AdminService {
       updateFields.password = user.password; // Keep the old password if it's not changed
     }
 
-    if (updateData.avatarURL) {
-      const upload = await this.cloudinaryService.uploadFile(updateData.avatarURL, `Users/${id}/Avatar`);
-      updateFields.avatarURL = upload.secure_url;
-    }
 
     let roleChanged = false;
     let newRole = user.role; // Keep the old role by default
@@ -122,7 +129,11 @@ export class AdminService {
       roleChanged = true;
       newRole = updateData.role;
     }
-
+// Log thông tin cập nhật
+    console.log('Thông tin cập nhật nguoi dung:', {
+      id,
+      updatedData: updateFields
+    });
     // If no fields have changed, return a message
     if (Object.keys(updateFields).length === 0 && !roleChanged) {
       return { message: 'No changes detected' };

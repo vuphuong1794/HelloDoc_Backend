@@ -26,7 +26,8 @@ import { User } from 'src/schemas/user.schema';
 import { PendingDoctor } from 'src/schemas/PendingDoctor.shema';
 import { Specialty } from 'src/schemas/specialty.schema';
 import { Clinic } from 'src/schemas/clinic.schema';
-
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
 
 @Controller('doctor')
 export class DoctorController {
@@ -90,38 +91,32 @@ export class DoctorController {
   }
 
   @Post(':id/updateclinic')
-  @UseInterceptors(FilesInterceptor('imageService'))
+  @UseInterceptors(AnyFilesInterceptor())
   async updateClinic(
     @Param('id') id: string,
     @UploadedFiles() files: Express.Multer.File[],
     @Body() updateData: any
   ) {
-    console.log('Uploaded files:', files);
-    console.log('Is file available?', !!files?.[0]);
-  
-    // Parse JSON nếu cần
+    console.log('Uploaded files:', files.map(f => f.originalname));
+
     const clinicData = this.parseUpdateData(updateData);
     return this.doctorService.updateClinic(id, clinicData, { serviceImage: files });
   }
+
   private parseUpdateData(data: any) {
-    if (typeof data.services === 'string') {
-      try {
+    try {
+      if (typeof data.services === 'string') {
         data.services = JSON.parse(data.services);
-      } catch {
-        throw new BadRequestException('services không đúng định dạng JSON');
       }
-    }
-  
-    if (typeof data.workingHours === 'string') {
-      try {
+      if (typeof data.workingHours === 'string') {
         data.workingHours = JSON.parse(data.workingHours);
-      } catch {
-        throw new BadRequestException('workingHours không đúng định dạng JSON');
       }
+    } catch {
+      throw new BadRequestException('Dữ liệu JSON không hợp lệ');
     }
-  
     return data;
   }
+
 
   @Patch('apply-for-doctor/:id')
   @UseInterceptors(

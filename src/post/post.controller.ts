@@ -3,6 +3,7 @@ import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
 import { UpdatePostDto } from 'src/dtos/updatePost.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
 
 @Controller('post')
 export class PostController {
@@ -36,9 +37,16 @@ export class PostController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
+  @UseInterceptors(FilesInterceptor('images'))
+  async updatePost(
+    @Param('id') id: string,
+    @UploadedFiles() images: Express.Multer.File[],
+    @Body() updatePostDto: UpdatePostDto,
+  ) {
+    updatePostDto.images = images;
     return this.postService.update(id, updatePostDto);
   }
+
 
   @Delete(':id')
   async delete(@Param('id') id: string) {

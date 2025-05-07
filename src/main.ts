@@ -3,12 +3,35 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import * as admin from 'firebase-admin';
+import * as fs from 'fs';
 import * as path from 'path';
 
 async function bootstrap() {
   dotenv.config();
 
-  const serviceAccount = require(path.join(__dirname, '..', 'firebase-service-account.json'));
+  // Check if running in Render environment
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  let serviceAccount;
+  if (isProduction) {
+    // Render environment - read from /etc/secrets
+    try {
+      const serviceAccountPath = '/etc/secrets/firebase-service-account.json';
+      serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    } catch (error) {
+      console.error('Error loading Firebase service account from Render secrets:', error);
+      process.exit(1);
+    }
+  } else {
+    // Local development - read from project directory
+    try {
+      serviceAccount = require(path.join(__dirname, '..', 'firebase-service-account.json'));
+    } catch (error) {
+      console.error('Error loading Firebase service account locally:', error);
+      process.exit(1);
+    }
+  }
+
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
@@ -21,6 +44,8 @@ async function bootstrap() {
     transform: true
   }));
 
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`Server running on port ${port}`);
 }
 bootstrap();
