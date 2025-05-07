@@ -38,6 +38,14 @@ export class SpecialtyService {
   }
 
   async create(createSpecialtyDto: CreateSpecialtyDto) {
+
+    // Kiểm tra xem chuyên khoa đã tồn tại hay chưa
+    const existingSpecialty = await this.SpecialtyModel.findOne({
+      name: createSpecialtyDto.name,
+    });
+    if (existingSpecialty) {
+      throw new BadRequestException('Chuyên khoa nây đã tồn tại');
+    }
     let uploadedMediaUrl: string = '';
 
     if (createSpecialtyDto.image) {
