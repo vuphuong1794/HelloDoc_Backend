@@ -37,7 +37,7 @@ export class SpecialtyController {
   }
 
   @Put(':id')
-  @UseInterceptors(FileInterceptor('icon')) // 'icon' là tên field form-data
+  @UseInterceptors(FileInterceptor('icon'))
   async updateSpecialty(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
