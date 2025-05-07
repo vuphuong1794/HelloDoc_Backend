@@ -8,6 +8,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 import { CacheService } from 'src/cache.service';
+import { Express } from 'express';
 
 @Injectable()
 export class PostService {

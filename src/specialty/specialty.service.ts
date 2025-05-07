@@ -2,10 +2,9 @@ import { CreateSpecialtyDto } from './dto/create-specialty.dto';
 import { UpdateSpecialtyDto } from './dto/update-specialty.dto';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { CacheService } from 'src/cache.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { updateUserDto } from 'src/dtos/updateUser.dto';
 import { Specialty } from 'src/schemas/specialty.schema';
 
 @Injectable()
