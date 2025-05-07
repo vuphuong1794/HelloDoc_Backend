@@ -17,7 +17,9 @@ export class NotificationService {
       const createdNotification = new this.notificationModel({
         user: createNotificationDto.userId,
         userModel: createNotificationDto.userModel,
+        type:  createNotificationDto.type,
         content: createNotificationDto.content,
+        navigatePath: createNotificationDto.navigatePath,
       });
 
       return await createdNotification.save();
