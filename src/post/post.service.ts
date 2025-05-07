@@ -73,7 +73,7 @@ export class PostService {
 
         console.log('Cache MISS - querying DB');
         const data = await this.postModel
-            .find()
+            .find({ $or: [{ isHidden: false }, { isHidden: { $exists: false } }] })
             .sort({ createdAt: -1 })
             .populate({
                 path: 'user',
@@ -110,7 +110,7 @@ export class PostService {
     async getById(ownerId: string): Promise<Post[]> {
         await this.findOwnerById(ownerId);  // Đảm bảo owner tồn tại
 
-        const cacheKey = `posts_by_owner_${ownerId}`;
+        const cacheKey = 'posts_by_owner';
         console.log('Trying to get user posts from cache...');
 
         const cached = await this.cacheService.getCache(cacheKey);
@@ -121,7 +121,13 @@ export class PostService {
 
         console.log('Cache MISS - querying DB');
         const posts = await this.postModel
-            .find({ user: ownerId })
+            .find({
+                user: ownerId,
+                $or: [
+                    { isHidden: false },
+                    { isHidden: { $exists: false } } //để xử lý các bài viết cũ chưa có trường này
+                ]
+            })
             .sort({ createdAt: -1 })
             .populate({
                 path: 'user',
@@ -134,34 +140,46 @@ export class PostService {
         return posts;
     }
 
-    async update(id: string, updatePostDto: UpdatePostDto): Promise<Post> {
-        const updatedPost = await this.postModel
-            .findByIdAndUpdate(
-                id,
-                {
-                    user: updatePostDto.userId,
-                    content: updatePostDto.content,
-                    media: updatePostDto.media || [],
-                },
-                { new: true }
-            )
-            .populate({
-                path: 'user',
-                select: 'name imageUrl avatarURL',
-            })
-            .exec();
+    async update(id: string, updatePostDto: UpdatePostDto) {
+        const existingPost = await this.postModel.findById(id);
+        if (!existingPost) throw new NotFoundException('Post not found');
 
-        if (!updatedPost) {
-            throw new NotFoundException(`Post with id ${id} not found`);
+        const uploadedMediaUrls: string[] = [];
+
+        const images = updatePostDto.images as Express.Multer.File[];
+
+        if (images && images.length > 0) {
+            for (const file of images) {
+                const uploadResult = await this.cloudinaryService.uploadFile(file, `Posts/${existingPost.user}`);
+                uploadedMediaUrls.push(uploadResult.secure_url);
+            }
+            existingPost.media = uploadedMediaUrls; // cập nhật ảnh mới
+        } else {
+            // Nếu client không gửi ảnh mới nào (người dùng đã gỡ hết)
+            existingPost.media = []; // xoá hết ảnh cũ
         }
-        return updatedPost;
+
+        if (updatePostDto.content) {
+            existingPost.content = updatePostDto.content;
+        }
+        const all_posts = 'posts_by_owner';
+        await this.cacheService.deleteCache(all_posts);
+
+        return await existingPost.save();
     }
 
+
+
     async delete(id: string): Promise<{ message: string }> {
-        const result = await this.postModel.findByIdAndDelete(id);
-        if (!result) {
+        const updated = await this.postModel.findByIdAndUpdate(
+            id,
+            { isHidden: true },
+            { new: true }
+        );
+        if (!updated) {
             throw new NotFoundException(`Post with id ${id} not found`);
         }
+        await this.deleteCache(updated.user.toString());
         return { message: `Post with id ${id} deleted successfully` };
     }
 }

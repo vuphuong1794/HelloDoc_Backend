@@ -21,6 +21,9 @@ export class Post {
     // @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] })
     // likes: mongoose.Schema.Types.ObjectId[];
 
+    @Prop({ type: Boolean, default: false })
+    isHidden: boolean;
+
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
