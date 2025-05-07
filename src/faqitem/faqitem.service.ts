@@ -1,6 +1,6 @@
+import { BadRequestException, InternalServerErrorException, Injectable } from '@nestjs/common';
 import { CreateFaqitemDto } from './dto/create-faqitem.dto';
 import { UpdateFaqitemDto } from './dto/update-faqitem.dto';
-import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { FAQItem } from 'src/schemas/faqitem.schema';
@@ -12,7 +12,12 @@ export class FaqitemService {
     ) {}
 
   async getFaqitems() {
-    return await this.FaqitemModel.find();
+    try {
+      return await this.FaqitemModel.find();
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách câu hỏi thường gặp:', error);
+      throw new InternalServerErrorException('Đã xảy ra lỗi khi lấy danh sách câu hỏi thường gặp');
+    }
   }
 
   create(createFaqitemDto: CreateFaqitemDto) {
