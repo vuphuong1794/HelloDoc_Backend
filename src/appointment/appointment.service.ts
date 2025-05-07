@@ -7,6 +7,7 @@ import { Appointment, AppointmentStatus, ExaminationMethod } from 'src/schemas/A
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 import * as admin from 'firebase-admin';
+import { Review } from 'src/schemas/review.schema';
 
 @Injectable()
 export class AppointmentService {
@@ -14,8 +15,21 @@ export class AppointmentService {
         @InjectModel(Appointment.name) private appointmentModel: Model<Appointment>,
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
+        @InjectModel(Review.name) private reviewModel: Model<Review>,
         private cacheService: CacheService,
     ) { }
+    async getDoctorStats(doctorID: string) {
+        const patientsCount = await this.appointmentModel.countDocuments({
+            doctor: doctorID,
+            status: 'done',
+        });
+
+        const ratingsCount = await this.reviewModel.countDocuments({
+            doctor: doctorID,
+        });
+
+        return { patientsCount, ratingsCount };
+    }
 
     // 📌 Đặt lịch hẹn
     async bookAppointment(bookData: BookAppointmentDto) {
