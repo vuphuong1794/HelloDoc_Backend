@@ -1,5 +1,6 @@
 import { IsOptional, IsArray, IsMongoId, IsString } from 'class-validator';
 import { ObjectId } from 'mongoose';
+import { Express } from 'express';
 
 export class CreateSpecialtyDto {
   @IsString()

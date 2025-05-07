@@ -3,6 +3,7 @@ import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
 import { UpdatePostDto } from 'src/dtos/updatePost.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
 
 @Controller('post')
 export class PostController {

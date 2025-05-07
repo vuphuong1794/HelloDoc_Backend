@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import { IsEmail, IsOptional, IsNumberString, IsString, Matches, MinLength } from "class-validator";
+import { Express } from 'express';
 
 export class updateUserDto {
     @IsOptional()
