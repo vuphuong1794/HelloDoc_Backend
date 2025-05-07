@@ -155,9 +155,11 @@ export class PostService {
                 uploadedMediaUrls.push(uploadResult.secure_url);
             }
             existingPost.media = uploadedMediaUrls; // cập nhật ảnh mới
+        } else if (updatePostDto.media && updatePostDto.media.length > 0) {
+            //Nếu có gửi lại danh sách media cũ → giữ nguyên
+            existingPost.media = updatePostDto.media;
         } else {
-            // Nếu client không gửi ảnh mới nào (người dùng đã gỡ hết)
-            existingPost.media = []; // xoá hết ảnh cũ
+
         }
 
         if (updatePostDto.content) {
