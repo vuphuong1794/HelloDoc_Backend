@@ -20,6 +20,7 @@ import { JwtAuthGuard } from 'src/Guard/jwt-auth.guard';
 import { AdminGuard } from 'src/Guard/AdminGuard.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Types } from 'mongoose';
+import { Express } from 'express';
 
 @Controller('admin')
 export class AdminController {
