@@ -10,8 +10,14 @@ export class Notification extends Document {
     @Prop({ type: String, required: true, enum: ['User', 'Doctor'] })
     userModel: string;
 
+    @Prop({ type: String, required: true, enum: ['ForPost', 'ForAppointment'] })
+    type: string;
+
     @Prop({ required: true })
     content: string;
+
+    @Prop({ required: false })
+    navigatePath: string;
 
     @Prop({ default: false })
     isRead: boolean;

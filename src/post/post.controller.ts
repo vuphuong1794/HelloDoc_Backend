@@ -31,9 +31,9 @@ export class PostController {
     return this.postService.getOne(id);
   }
 
-  @Get('getById/:id')
-  async getById(@Param('id') id: string) {
-    return this.postService.getById(id);
+  @Get('get-by-user-id/:id')
+  async getByUserId(@Param('id') id: string) {
+    return this.postService.getByUserId(id);
   }
 
   @Patch(':id')

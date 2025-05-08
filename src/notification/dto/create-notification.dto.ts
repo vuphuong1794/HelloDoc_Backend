@@ -11,5 +11,13 @@ export class CreateNotificationDto {
     userModel: string;
 
     @IsString()
+    @IsNotEmpty()
+    @IsIn(['ForPost', 'ForAppointment'])
+    type: string;
+
+    @IsString()
     content: string;
+
+    @IsString()
+    navigatePath: string;
 }

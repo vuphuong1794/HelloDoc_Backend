@@ -104,7 +104,7 @@ export class PostService {
                 .findById(id)
                 .populate({
                     path: 'user',
-                    select: 'name imageUrl avatarURL',
+                    select: 'name avatarURL',
                 })
                 .exec();
 
@@ -127,7 +127,7 @@ export class PostService {
         }
     }
 
-    async getById(ownerId: string): Promise<Post[]> {
+    async getByUserId(ownerId: string): Promise<Post[]> {
         try {
             await this.findOwnerById(ownerId);
             const posts = await this.postModel
