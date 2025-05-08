@@ -130,18 +130,6 @@ export class PostService {
     async getById(ownerId: string): Promise<Post[]> {
         try {
             await this.findOwnerById(ownerId);
-
-            const cacheKey = 'posts_by_owner';
-            console.log('Trying to get user posts from cache...');
-
-            const cached = await this.cacheService.getCache(cacheKey);
-            if (cached) {
-                console.log('Cache HIT');
-                return cached;
-            }
-        
-
-            console.log('Cache MISS - querying DB');
             const posts = await this.postModel
                 .find({
                     user: ownerId,
@@ -157,8 +145,6 @@ export class PostService {
                 })
                 .exec();
 
-            console.log('Setting cache...');
-            await this.cacheService.setCache(cacheKey, posts, 30 * 1000);
             return posts;
         } catch (error) {
             console.error('Error getting posts by owner:', error);

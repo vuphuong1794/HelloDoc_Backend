@@ -98,7 +98,7 @@ export class DoctorController {
     @Body() updateData: any
   ) {
     console.log('Uploaded files:', files.map(f => f.originalname));
-
+    console.log('Uploaded data:', updateData);
     const clinicData = this.parseUpdateData(updateData);
     return this.doctorService.updateClinic(id, clinicData, { serviceImage: files });
   }
@@ -110,6 +110,12 @@ export class DoctorController {
       }
       if (typeof data.workingHours === 'string') {
         data.workingHours = JSON.parse(data.workingHours);
+      }
+      if (typeof data.oldWorkingHours === 'string') {
+        data.oldWorkingHours = JSON.parse(data.oldWorkingHours);
+      }
+      if (typeof data.oldService === 'string') {
+        data.oldService = JSON.parse(data.oldService);
       }
     } catch {
       throw new BadRequestException('Dữ liệu JSON không hợp lệ');

@@ -17,7 +17,7 @@ export class ServiceOutput extends Document {
   imageService: string[];
 
   @Prop()
-  specialtyID: string;
+  specialtyId: string;
 
   @Prop()
   specialtyName: string;
