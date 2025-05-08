@@ -4,12 +4,7 @@ import { Express } from 'express';
 export class CreateNewsDto {
     @IsNotEmpty()
     @IsMongoId()
-    userId: string;
-
-    @IsString()
-    @IsNotEmpty()
-    @IsIn(['User', 'Doctor'])
-    userModel: 'User' | 'Doctor';
+    adminId: string;
 
     @IsString()
     title: string;

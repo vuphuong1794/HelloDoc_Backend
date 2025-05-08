@@ -8,6 +8,7 @@ import { Model } from 'mongoose';
 import { CreateNewsFavoriteDto } from './dto/create-news-favorite.dto';
 import { GetNewsFavoriteDto } from './dto/get-news-favorite.dto';
 import * as admin from 'firebase-admin';
+import { Admin } from 'src/schemas/admin.schema';
 
 @Injectable()
 export class NewsFavoriteService {
@@ -16,6 +17,7 @@ export class NewsFavoriteService {
         @InjectModel(News.name) private newsModel: Model<News>,
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
+        @InjectModel(Admin.name) private adminModel: Model<Admin>,
     ) { }
 
     async getNewsFavoritesByNewsId(newsId: string, dto: GetNewsFavoriteDto) {

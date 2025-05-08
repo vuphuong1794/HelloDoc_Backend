@@ -7,6 +7,7 @@ export class CreateNewsFavoriteDto {
 
     @IsString()
     @IsNotEmpty()
-    @IsIn(['User', 'Doctor'])
-    userModel: 'User' | 'Doctor';
+    @IsIn(['User', 'Doctor', 'Admin'])
+    userModel: 'User' | 'Doctor' | 'Admin';
+
 }
