@@ -6,6 +6,7 @@ import { NewsFavorite, NewsFavoriteSchema } from '../schemas/news-favorite.schem
 import { News, NewsSchema } from '../schemas/news.schema';
 import { User, UserSchema } from '../schemas/user.schema';
 import { Doctor, DoctorSchema } from '../schemas/doctor.schema';
+import { Admin, AdminSchema } from 'src/schemas/admin.schema';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { Doctor, DoctorSchema } from '../schemas/doctor.schema';
       { name: News.name, schema: NewsSchema },
       { name: User.name, schema: UserSchema },
       { name: Doctor.name, schema: DoctorSchema },
+      { name: Admin.name, schema: AdminSchema },
     ]),
   ],
   controllers: [NewsFavoriteController],

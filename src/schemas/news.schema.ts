@@ -2,11 +2,8 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Types } from 'mongoose';
 @Schema({ timestamps: true })
 export class News {
-    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'userModel' })
-    user: Types.ObjectId;
-
-    @Prop({ type: String, required: true, enum: ['User', 'Doctor'] })
-    userModel: string;
+    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Admin' })
+    admin: Types.ObjectId; // Người đăng (admin)
 
     @Prop({ required: true })
     title: string;

@@ -7,7 +7,7 @@ export class NewsComment extends Document {
     @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'userModel' })
     user: Types.ObjectId;
 
-    @Prop({ type: String, required: true, enum: ['User', 'Doctor'] })
+    @Prop({ type: String, required: true, enum: ['User', 'Doctor', 'Admin'] })
     userModel: string;
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'News' })

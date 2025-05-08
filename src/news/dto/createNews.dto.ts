@@ -3,12 +3,7 @@ import { IsNotEmpty, IsMongoId, IsIn, IsString, IsArray, IsOptional } from 'clas
 export class CreateNewsDto {
     @IsNotEmpty()
     @IsMongoId()
-    userId: string;
-
-    @IsString()
-    @IsNotEmpty()
-    @IsIn(['User', 'Doctor'])
-    userModel: 'User' | 'Doctor';
+    adminId: string;
 
     @IsString()
     title: string;

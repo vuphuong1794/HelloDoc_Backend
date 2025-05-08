@@ -6,8 +6,8 @@ export class CreateNewsCommentDto {
 
     @IsString()
     @IsNotEmpty()
-    @IsIn(['User', 'Doctor'])
-    userModel: 'User' | 'Doctor';
+    @IsIn(['User', 'Doctor', 'Admin'])
+    userModel: 'User' | 'Doctor' | 'Admin';
 
     @IsString()
     content: string;

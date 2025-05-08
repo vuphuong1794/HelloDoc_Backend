@@ -6,14 +6,14 @@ import { News, NewsSchema } from '../schemas/news.schema';
 import { User, UserSchema } from '../schemas/user.schema';
 import { Doctor, DoctorSchema } from '../schemas/doctor.schema';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { Admin, AdminSchema } from 'src/schemas/admin.schema';
 
 @Module({
   imports: [
     CloudinaryModule,
     MongooseModule.forFeature([
       { name: News.name, schema: NewsSchema },
-      { name: User.name, schema: UserSchema },
-      { name: Doctor.name, schema: DoctorSchema },
+      { name: Admin.name, schema: AdminSchema },
     ]),
   ],
   controllers: [NewsController],
