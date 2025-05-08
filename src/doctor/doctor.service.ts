@@ -215,9 +215,6 @@ export class DoctorService {
     return updatedWH;
   }
 
-
-
-
   async updateDoctorProfile(doctorId: string, updateData: any) {
     if (!Types.ObjectId.isValid(doctorId)) {
       throw new BadRequestException('ID không hợp lệ');
@@ -453,8 +450,7 @@ export class DoctorService {
     }
 
     console.log('Cache MISS - querying DB');
-    const data = await this.pendingDoctorModel.find({ verified: false })
-
+    const data = await this.pendingDoctorModel.find({ verified: false, isDeleted: false })
 
     if (!data) {
       throw new NotFoundException('Không có bác sĩ nào trong danh sách chờ phê duyệt.');
@@ -522,6 +518,7 @@ export class DoctorService {
       certificates: pendingDoctor.certificates,
       experience: pendingDoctor.experience,
       specialty: pendingDoctor.specialty,
+      isDeleted: pendingDoctor.isDeleted,
     });
     await this.pendingDoctorModel.deleteOne({ userId });
     await this.userModel.deleteOne({ _id: userId });
