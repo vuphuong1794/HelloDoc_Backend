@@ -127,16 +127,16 @@ export class DoctorService {
 
     // Xử lý services nếu có
     if (Array.isArray(filteredData.services)) {
-      filteredData.services = this.mergeServices(doctor.services, filteredData.services, uploadedImages);
+      filteredData.services = await this.mergeServices(doctorId,filteredData.oldService, filteredData.services, uploadedImages);
     }
 
     // Xử lý workingHours nếu có
     if (Array.isArray(filteredData.workingHours)) {
-      filteredData.workingHours = this.mergeWorkingHours(doctor.workingHours, filteredData.workingHours);
+      filteredData.workingHours = this.mergeWorkingHours(filteredData.oldWorkingHours, filteredData.workingHours);
     }
 
     // Gán và lưu
-    Object.assign(doctor, filteredData);
+    await Object.assign(doctor, filteredData);
     await doctor.save();
     await this.cacheService.deleteCache(`doctor_${doctorId}`);
 
@@ -147,7 +147,7 @@ export class DoctorService {
   }
 
   private filterAllowedFields(data: any) {
-    const allowed = ['description', 'address', 'services', 'workingHours'];
+    const allowed = ['description', 'address', 'services', 'workingHours', 'oldService', 'oldWorkingHours'];
     const filtered: any = {};
     for (const key of allowed) {
       if (key in data) filtered[key] = data[key];
@@ -166,9 +166,9 @@ export class DoctorService {
     return uploaded;
   }
 
-  private mergeServices(existingServices: any[], newServices: any[], uploadedImages: string[]): any[] {
+  private async mergeServices(doctorId,existingServices: any[], newServices: any[], uploadedImages: string[]) {
     const updatedServices = [...existingServices];
-    let uploadIndex = 0;
+        let uploadIndex = 0;
 
     for (const service of newServices) {
       const imageList = uploadedImages?.length
@@ -181,13 +181,19 @@ export class DoctorService {
         maxprice: Number(service.maxprice),
         minprice: Number(service.minprice),
         imageService: imageList,
-        specialtyID: service.specialtyID,
+        specialtyId: service.specialtyId,
         specialtyName: service.specialtyName,
       };
 
       uploadIndex++;
       updatedServices.push(newService);
-    }
+      
+      // Đảm bảo bác sĩ được gắn vào chuyên khoa này (chỉ thêm nếu chưa có)
+      await this.SpecialtyModel.findByIdAndUpdate(
+        service.specialtyId,
+        { $addToSet: { doctors: doctorId } }  // Tránh trùng
+      );
+      }
 
     return updatedServices;
   }
