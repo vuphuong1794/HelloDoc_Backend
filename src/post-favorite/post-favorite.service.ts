@@ -26,9 +26,9 @@ export class PostFavoriteService {
         user: getPostFavoriteDto.userId,
         post: postId,
       });
-  
+
       const totalFavorites = await this.postFavoriteModel.countDocuments({ post: postId });
-  
+
       return {
         isFavorited: !!postFavorite,
         totalFavorites,
@@ -86,16 +86,6 @@ export class PostFavoriteService {
 
   async getPostFavoritesByUserId(userId: string) {
     try {
-      const postIdFavoritesCacheKey = `userIdFavorites_${userId}`;
-      console.log('try to get post favorites from cache:', postIdFavoritesCacheKey);
-
-      const cached = await this.cacheService.getCache(postIdFavoritesCacheKey)
-      if (cached) {
-        console.log('Cache HIT');
-        return cached;
-      }
-
-      console.log('Cache MISS - fetching from DB...');
       const postFavorites = await this.postFavoriteModel.find({ user: userId })
         .populate({
           path: 'post',
@@ -107,9 +97,6 @@ export class PostFavoriteService {
         })
         .exec();
 
-      console.log('setting cache...');
-      await this.cacheService.setCache(postIdFavoritesCacheKey, postFavorites, 30 * 1000);
-
       return postFavorites;
     } catch (error) {
       console.error('Lỗi khi lấy danh sách bình luận:', error);
@@ -117,53 +104,53 @@ export class PostFavoriteService {
     }
   }
 
-  async notifyFavorite(userId: string, userModel:string, message: string) {
-      try {
-        if (userModel== 'User') {
+  async notifyFavorite(userId: string, userModel: string, message: string) {
+    try {
+      if (userModel == 'User') {
         const user = await this.userModel.findById(userId);
-          if(user) {
-            if (user?.fcmToken) {
-                await admin.messaging().send({
-                    token: user.fcmToken,
-                    notification: {
-                      title: 'HelloDoc',
-                      body: message,
-                    },
-                    data: {
-                        bigText: message, // Truyền toàn bộ nội dung dài ở đây
-                    },
-                });
-                console.log(`Đã gửi thông báo đến người dùng ${userId}`);
-                return
-            } else {
-                console.warn(`Người dùng ${userId} không có fcmToken`);
-                return
-            }
-          }
-        } else if (userModel== 'Doctor') {
-          const doctor = await this.doctorModel.findById(userId);
-          if(doctor) {
-            if (doctor?.fcmToken) {
-                await admin.messaging().send({
-                    token: doctor.fcmToken,
-                    notification: {
-                      title: 'HelloDoc',
-                      body: message,
-                    },
-                    data: {
-                        bigText: message, // Truyền toàn bộ nội dung dài ở đây
-                    },
-                });
-                console.log(`Đã gửi thông báo đến người dùng ${userId}`);
-                return
-            } else {
-                console.warn(`Người dùng ${userId} không có fcmToken`);
-                return
-            }
+        if (user) {
+          if (user?.fcmToken) {
+            await admin.messaging().send({
+              token: user.fcmToken,
+              notification: {
+                title: 'HelloDoc',
+                body: message,
+              },
+              data: {
+                bigText: message, // Truyền toàn bộ nội dung dài ở đây
+              },
+            });
+            console.log(`Đã gửi thông báo đến người dùng ${userId}`);
+            return
+          } else {
+            console.warn(`Người dùng ${userId} không có fcmToken`);
+            return
           }
         }
-      } catch (error) {
-          console.error(`Lỗi khi gửi thông báo đến bác sĩ ${userId}:`, error);
+      } else if (userModel == 'Doctor') {
+        const doctor = await this.doctorModel.findById(userId);
+        if (doctor) {
+          if (doctor?.fcmToken) {
+            await admin.messaging().send({
+              token: doctor.fcmToken,
+              notification: {
+                title: 'HelloDoc',
+                body: message,
+              },
+              data: {
+                bigText: message, // Truyền toàn bộ nội dung dài ở đây
+              },
+            });
+            console.log(`Đã gửi thông báo đến người dùng ${userId}`);
+            return
+          } else {
+            console.warn(`Người dùng ${userId} không có fcmToken`);
+            return
+          }
+        }
       }
+    } catch (error) {
+      console.error(`Lỗi khi gửi thông báo đến bác sĩ ${userId}:`, error);
+    }
   }
 }

@@ -57,6 +57,9 @@ export class PendingDoctor extends Document {
   @Prop()
   frontCccdUrl?: string;
 
+  @Prop({ default: false })
+  isDeleted: boolean; // Trạng thái xóa (true/false)
+
 }
 
 export const PendingDoctorSchema = SchemaFactory.createForClass(PendingDoctor);

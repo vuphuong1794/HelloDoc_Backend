@@ -28,7 +28,7 @@ export class AuthService {
     private configService: ConfigService,
     private jwtService: JwtService,
     private cacheService: CacheService,
-  ) {}
+  ) { }
 
   async signUp(signUpData: SignupDto) {
     try {
@@ -67,9 +67,9 @@ export class AuthService {
     try {
       const { email, password } = LoginData;
       let user =
-        (await this.UserModel.findOne({ email })) ||
+        (await this.UserModel.findOne({ email, isDeleted: false })) ||
         (await this.AdminModel.findOne({ email })) ||
-        (await this.DoctorModel.findOne({ email }));
+        (await this.DoctorModel.findOne({ email, isDeleted: false }));
 
       if (!user) {
         throw new UnauthorizedException('Không tìm thấy người dùng');
@@ -194,31 +194,31 @@ export class AuthService {
 
   async resetPassword(email: string, newPassword: string): Promise<any> {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-  
+
     // Tìm và cập nhật trong UserModel
     const user = await this.UserModel.findOne({ email });
     if (user) {
       await this.UserModel.updateOne({ email }, { password: hashedPassword });
       return { message: 'Đặt lại mật khẩu thành công (user)' };
     }
-  
+
     // Tìm và cập nhật trong AdminModel
     const admin = await this.AdminModel.findOne({ email });
     if (admin) {
       await this.AdminModel.updateOne({ email }, { password: hashedPassword });
       return { message: 'Đặt lại mật khẩu thành công (admin)' };
     }
-  
+
     // Tìm và cập nhật trong DoctorModel
     const doctor = await this.DoctorModel.findOne({ email });
     if (doctor) {
       await this.DoctorModel.updateOne({ email }, { password: hashedPassword });
       return { message: 'Đặt lại mật khẩu thành công (doctor)' };
     }
-  
+
     // Không tìm thấy ở bất kỳ model nào
     throw new NotFoundException('Người dùng không tồn tại');
-  }  
+  }
 
   private async findUserByEmail(email: string): Promise<any> {
     return (
