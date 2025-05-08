@@ -5,10 +5,11 @@ import { NewsService } from './news.service';
 import { News, NewsSchema } from '../schemas/news.schema';
 import { User, UserSchema } from '../schemas/user.schema';
 import { Doctor, DoctorSchema } from '../schemas/doctor.schema';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
+    CloudinaryModule,
     MongooseModule.forFeature([
       { name: News.name, schema: NewsSchema },
       { name: User.name, schema: UserSchema },
