@@ -1,26 +1,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
-import { Post } from './Post.schema';
+import { News } from './news.schema';
 
 @Schema({ timestamps: true })
-export class Notification extends Document {
+export class NewsComment extends Document {
     @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'userModel' })
     user: Types.ObjectId;
 
     @Prop({ type: String, required: true, enum: ['User', 'Doctor'] })
     userModel: string;
 
-    @Prop({ type: String, required: true, enum: ['ForPost', 'ForAppointment'] })
-    type: string;
+    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'News' })
+    news: Types.ObjectId | News;
 
     @Prop({ required: true })
     content: string;
-
-    @Prop({ required: false })
-    navigatePath: string;
-
-    @Prop({ default: false })
-    isRead: boolean;
 }
 
-export const NotificationSchema = SchemaFactory.createForClass(Notification);
+export const NewsCommentSchema = SchemaFactory.createForClass(NewsComment);

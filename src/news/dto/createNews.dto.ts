@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsMongoId, IsIn, IsString, IsArray, IsOptional } from 'class-validator';
 
-export class CreateNotificationDto {
+export class CreateNewsDto {
     @IsNotEmpty()
     @IsMongoId()
     userId: string;
@@ -8,16 +8,14 @@ export class CreateNotificationDto {
     @IsString()
     @IsNotEmpty()
     @IsIn(['User', 'Doctor'])
-    userModel: string;
+    userModel: 'User' | 'Doctor';
 
     @IsString()
-    @IsNotEmpty()
-    @IsIn(['ForPost', 'ForAppointment'])
-    type: string;
+    title: string;
 
     @IsString()
     content: string;
 
-    @IsString()
-    navigatePath: string;
+    @IsOptional()
+    images?: Express.Multer.File[];
 }
