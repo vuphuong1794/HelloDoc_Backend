@@ -25,6 +25,9 @@ import { PostFavoriteModule } from './post-favorite/post-favorite.module';
 import { PostCommentModule } from './post-comment/post-comment.module';
 import { NotificationModule } from './notification/notification.module';
 import { UserModule } from './user/user.module';
+import { NewsModule } from './news/news.module';
+import { NewsCommentModule } from './news-comment/news-comment.module';
+import { NewsFavoriteModule } from './news-favorite/news-favorite.module';
 
 @Module({
   imports: [
@@ -65,6 +68,9 @@ import { UserModule } from './user/user.module';
     PostCommentModule,
     NotificationModule,
     UserModule,
+    NewsModule,
+    NewsCommentModule,
+    NewsFavoriteModule,
   ],
   controllers: [AppController],
   providers: [AppService, CacheService],
