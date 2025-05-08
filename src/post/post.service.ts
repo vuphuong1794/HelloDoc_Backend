@@ -52,8 +52,6 @@ export class PostService {
                 }
             }
 
-            await this.deleteCache(createPostDto.userId);
-
             const createdPost = new this.postModel({
                 user: createPostDto.userId,
                 userModel: createPostDto.userModel,
@@ -61,7 +59,6 @@ export class PostService {
                 media: uploadedMediaUrls,
             });
 
-            await this.deleteCache(createPostDto.userId);
             return createdPost.save();
         } catch (error) {
             console.error('Error creating post:', error);
@@ -70,16 +67,7 @@ export class PostService {
     }
 
     async getAll(): Promise<Post[]> {
-        const cacheKey = 'all_posts';
         try {
-            console.log('Trying to get from cache...');
-            const cached = await this.cacheService.getCache(cacheKey);
-            if (cached) {
-                console.log('Cache HIT');
-                return cached;
-            }
-
-            console.log('Cache MISS - querying DB');
             const data = await this.postModel
                 .find({ $or: [{ isHidden: false }, { isHidden: { $exists: false } }] })
                 .sort({ createdAt: -1 })
@@ -89,8 +77,6 @@ export class PostService {
                 })
                 .exec();
 
-            console.log('Setting cache...');
-            await this.cacheService.setCache(cacheKey, data, 30 * 1000);
             return data;
         } catch (error) {
             console.error('Error getting all posts:', error);
@@ -177,8 +163,6 @@ export class PostService {
             if (updatePostDto.content) {
                 existingPost.content = updatePostDto.content;
             }
-            const all_posts = 'posts_by_owner';
-            await this.cacheService.deleteCache(all_posts);
 
             return await existingPost.save();
         } catch (error) {
@@ -186,8 +170,6 @@ export class PostService {
             throw new InternalServerErrorException('Lỗi khi cập nhật bài viết');
         }
     }
-
-
 
     async delete(id: string): Promise<{ message: string }> {
         try {
@@ -199,7 +181,7 @@ export class PostService {
             if (!updated) {
                 throw new NotFoundException(`Post with id ${id} not found`);
             }
-            await this.deleteCache(updated.user.toString());
+
             return { message: `Post with id ${id} deleted successfully` };
         } catch (error) {
             console.error('Error deleting post:', error);
