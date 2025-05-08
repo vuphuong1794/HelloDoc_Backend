@@ -6,6 +6,7 @@ import { User, UserSchema } from '../schemas/user.schema';
 import { Doctor, DoctorSchema } from '../schemas/doctor.schema';
 import { NewsCommentService } from './news-comment.service';
 import { NewsCommentController } from './news-comment.controller';
+import { Admin, AdminSchema } from 'src/schemas/admin.schema';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { NewsCommentController } from './news-comment.controller';
       { name: News.name, schema: NewsSchema },
       { name: User.name, schema: UserSchema },
       { name: Doctor.name, schema: DoctorSchema },
+      { name: Admin.name, schema: AdminSchema },
     ]),
   ],
   controllers: [NewsCommentController],

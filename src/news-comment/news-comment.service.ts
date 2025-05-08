@@ -8,6 +8,7 @@ import { News } from '../schemas/news.schema';
 import { User } from '../schemas/user.schema';
 import { Doctor } from '../schemas/doctor.schema';
 import * as admin from 'firebase-admin';
+import { Admin } from 'src/schemas/admin.schema';
 
 @Injectable()
 export class NewsCommentService {
@@ -16,6 +17,7 @@ export class NewsCommentService {
         @InjectModel(News.name) private newsModel: Model<News>,
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
+        @InjectModel(Admin.name) private adminModel: Model<Admin>,
     ) { }
 
     async create(newsId: string, dto: CreateNewsCommentDto) {

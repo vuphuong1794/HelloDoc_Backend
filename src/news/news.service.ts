@@ -12,8 +12,6 @@ import { Doctor } from '../schemas/doctor.schema';
 export class NewsService {
     constructor(
         @InjectModel(News.name) private newsModel: Model<News>,
-        @InjectModel(User.name) private userModel: Model<User>,
-        @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
         private cloudinaryService: CloudinaryService,
     ) { }
 
@@ -23,14 +21,13 @@ export class NewsService {
 
             if (createNewsDto.images && createNewsDto.images.length > 0) {
                 for (const file of createNewsDto.images) {
-                    const upload = await this.cloudinaryService.uploadFile(file, `News/${createNewsDto.userId}`);
+                    const upload = await this.cloudinaryService.uploadFile(file, `News/${createNewsDto.adminId}`);
                     uploadedMediaUrls.push(upload.secure_url);
                 }
             }
 
             const created = new this.newsModel({
-                user: createNewsDto.userId,
-                userModel: createNewsDto.userModel,
+                admin: createNewsDto.adminId,
                 title: createNewsDto.title,
                 content: createNewsDto.content,
                 media: uploadedMediaUrls,
@@ -59,7 +56,7 @@ export class NewsService {
         const uploadedMediaUrls: string[] = [];
         if (updateDto.images && updateDto.images.length > 0) {
             for (const file of updateDto.images) {
-                const upload = await this.cloudinaryService.uploadFile(file, `News/${news.user}`);
+                const upload = await this.cloudinaryService.uploadFile(file, `News/${news.admin}`);
                 uploadedMediaUrls.push(upload.secure_url);
             }
             news.media = uploadedMediaUrls;
