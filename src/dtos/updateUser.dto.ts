@@ -18,6 +18,10 @@ export class updateUserDto {
 
     @IsOptional()
     @IsString()
+    address?: string;
+
+    @IsOptional()
+    @IsString()
     @MinLength(6, { message: 'Password must be at least 6 characters' })
     @Matches(/^(?=.*[A-Za-z])(?=.*[0-9]).*$/, { message: 'Password must contain at least one letter and one number' })
     password?: string;
