@@ -39,9 +39,14 @@ import { NewsFavoriteModule } from './news-favorite/news-favorite.module';
     JwtModule.register({ global: true, secret: "secretKey" }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGO_URI'),
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const isDev = configService.get<string>('isDev') === 'true';
+        const uri = isDev
+          ? configService.get<string>('MONGO_URI_DEV')
+          : configService.get<string>('MONGO_URI_PROD');
+
+        return { uri };
+      },
       inject: [ConfigService],
     }),
     CacheModule.register({

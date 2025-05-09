@@ -30,6 +30,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@types/bcrypt": "^5.0.2",
+    "@types/cache-manager": "^5.0.0",
     "bcrypt": "^5.1.1",
     "cache-manager": "^6.4.2",
     "cache-manager-redis-store": "^3.0.1",
