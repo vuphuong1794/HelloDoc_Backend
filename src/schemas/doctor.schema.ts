@@ -107,6 +107,14 @@ export class Doctor extends Document {
   @Prop({ default: false })
   @IsBoolean()
   isDeleted: boolean;
+
+  @Prop({ default: false })
+  @IsBoolean()
+  hasHomeService: boolean;
+
+  @Prop({ default: false })
+  @IsBoolean()
+  isClinicPaused: boolean;
 }
 
 
