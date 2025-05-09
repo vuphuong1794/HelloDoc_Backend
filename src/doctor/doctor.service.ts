@@ -147,10 +147,17 @@ export class DoctorService {
   }
 
   private filterAllowedFields(data: any) {
-    const allowed = ['description', 'address', 'services', 'workingHours', 'oldService', 'oldWorkingHours'];
+    const allowed = ['description', 'address', 'services', 'workingHours', 'oldService', 'oldWorkingHours', 'hasHomeService', 'isClinicPaused'];
     const filtered: any = {};
     for (const key of allowed) {
-      if (key in data) filtered[key] = data[key];
+      if (key in data) {
+        if (key === 'hasHomeService' || key === 'isClinicPaused') {
+        // Chuyển đổi sang boolean nếu là chuỗi
+        filtered[key] = data[key] === 'true' || data[key] === true;
+      } else {
+        filtered[key] = data[key];
+      }
+      }
     }
     return filtered;
   }
