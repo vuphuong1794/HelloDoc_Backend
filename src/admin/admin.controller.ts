@@ -90,7 +90,7 @@ export class AdminController {
   }
 
   @Delete('delete-user/:id')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  //@UseGuards(JwtAuthGuard, AdminGuard)
   async deleteUser(@Param('id') id: string) {
     return this.adminService.deleteUser(id);
   }

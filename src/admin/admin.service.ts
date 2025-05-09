@@ -31,10 +31,8 @@ export class AdminService {
   }
 
   async getAllUsers() {
-    const [users, doctors] = await Promise.all([
-      this.UserModel.find(),
-      this.DoctorModel.find()
-    ]);
+    const users = await this.UserModel.find({ isDeleted: false });
+    const doctors = await this.DoctorModel.find({ isDeleted: false });
 
     return { users, doctors };
   }
@@ -94,7 +92,6 @@ export class AdminService {
 
     // Prepare the update object
     const updateFields: Partial<updateUserDto> = {};
-    // Xử lý tải lên giấy phép - sử dụng key 'license' từ form-data
     if (updateData.avatarURL) {
       try {
         const uploadResult = await this.cloudinaryService.uploadFile(updateData.avatarURL, `Doctors/${id}/License`);
@@ -109,6 +106,7 @@ export class AdminService {
     if (updateData.email) updateFields.email = updateData.email;
     if (updateData.name) updateFields.name = updateData.name;
     if (updateData.phone) updateFields.phone = updateData.phone;
+    if (updateData.address) updateFields.address = updateData.address;
 
     // 🔥 Only hash password if it is actually changed
     if (
@@ -121,7 +119,6 @@ export class AdminService {
       updateFields.password = user.password; // Keep the old password if it's not changed
     }
 
-
     let roleChanged = false;
     let newRole = user.role; // Keep the old role by default
 
@@ -129,7 +126,7 @@ export class AdminService {
       roleChanged = true;
       newRole = updateData.role;
     }
-// Log thông tin cập nhật
+    // Log thông tin cập nhật
     console.log('Thông tin cập nhật nguoi dung:', {
       id,
       updatedData: updateFields
@@ -243,20 +240,22 @@ export class AdminService {
   }
 
   async deleteUser(id: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new BadRequestException('Invalid ID format');
-    }
+    // Check if the user exists in either UserModel or DoctorModel
+    let user =
+      (await this.UserModel.findById(id)) ||
+      (await this.DoctorModel.findById(id));
 
-    const user = await this.UserModel.findById(id);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new UnauthorizedException('Không tìm thấy người dùng');
     }
 
     if (user.isDeleted) {
       return { message: 'User already deleted' };
     }
 
+    // Soft delete the user
     await this.UserModel.findByIdAndUpdate(id, { isDeleted: true });
+    await this.DoctorModel.findByIdAndUpdate(id, { isDeleted: true });
 
     return { message: 'User soft-deleted successfully' };
   }
