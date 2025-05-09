@@ -115,9 +115,7 @@ export class AppointmentService {
         };
     }
 
-
     // 📌 Gửi thông báo đến bác sĩ
-
     async notifyDoctor(doctorId: string, message: string) {
         try {
             const doctor = await this.doctorModel.findById(doctorId);
