@@ -15,6 +15,7 @@ export class PostComment extends Document {
 
     @Prop({ required: true })
     content: string;
+
 }
 
 export const PostCommentSchema = SchemaFactory.createForClass(PostComment);

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete,Query } from '@nestjs/common';
 import { PostCommentService } from './post-comment.service';
 import { CreatePostCommentDto } from './dto/create-post-comment.dto';
 import { UpdatePostCommentDto } from './dto/update-post-comment.dto';
@@ -12,13 +12,24 @@ export class PostCommentController {
     @Param('postId') postId: string,
     @Body() createPostCommentDto: CreatePostCommentDto
   ) {
+    console.log("ID bai viet dc cmt la: "+postId)
+    console.log("Noi dung cmt la: "+createPostCommentDto+" "+createPostCommentDto.content)
+
     return this.postCommentService.createCommentByPostId(postId, createPostCommentDto);
   }
 
-  @Get(':postId/comment/get')
-  async getCommentsByPostId(@Param('postId') postId: string) {
-    return this.postCommentService.getCommentsByPostId(postId);
-  }
+@Get(':postId/comment/get')
+async getCommentsByPostId(
+  @Param('postId') postId: string,
+  @Query('limit') limit = '10',
+  @Query('skip') skip = '0',
+) {
+  const limitNum = parseInt(limit);
+  const skipNum = parseInt(skip);
+  console.log("limitNum "+limitNum+" skipNum "+skipNum)
+  return this.postCommentService.getCommentsByPostId(postId, limitNum, skipNum);
+}
+
 
   @Get('user/:userId/comment/get')
   async getCommentByUserId(@Param('userId') userId: string) {

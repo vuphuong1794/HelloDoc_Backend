@@ -29,6 +29,12 @@ export class PostCommentService {
         post: postId,
         content: createPostCommentDto.content,
       });
+      console.log("Noi dung cmt vao service la: "
+        +createPostCommentDto.userId
+        +" "+createPostCommentDto.userModel
+      +" "+postId
+      +" "+createPostCommentDto.content)
+
 
       const post = await this.postModel.findById(postId);
       if (!post) {
@@ -48,30 +54,48 @@ export class PostCommentService {
         const username = user?.name
         this.notifyComment(userId, userModel, `${username} đã bình luận bài viết của bạn`);
       }
-
+      console.log("Gui thanh cong: "+createdPostComment)
       return await createdPostComment.save();
     } catch (error) {
       throw new InternalServerErrorException('Lỗi khi tạo bình luận');
     }
   }
 
-  async getCommentsByPostId(postId: string) {
-    try {
-      const postComments = await this.postCommentModel.find({ post: postId })
-        .populate({
-          path: 'user',
-          select: 'name avatarURL'
-        })
-        .exec();
-      console.error('Post comments:', postComments);
-      const validComments = postComments.filter(comment => comment.user !== null);
 
-      return validComments;
-    } catch (error) {
-      console.error('Error fetching comments by postId:', error);
-      throw new Error('Không thể lấy danh sách bình luận');
-    }
+async getCommentsByPostId(postId: string, limit = 10, skip = 0) {
+  try {
+    // Truy vấn dư ra 1 phần tử để kiểm tra còn hay không
+    const postComments = await this.postCommentModel.find({ post: postId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit + 1)
+      .populate({
+        path: 'user',
+        select: 'name avatarURL'
+      })
+      .exec();
+
+    // Chỉ giữ lại những comment có user hợp lệ
+    const filteredComments = postComments.filter(comment => comment.user !== null);
+
+    // Lấy đúng số lượng comment cần trả về
+    const comments = filteredComments.slice(0, limit);
+
+    // Kiểm tra còn dữ liệu không
+    const hasMore = filteredComments.length > limit;
+
+    return {
+      comments,
+      hasMore
+    };
+  } catch (error) {
+    console.error('Lỗi khi lấy bình luận:', error);
+    throw new Error('Không thể lấy danh sách bình luận');
   }
+}
+
+
+
 
   async getCommentByUserId(userId: string) {
     try {
