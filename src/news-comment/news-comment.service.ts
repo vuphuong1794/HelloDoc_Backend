@@ -21,14 +21,30 @@ export class NewsCommentService {
     ) { }
 
     async create(newsId: string, dto: CreateNewsCommentDto) {
+        let model: string;
+
+        const user = await this.userModel.findById(dto.userId);
+        if (user) model = 'User';
+        else {
+            const doctor = await this.doctorModel.findById(dto.userId);
+            if (doctor) model = 'Doctor';
+            else {
+                const admin = await this.adminModel.findById(dto.userId);
+                if (admin) model = 'Admin';
+                else throw new NotFoundException('Không tìm thấy người dùng');
+            }
+        }
+
         const comment = new this.newsCommentModel({
             user: dto.userId,
-            userModel: dto.userModel,
+            userModel: model,
             news: newsId,
             content: dto.content,
         });
+
         return await comment.save();
     }
+
 
     async findByNews(newsId: string) {
         return await this.newsCommentModel.find({ news: newsId }).populate('user', 'name avatarURL');
