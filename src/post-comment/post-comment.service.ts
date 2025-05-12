@@ -87,7 +87,7 @@ export class PostCommentService {
         .exec();
       const validComments = postComments.filter(comment => comment.user !== null);
 
-      console.error('Post comments:', postComments);
+      //console.error('Post comments:', postComments);
 
       return validComments;
     } catch (error) {
