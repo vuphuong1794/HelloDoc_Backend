@@ -107,6 +107,7 @@ export class AppointmentService {
 
         // Thông báo và xóa cache
         await this.notifyDoctor(doctorID, "Bạn có lịch hẹn mới!");
+        await this.notifyPatient(patientID, "Bạn đã đặt lịch hẹn thành công!");
         this.clearDoctorAppointmentCache(doctorID);
 
         return {
