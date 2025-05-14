@@ -66,20 +66,28 @@ export class PostService {
         }
     }
 
-    async getAll(): Promise<Post[]> {
+    async getAll(limit: number, skip: number): Promise<{ posts: Post[]; hasMore: boolean }> {
         try {
-            const data = await this.postModel
-                .find({ $or: [{ isHidden: false }, { isHidden: { $exists: false } }] })
-                .sort({ createdAt: -1 })
-                .populate({
-                    path: 'user',
-                    select: 'name imageUrl avatarURL', // Chỉ cần viết 1 lần, nếu sau này User và Doctor khác nhau thì chỉnh chỗ này
-                })
-                .exec();
+            const total = await this.postModel.countDocuments({
+            $or: [{ isHidden: false }, { isHidden: { $exists: false } }],
+            });
 
-            return data;
+            const posts = await this.postModel
+            .find({ $or: [{ isHidden: false }, { isHidden: { $exists: false } }] })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate({
+                path: 'user',
+                select: 'name imageUrl avatarURL',
+            })
+            .exec();
+
+            const hasMore = skip + posts.length < total;
+
+            return { posts, hasMore };
         } catch (error) {
-            console.error('Error getting all posts:', error);
+            console.error('Error getting paginated posts:', error);
             throw new InternalServerErrorException('Lỗi khi lấy danh sách bài viết');
         }
     }

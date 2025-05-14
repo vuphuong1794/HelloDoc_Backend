@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
 import { UpdatePostDto } from 'src/dtos/updatePost.dto';
@@ -22,9 +22,14 @@ export class PostController {
   }
 
   @Get()
-  async getAll() {
-    return this.postService.getAll();
-  }
+  async getAll(
+    @Query('limit') limit = '10',
+    @Query('skip') skip = '0'
+  ) {
+  const limitNum = parseInt(limit);
+  const skipNum = parseInt(skip);
+  return this.postService.getAll(limitNum, skipNum);
+}
 
   @Get(':id')
   async getOne(@Param('id') id: string) {
