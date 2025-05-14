@@ -140,7 +140,10 @@ export class AppointmentService {
     // 📌 Gửi thông báo đến bệnh nhân
     async notifyPatient(patientId: string, message: string) {
         try {
-            const patient = await this.userModel.findById(patientId);
+            var patient = await this.userModel.findById(patientId);
+            if (!patient) {
+                patient = await this.doctorModel.findById(patientId);
+            }
             if (patient?.fcmToken) {
                 await admin.messaging().send({
                     token: patient.fcmToken,
