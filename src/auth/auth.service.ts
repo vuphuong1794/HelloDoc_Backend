@@ -34,14 +34,22 @@ export class AuthService {
     try {
       const { email, password, name, phone } = signUpData;
 
-      const emailInUse = await this.UserModel.findOne({ email });
-      if (emailInUse) {
-        throw new BadRequestException('Email đã được sử dụng');
+      let user =
+        (await this.UserModel.findOne({ email, isDeleted: false })) ||
+        (await this.AdminModel.findOne({ email })) ||
+        (await this.DoctorModel.findOne({ email, isDeleted: false }));
+
+      if (user) {
+        throw new UnauthorizedException('Email đã được sử dụng');
       }
 
-      const phoneInUse = await this.UserModel.findOne({ phone });
-      if (phoneInUse) {
-        throw new BadRequestException('Số điện thoại đã được sử dụng');
+      let validPhone =
+        (await this.UserModel.findOne({ phone, isDeleted: false })) ||
+        (await this.AdminModel.findOne({ phone })) ||
+        (await this.DoctorModel.findOne({ phone, isDeleted: false }));
+
+      if (validPhone) {
+        throw new UnauthorizedException('Số điện thoại đã được sử dụng');
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
