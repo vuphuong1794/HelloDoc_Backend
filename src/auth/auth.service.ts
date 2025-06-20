@@ -74,6 +74,38 @@ export class AuthService {
     }
   }
 
+  async signUpAdmin(signUpData: SignupDto) {
+    try {
+      const { email, password, name, phone } = signUpData;
+
+      let user = await this.AdminModel.findOne({ email });
+      if (user) {
+        throw new UnauthorizedException('Email đã được sử dụng');
+      }
+
+      let validPhone = await this.AdminModel.findOne({ phone });
+      if (validPhone) {
+        throw new UnauthorizedException('Số điện thoại đã được sử dụng');
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await this.AdminModel.create({
+        email,
+        password: hashedPassword,
+        name,
+        phone,
+        avatarURL: 'https://imgs.search.brave.com/mDztPWayQWWrIPAy2Hm_FNfDjDVgayj73RTnUIZ15L0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly90NC5m/dGNkbi5uZXQvanBn/LzAyLzE1Lzg0LzQz/LzM2MF9GXzIxNTg0/NDMyNV90dFg5WWlJ/SXllYVI3TmU2RWFM/TGpNQW15NEd2UEM2/OS5qcGc',
+        address: 'Chưa có địa chỉ',
+      });
+
+      return {
+        message: 'Tạo tài khoản thành công',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException('Đã xảy ra lỗi khi đăng ký tài khoản');
+    }
+  }
+
   async loginGoogle(LoginData: LoginGoogleDto) {
     try {
       const { email, password, name, phone } = LoginData;
@@ -87,8 +119,8 @@ export class AuthService {
         throw new UnauthorizedException('Email đã được sử dụng');
       }
 
-      // Xử lý phone: nếu rỗng hoặc undefined thì set thành null
-      const processedPhone = phone && phone.trim() !== '' ? phone : null;
+      // Xử lý phone: nếu rỗng hoặc undefined thì set thành chuỗi rỗng
+      const processedPhone = phone && phone.trim() !== '' ? phone.trim() : '';
 
       // Kiểm tra phone duplicate chỉ khi có phone
       if (processedPhone) {

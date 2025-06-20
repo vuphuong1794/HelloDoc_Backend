@@ -13,6 +13,11 @@ export class AuthController {
     return this.authService.signUp(signUpData);
   }
 
+  @Post('signup-admin')
+  async signUpAdmin(@Body() signUpData: SignupDto) {
+    return this.authService.signUpAdmin(signUpData);
+  }
+
   @Post('login')
   async login(@Body() credentials: loginDto) {
     return this.authService.login(credentials);

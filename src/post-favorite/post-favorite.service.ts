@@ -60,16 +60,16 @@ export class PostFavoriteService {
         const post = await this.postModel.findById(postId);
         if (!post) {
           console.warn(`Bài viết với ID ${postId} không tồn tại`);
-          return;  // Hoặc trả về lỗi nếu cần thiết
+          return;  // Hoặc trả về lỗi nếu cần thiết 
         }
 
         const userId = post?.user instanceof Object ? post?.user.toString() : post?.user;
         const userModel = post?.userModel;
         if (userId != createPostFavoriteDto.userId) {
           let user;
-          if (createPostFavoriteDto.userModel == "Doctor") {
+          if (createPostFavoriteDto.userModel == "doctor") {
             user = await this.doctorModel.findById(createPostFavoriteDto.userId);
-          } else if (createPostFavoriteDto.userModel == "User") {
+          } else if (createPostFavoriteDto.userModel == "user") {
             user = await this.userModel.findById(createPostFavoriteDto.userId);
           }
           const username = user?.name
