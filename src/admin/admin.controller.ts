@@ -105,4 +105,10 @@ export class AdminController {
   async getUser(@Param('id') id: string) {
     return this.adminService.getUser(id);
   }
+
+  @Get('get-soft-deleted-users')
+  async getSoftDeletedUsers() {
+    return this.adminService.getSoftDeletedUsers();
+  }
+
 }
