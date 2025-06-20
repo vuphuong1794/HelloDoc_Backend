@@ -18,6 +18,9 @@ import { Doctor } from 'src/schemas/doctor.schema';
 import { ConfigService } from '@nestjs/config';
 import { CacheService } from 'src/cache.service';
 import * as nodemailer from 'nodemailer';
+import { google } from 'googleapis';
+import e from 'express';
+import { LoginGoogleDto } from 'src/dtos/loginGoogle.dto';
 
 @Injectable()
 export class AuthService {
@@ -68,6 +71,52 @@ export class AuthService {
       };
     } catch (error) {
       throw new InternalServerErrorException('Đã xảy ra lỗi khi đăng ký tài khoản');
+    }
+  }
+
+  async loginGoogle(LoginData: LoginGoogleDto) {
+    try {
+      const { email, password, name, phone } = LoginData;
+
+      let user =
+        (await this.UserModel.findOne({ email, isDeleted: false })) ||
+        (await this.AdminModel.findOne({ email })) ||
+        (await this.DoctorModel.findOne({ email, isDeleted: false }));
+
+      if (user) {
+        throw new UnauthorizedException('Email đã được sử dụng');
+      }
+
+      // Xử lý phone: nếu rỗng hoặc undefined thì set thành null
+      const processedPhone = phone && phone.trim() !== '' ? phone : null;
+
+      // Kiểm tra phone duplicate chỉ khi có phone
+      if (processedPhone) {
+        let validPhone =
+          (await this.UserModel.findOne({ phone: processedPhone, isDeleted: false })) ||
+          (await this.AdminModel.findOne({ phone: processedPhone })) ||
+          (await this.DoctorModel.findOne({ phone: processedPhone, isDeleted: false }));
+
+        if (validPhone) {
+          throw new UnauthorizedException('Số điện thoại đã được sử dụng');
+        }
+      }
+
+      await this.UserModel.create({
+        email,
+        password,
+        name,
+        phone: processedPhone, // Sử dụng processedPhone thay vì phone
+        avatarURL: 'https://imgs.search.brave.com/mDztPWayQWWrIPAy2Hm_FNfDjDVgayj73RTnUIZ15L0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly90NC5m/dGNkbi5uZXQvanBn/LzAyLzE1Lzg0LzQz/LzM2MF9GXzIxNTg0/NDMyNV90dFg5WWlJ/SXllYVI3TmU2RWFM/TGpNQW15NEd2UEM2/OS5qcGc',
+        address: 'Chưa có địa chỉ',
+      });
+
+      return {
+        message: 'Đăng nhập thành công',
+      };
+    } catch (error) {
+      console.log(error.message);
+      throw new InternalServerErrorException(error.message);
     }
   }
 
@@ -140,6 +189,56 @@ export class AuthService {
       };
     } catch (error) {
       throw new InternalServerErrorException('Không thể tạo token truy cập');
+    }
+  }
+
+  async generateGoogleTokens(email: string) {
+    try {
+      // Validate email format
+      if (!email || !email.includes('@')) {
+        throw new BadRequestException('Email không hợp lệ');
+      }
+
+      const user = await this.findUserByEmail(email);
+      if (!user) {
+        throw new UnauthorizedException('Email không tồn tại trong hệ thống');
+      }
+
+      // Ensure all required fields exist
+      const payload = {
+        userId: user._id?.toString() || '',
+        email: user.email || '',
+        name: user.name || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        role: user.role || 'user', // Default role nếu không có
+      };
+
+      // Log payload for debugging
+      console.log('JWT Payload:', payload);
+
+      const accessToken = this.jwtService.sign(payload, {
+        expiresIn: '24h', // Thêm thời gian hết hạn
+      });
+
+      // Validate token được tạo
+      if (!accessToken || typeof accessToken !== 'string') {
+        throw new InternalServerErrorException('Không thể tạo token hợp lệ');
+      }
+
+      console.log('Generated token:', accessToken);
+
+      return {
+        accessToken
+      };
+    } catch (error) {
+      console.error('Generate token error:', error);
+      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Không thể tạo token truy cập', {
+        cause: error,
+      });
     }
   }
 
