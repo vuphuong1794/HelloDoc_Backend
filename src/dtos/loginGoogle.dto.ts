@@ -2,18 +2,9 @@ import { IsEmail, IsOptional, IsNumberString, IsString, Matches, MinLength } fro
 
 export class LoginGoogleDto {
     @IsString()
-    name: string;
-
-    @IsEmail()
-    email: string;
-
-    @IsString()
-    phone: string;
-
-    @IsString()
-    password: string;
+    idToken: string;
 
     @IsOptional()
     @IsString()
-    licenseUrl: string;
+    phone?: string;
 }
