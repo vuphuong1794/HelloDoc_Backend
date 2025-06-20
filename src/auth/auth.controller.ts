@@ -2,19 +2,30 @@ import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from '../dtos/signup.dto';
 import { loginDto } from '../dtos/login.dto';
+import { LoginGoogleDto } from 'src/dtos/loginGoogle.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('signup')
   async signUp(@Body() signUpData: SignupDto) {
     return this.authService.signUp(signUpData);
   }
 
+  @Post('signup-admin')
+  async signUpAdmin(@Body() signUpData: SignupDto) {
+    return this.authService.signUpAdmin(signUpData);
+  }
+
   @Post('login')
   async login(@Body() credentials: loginDto) {
     return this.authService.login(credentials);
+  }
+
+  @Post('login-google')
+  async loginGoogle(@Body() loginGoogleData: LoginGoogleDto) {
+    return this.authService.loginGoogle(loginGoogleData);
   }
 
   // Gửi OTP qua email
@@ -50,13 +61,19 @@ export class AuthController {
   }
 
   @Post('reset-password')
-async resetPassword(
-  @Body('email') email: string,
-  @Body('newPassword') newPassword: string
-) {
-  // Cập nhật mật khẩu mới (hash trước khi lưu)
-  await this.authService.resetPassword(email, newPassword);
+  async resetPassword(
+    @Body('email') email: string,
+    @Body('newPassword') newPassword: string
+  ) {
+    // Cập nhật mật khẩu mới (hash trước khi lưu)
+    await this.authService.resetPassword(email, newPassword);
 
-  return { message: 'Mật khẩu đã được cập nhật thành công' };
-}
+    return { message: 'Mật khẩu đã được cập nhật thành công' };
+  }
+
+  @Post('generate-token')
+  async generateTokenGoogle(@Body() { email }: { email: string, }) {
+    return this.authService.generateGoogleTokens(email);
+
+  }
 }

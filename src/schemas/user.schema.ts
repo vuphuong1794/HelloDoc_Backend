@@ -12,7 +12,10 @@ export class User extends Document {
     @IsEmail()
     email: string;
 
-    @Prop({ required: true, unique: true })
+    @Prop({
+        sparse: true,  // Cho phép null/undefined không bị unique constraint
+        index: { unique: true, sparse: true }
+    })
     @IsString()
     phone: string;
 
@@ -20,7 +23,7 @@ export class User extends Document {
     @IsString()
     address: string;
 
-    @Prop({ required: true })
+    @Prop({ required: false })
     @IsString()
     password: string;
 

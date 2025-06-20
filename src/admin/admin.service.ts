@@ -282,4 +282,10 @@ export class AdminService {
     }
     return this.UserModel.findById(id);
   }
+
+  getSoftDeletedUsers() {
+    return this.UserModel.find({ isDeleted: true })
+      .select('-password -__v')
+      .lean();
+  }
 }
