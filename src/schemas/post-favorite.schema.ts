@@ -7,7 +7,7 @@ export class PostFavorite extends Document {
     @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'userModel' })
     user: Types.ObjectId;
 
-    @Prop({ type: String, required: true, enum: ['user', 'doctor'] })
+    @Prop({ type: String, required: true, enum: ['User', 'Doctor'] })
     userModel: string;
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Post' })

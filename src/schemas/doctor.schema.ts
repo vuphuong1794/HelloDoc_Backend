@@ -20,7 +20,7 @@ export class Doctor extends Document {
   @Prop({ required: true })
   password: string;
 
-  @Prop({ default: 'doctor' })
+  @Prop({ default: 'Doctor' })
   role: string;
 
   @Prop({ default: "" })

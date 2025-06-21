@@ -268,7 +268,7 @@ export class AuthService {
         name: user.name || '',
         phone: user.phone || '',
         address: user.address || '',
-        role: user.role || 'user', // Default role nếu không có
+        role: user.role || 'User', // Default role nếu không có
       };
 
       // Log payload for debugging
