@@ -14,20 +14,20 @@ export class Doctor extends Document {
   @Prop({ required: true, unique: true })
   email: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop()
   phone: string;
 
   @Prop({ required: true })
   password: string;
 
-  @Prop({ default: 'doctor' })
+  @Prop({ default: 'Doctor' })
   role: string;
 
   @Prop({ default: "" })
   certificates: string;
 
   @Prop({ type: [ServiceOutput], default: [] })
-  services: ServiceOutput[];  
+  services: ServiceOutput[];
 
   @Prop({ default: 0 })
   patientsCount: number; // Số lượng bệnh nhân đã khám
@@ -79,7 +79,7 @@ export class Doctor extends Document {
     hour: number;
     minute: number;
   }[];
-  
+
   @Prop()
   minAge: number; // Độ tuổi tối thiểu để khám
 

@@ -221,6 +221,17 @@ export class AppointmentService {
 
     // 📌 Lấy danh sách tất cả lịch hẹn
     async getAllAppointments() {
+        const cacheKey = 'appointments_cache';
+        console.log('Trying to get all appointments from cache...');
+
+        const cached = await this.cacheService.getCache(cacheKey);
+        if (cached) {
+            console.log('Cache HIT');
+            return cached;
+        }
+
+        console.log('Cache MISS - querying DB');
+
         const appointmentsRaw = await this.appointmentModel.find()
             .populate({
                 path: 'doctor',
@@ -238,10 +249,12 @@ export class AppointmentService {
             });
 
         const appointments = appointmentsRaw.filter(appt => appt.doctor && appt.patient);
+        await this.cacheService.setCache(cacheKey, appointments, 10000); //cache for 30 seconds
+
         return appointments;
     }
 
-    // 📌 Lấy danh sách lịch hẹn của bác sĩ
+    // Lấy danh sách lịch hẹn của bác sĩ
     async getDoctorAppointments(doctorID: string) {
         const doctor = await this.doctorModel.findById(doctorID);
         if (!doctor) {

@@ -127,7 +127,7 @@ export class DoctorService {
 
     // Xử lý services nếu có
     if (Array.isArray(filteredData.services)) {
-      filteredData.services = await this.mergeServices(doctorId,filteredData.oldService, filteredData.services, uploadedImages);
+      filteredData.services = await this.mergeServices(doctorId, filteredData.oldService, filteredData.services, uploadedImages);
     }
 
     // Xử lý workingHours nếu có
@@ -152,11 +152,11 @@ export class DoctorService {
     for (const key of allowed) {
       if (key in data) {
         if (key === 'hasHomeService' || key === 'isClinicPaused') {
-        // Chuyển đổi sang boolean nếu là chuỗi
-        filtered[key] = data[key] === 'true' || data[key] === true;
-      } else {
-        filtered[key] = data[key];
-      }
+          // Chuyển đổi sang boolean nếu là chuỗi
+          filtered[key] = data[key] === 'true' || data[key] === true;
+        } else {
+          filtered[key] = data[key];
+        }
       }
     }
     return filtered;
@@ -173,9 +173,9 @@ export class DoctorService {
     return uploaded;
   }
 
-  private async mergeServices(doctorId,existingServices: any[], newServices: any[], uploadedImages: string[]) {
+  private async mergeServices(doctorId, existingServices: any[], newServices: any[], uploadedImages: string[]) {
     const updatedServices = [...existingServices];
-        let uploadIndex = 0;
+    let uploadIndex = 0;
 
     for (const service of newServices) {
       const imageList = uploadedImages?.length
@@ -194,13 +194,13 @@ export class DoctorService {
 
       uploadIndex++;
       updatedServices.push(newService);
-      
+
       // Đảm bảo bác sĩ được gắn vào chuyên khoa này (chỉ thêm nếu chưa có)
       await this.SpecialtyModel.findByIdAndUpdate(
         service.specialtyId,
         { $addToSet: { doctors: doctorId } }  // Tránh trùng
       );
-      }
+    }
 
     return updatedServices;
   }
@@ -387,6 +387,7 @@ export class DoctorService {
         'licenseUrl',
         'frontCccdUrl',
         'backCccdUrl',
+        'address',
       ];
 
       // Lọc dữ liệu hợp lệ
@@ -400,6 +401,7 @@ export class DoctorService {
       filteredApplyData['email'] = user.email;
       filteredApplyData['phone'] = user.phone;
       filteredApplyData['name'] = user.name;
+      filteredApplyData['address'] = user.address;
 
       if (filteredApplyData['specialty']) {
         const specialtyId = filteredApplyData['specialty'];
