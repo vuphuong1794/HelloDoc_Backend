@@ -15,41 +15,41 @@ export class PendingDoctor extends Document {
   userId: Types.ObjectId;
 
   @Prop({ required: true })
-  CCCD: string; // Số CCCD/CMND
+  CCCD: string;
 
   @Prop({ required: true })
   license: string;
 
   @Prop({ required: true })
-  name: string; // Tên bác sĩ
+  name: string;
+
+  @Prop()
+  phone: string;
 
   @Prop({ required: true })
-  phone: string; // Số điện thoại
-
-  @Prop({ required: true })
-  email: string; // Email
+  email: string;
 
   @Prop({ default: false })
   verified: boolean;
 
   @Prop()
-  certificates: string; // Danh sách chứng chỉ hành nghề
+  certificates: string;
 
   @Prop()
-  experience: number; // Số năm kinh nghiệm
+  experience: number;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Specialty', required: true })
   specialty: Types.ObjectId;
 
   @Prop()
-  faceUrl: string; // Ảnh chân dung
+  faceUrl: string;
 
   @Prop()
-  avatarURL: string; // Ảnh đại diện
+  avatarURL: string;
 
   @Prop()
   @IsUrl()
-  licenseUrl: string; // Giấy phép hành nghề
+  licenseUrl: string;
 
   @Prop()
   backCccdUrl?: string;
@@ -58,7 +58,7 @@ export class PendingDoctor extends Document {
   frontCccdUrl?: string;
 
   @Prop({ default: false })
-  isDeleted: boolean; // Trạng thái xóa (true/false)
+  isDeleted: boolean;
 
 }
 
