@@ -29,6 +29,9 @@ export class PendingDoctor extends Document {
   @Prop({ required: true })
   email: string;
 
+  @Prop({ required: true })
+  address: string;
+
   @Prop({ default: false })
   verified: boolean;
 
