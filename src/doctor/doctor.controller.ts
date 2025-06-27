@@ -58,6 +58,11 @@ export class DoctorController {
     return this.doctorService.loginDoctor(loginData);
   }
 
+  @Get('getAvailableWorkingTime/:doctorID')
+  async getAvailableWorkingTime(@Param('doctorID') doctorID: string) {
+    return await this.doctorService.getAvailableWorkingHours(doctorID);
+  }
+
   //@UseGuards(JwtAuthGuard) // Bảo vệ API, chỉ cho phép bác sĩ đăng nhập mới có quyền cập nhật
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'license', maxCount: 1 },

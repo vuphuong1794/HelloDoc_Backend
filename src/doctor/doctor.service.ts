@@ -18,6 +18,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { CacheService } from 'src/cache.service';
 import { Clinic } from 'src/schemas/clinic.schema';
 import { Express } from 'express';
+import { Appointment, AppointmentStatus } from 'src/schemas/Appointment.schema';
 
 @Injectable()
 export class DoctorService {
@@ -26,6 +27,7 @@ export class DoctorService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(PendingDoctor.name) private pendingDoctorModel: Model<PendingDoctor>,
     @InjectModel(Specialty.name) private SpecialtyModel: Model<Specialty>,
+    @InjectModel(Appointment.name) private AppointmentModel: Model<Appointment>,
     private jwtService: JwtService,
     private cloudinaryService: CloudinaryService,
     private cacheService: CacheService,
@@ -363,6 +365,221 @@ export class DoctorService {
     };
   }
 
+  // 📌 Lấy thời gian làm việc chưa được đặt 
+  async getAvailableWorkingHours(
+    doctorID: string,
+    numberOfDays: number = 14,
+    specificDate?: string,
+  ) {
+    // Validate doctor ID
+    if (!Types.ObjectId.isValid(doctorID)) {
+      throw new BadRequestException('Invalid doctor ID');
+    }
+
+    // Fetch doctor
+    const doctor = await this.DoctorModel.findById(doctorID);
+    if (!doctor) {
+      throw new NotFoundException('Doctor not found');
+    }
+
+    // Check if doctor has working hours
+    if (!doctor.workingHours || doctor.workingHours.length === 0) {
+      return {
+        doctorID,
+        doctorName: doctor.name,
+        availableSlots: [],
+        message: 'Doctor has not set working hours',
+      };
+    }
+
+    // Set date range
+    const startDate = specificDate ? new Date(specificDate) : new Date();
+    if (specificDate && isNaN(startDate.getTime())) {
+      throw new BadRequestException('Invalid specific date format');
+    }
+    startDate.setHours(0, 0, 0, 0); // Start from beginning of day
+
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + (specificDate ? 1 : numberOfDays));
+
+    // Fetch appointments that are not cancelled (exclude cancelled appointments)
+    const bookedAppointments = await this.AppointmentModel
+      .find({
+        doctor: doctorID,
+        date: {
+          $gte: startDate.toISOString().split('T')[0],
+          $lt: endDate.toISOString().split('T')[0],
+        },
+        status: { $in: ['pending', 'confirmed', 'done'] }, // Exclude cancelled appointments
+      })
+      .select('date time')
+      .lean();
+
+    const availableSlots: any[] = [];
+    const currentDate = new Date(startDate);
+
+    // Iterate through each day
+    while (currentDate < endDate) {
+      const jsDay = currentDate.getDay(); // JavaScript day (0=Sunday, 1=Monday, ..., 6=Saturday)
+      const dateString = currentDate.toISOString().split('T')[0];
+
+      // Skip past dates unless specific date is provided
+      const now = new Date();
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+      if (currentDate < todayStart && !specificDate) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        continue;
+      }
+
+      let dbDay: number;
+      switch (jsDay) {
+        case 0: // Sunday
+          dbDay = 7;
+          break;
+        case 1: // Monday  
+          dbDay = 8; // Assuming 8 is Monday based on your data pattern
+          break;
+        case 2: // Tuesday
+          dbDay = 2;
+          break;
+        case 3: // Wednesday
+          dbDay = 3;
+          break;
+        case 4: // Thursday
+          dbDay = 4;
+          break;
+        case 5: // Friday
+          dbDay = 5;
+          break;
+        case 6: // Saturday
+          dbDay = 6;
+          break;
+        default:
+          dbDay = jsDay;
+      }
+
+      // Get working hours for this day
+      const workingHoursForDay = doctor.workingHours.filter(
+        (wh) => wh.dayOfWeek === dbDay,
+      );
+
+      if (workingHoursForDay.length > 0) {
+        // Sort working hours by time
+        const sortedWorkingHours = workingHoursForDay.sort((a, b) => {
+          if (a.hour !== b.hour) return a.hour - b.hour;
+          return a.minute - b.minute;
+        });
+
+        // Get booked times for this day
+        const bookedTimesForDay = bookedAppointments
+          .filter((apt) => {
+            const aptDateString = apt.date instanceof Date
+              ? apt.date.toISOString().split('T')[0]
+              : apt.date;
+            return aptDateString === dateString;
+          })
+          .map((apt) => apt.time);
+
+        // Filter out slots that are booked or in the past
+        const availableSlotsForDay = sortedWorkingHours
+          .filter((wh) => {
+            const timeString = `${wh.hour.toString().padStart(2, '0')}:${wh.minute
+              .toString()
+              .padStart(2, '0')}`;
+
+
+            if (dateString === new Date().toISOString().split('T')[0]) {
+              const currentTime = new Date();
+              const slotTime = new Date(currentDate);
+              slotTime.setHours(wh.hour, wh.minute, 0, 0);
+
+              // Thêm 30 phút đệm
+              const bufferTime = new Date(currentTime.getTime() + 30 * 60 * 1000);
+
+              if (slotTime <= bufferTime) {
+                return false;
+              }
+            }
+
+            // kiểm tra xem thời gian này đã được đặt hay chưa
+            return !bookedTimesForDay.includes(timeString);
+          })
+          .map((wh) => ({
+            workingHourId: `${wh.dayOfWeek}-${wh.hour}-${wh.minute}`,
+            time: `${wh.hour.toString().padStart(2, '0')}:${wh.minute
+              .toString()
+              .padStart(2, '0')}`,
+            hour: wh.hour,
+            minute: wh.minute,
+            displayTime: this.formatDisplayTime(wh.hour, wh.minute),
+          }));
+
+        if (availableSlotsForDay.length > 0) {
+          availableSlots.push({
+            date: dateString,
+            dayOfWeek: jsDay,
+            dayName: this.getDayName(jsDay),
+            displayDate: this.formatDisplayDate(currentDate),
+            slots: availableSlotsForDay,
+            totalSlots: availableSlotsForDay.length,
+          });
+        }
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    const result = {
+      doctorID,
+      doctorName: doctor.name,
+      searchPeriod: {
+        from: startDate.toISOString().split('T')[0],
+        to: new Date(endDate.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0], //trừ 1 ngày để không bao gồm ngày kết thúc
+        numberOfDays: specificDate ? 1 : numberOfDays,
+      },
+      availableSlots,
+      totalAvailableDays: availableSlots.length,
+      totalAvailableSlots: availableSlots.reduce(
+        (sum, day) => sum + day.totalSlots,
+        0,
+      ),
+    };
+
+    return result;
+  }
+
+  // Format giờ hiển thị
+  private formatDisplayTime(hour: number, minute: number): string {
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  }
+
+
+  private getDayName(dayOfWeek: number): string {
+    const days = [
+      'Sunday',    // 0
+      'Monday',    // 1
+      'Tuesday',   // 2
+      'Wednesday', // 3
+      'Thursday',  // 4
+      'Friday',    // 5
+      'Saturday',  // 6
+    ];
+    return days[dayOfWeek];
+  }
+
+  private formatDisplayDate(date: Date): string {
+    const displayDate = new Date(date.getTime());
+
+    return displayDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
+    });
+  }
+
   // Đăng ký làm bác sĩ (Lưu vào bảng chờ phê duyệt)
   async applyForDoctor(userId: string, applyData: any) {
     // Kiểm tra người dùng tồn tại
@@ -401,7 +618,6 @@ export class DoctorService {
       filteredApplyData['email'] = user.email;
       filteredApplyData['phone'] = user.phone;
       filteredApplyData['name'] = user.name;
-      filteredApplyData['address'] = user.address;
 
       if (filteredApplyData['specialty']) {
         const specialtyId = filteredApplyData['specialty'];
