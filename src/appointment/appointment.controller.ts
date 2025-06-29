@@ -47,6 +47,7 @@ export class AppointmentController {
     return await this.appointmentService.getAllAppointments();
   }
 
+
   @Get(':id')
   async getAppointmentbyitsID(
     @Param('id') id: string
