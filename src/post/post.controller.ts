@@ -2,7 +2,10 @@ import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
 import { UpdatePostDto } from 'src/dtos/updatePost.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { 
+  FilesInterceptor,   
+  FileFieldsInterceptor
+ } from '@nestjs/platform-express';
 import { Express } from 'express';
 
 @Controller('post')
@@ -10,15 +13,22 @@ export class PostController {
   constructor(private readonly postService: PostService) { }
 
   @Post('create')
-  @UseInterceptors(FilesInterceptor('images')) // 'images' là tên field form-data
+  @UseInterceptors(
+      FileFieldsInterceptor([
+        { name: 'images', maxCount: 10 },
+        { name: 'videos', maxCount: 10 }
+      ]),
+    ) // 'images' là tên field form-data
   async createPost(
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles() 
+    files: { 
+      images?: Express.Multer.File[]; 
+      videos?: Express.Multer.File[] 
+    },
     @Body() createPostDto: CreatePostDto,
   ) {
-    if (files && files.length > 0) {
-      createPostDto.images = files;
-    }
-    return this.postService.create(createPostDto);
+    console.log(createPostDto);
+    return this.postService.create(createPostDto, files);
   }
 
   @Get()

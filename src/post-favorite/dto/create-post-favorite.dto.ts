@@ -7,7 +7,7 @@ export class CreatePostFavoriteDto {
 
     @IsString()
     @IsNotEmpty()
-    @IsIn(['user', 'doctor'])
+    @IsIn(['User', 'Doctor'])
     userModel: string;
 
     // @IsNotEmpty()

@@ -14,6 +14,10 @@ export class PostFavoriteController {
 
   @Post(':postId/favorite/update')
   async updatePostFavoriteByPostId(@Param('postId') postId: string, @Body() createPostFavoriteDto: CreatePostFavoriteDto) {
+    if (!createPostFavoriteDto.userId) {
+      throw new Error('userId is required');
+    }
+    console.log('Updating post favorite for postId:', postId, 'with userId:', createPostFavoriteDto.userId);
     return this.postFavoriteService.updatePostFavoriteByPostId(postId, createPostFavoriteDto);
   }
 

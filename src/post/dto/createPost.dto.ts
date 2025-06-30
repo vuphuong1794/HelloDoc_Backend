@@ -16,4 +16,8 @@ export class CreatePostDto {
 
     @IsOptional()
     images?: Express.Multer.File[];
+
+    @IsOptional()
+    @IsString()
+    videos?: Express.Multer.File[];
 }

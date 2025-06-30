@@ -35,7 +35,14 @@ export class PostService {
         }
     }
 
-    async create(createPostDto: CreatePostDto): Promise<Post> {
+    async create(
+        createPostDto: CreatePostDto, 
+        files: { 
+            images?: Express.Multer.File[]; 
+            videos?: Express.Multer.File[] 
+
+        }
+    ): Promise<Post> {
         try {
             const uploadedMediaUrls: string[] = [];
 
@@ -48,6 +55,18 @@ export class PostService {
                     } catch (error) {
                         console.error('Lỗi Cloudinary khi upload media:', error);
                         throw new BadRequestException('Lỗi khi tải media lên Cloudinary');
+                    }
+                }
+            }
+            if (createPostDto.videos && createPostDto.videos.length > 0) {
+                for (const file of createPostDto.videos) {
+                    try {
+                        const uploadResult = await this.cloudinaryService.uploadFile(file, `Posts/${createPostDto.userId}`);
+                        uploadedMediaUrls.push(uploadResult.secure_url);
+                        console.log('Video đã tải lên Cloudinary:', uploadResult.secure_url);
+                    } catch (error) {
+                        console.error('Lỗi Cloudinary khi upload video:', error);
+                        throw new BadRequestException('Lỗi khi tải video lên Cloudinary');
                     }
                 }
             }

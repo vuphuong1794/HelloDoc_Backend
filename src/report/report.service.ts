@@ -13,7 +13,7 @@ export class ReportService {
         reporter: string;
         reporterModel: 'User' | 'Doctor';
         content: string;
-        type: 'Bác sĩ' | 'Ứng dụng' | 'Bài viết';
+        type: 'Người dùng' | 'Ứng dụng' | 'Bài viết';
         reportedId: string;
         postId?: string
     }) {
