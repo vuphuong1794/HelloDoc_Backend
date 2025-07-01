@@ -283,9 +283,13 @@ export class AppointmentService {
                 select: 'name'
             });
 
-        const appointments = appointmentsRaw.filter(
-            (appt) => appt.doctor !== null && appt.patient !== null
-        );
+        const appointments = appointmentsRaw
+            .filter((appt) => appt.doctor !== null && appt.patient !== null)
+            .sort((a, b) => {
+                    const dateA = new Date(`${a.date.toISOString().split('T')[0]}T${a.time}`);
+                    const dateB = new Date(`${b.date.toISOString().split('T')[0]}T${b.time}`);
+                    return dateB.getTime() - dateA.getTime();
+                });
 
 
         if (!appointments) {
@@ -319,8 +323,13 @@ export class AppointmentService {
             .populate({ path: 'doctor', match: { isDeleted: false }, select: 'name avatarURL' })
             .populate({ path: 'patient', select: 'name' });
 
-        const appointments = appointmentsRaw.filter(appt => appt.doctor !== null);
-
+        const appointments = appointmentsRaw
+            .filter(appt => appt.doctor !== null)
+            .sort((a, b) => {
+                const dateA = new Date(`${a.date.toISOString().split('T')[0]}T${a.time}`);
+                const dateB = new Date(`${b.date.toISOString().split('T')[0]}T${b.time}`);
+                return dateB.getTime() - dateA.getTime(); // Mới nhất trước
+            });
 
         if (!appointments) {
             throw new NotFoundException('No appointments found for this patient');

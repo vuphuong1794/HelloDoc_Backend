@@ -52,7 +52,11 @@ export class PostController {
   }
 
   @Patch(':id')
-  @UseInterceptors(FilesInterceptor('images'))
+  @UseInterceptors(
+      FileFieldsInterceptor([
+        { name: 'images', maxCount: 10 }
+      ]),
+    ) 
   async updatePost(
     @Param('id') id: string,
     @UploadedFiles() images: Express.Multer.File[],
