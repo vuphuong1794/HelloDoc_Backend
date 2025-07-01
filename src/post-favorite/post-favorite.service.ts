@@ -9,6 +9,8 @@ import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 import { Post } from 'src/schemas/Post.schema';
 import * as admin from 'firebase-admin';
+import { Notification } from 'src/schemas/notification.schema';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class PostFavoriteService {
@@ -17,7 +19,9 @@ export class PostFavoriteService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
     @InjectModel(Post.name) private postModel: Model<Post>,
+    @InjectModel(Notification.name) private notificationModel: Model<Notification>, // Assuming Notification schema is similar to PostComment
     private cacheService: CacheService,
+    private notificationService: NotificationService,
   ) { }
 
   async getPostFavoritesByPostId(postId: string, getPostFavoriteDto: GetPostFavoriteDto) {
@@ -67,13 +71,15 @@ export class PostFavoriteService {
         const userModel = post?.userModel;
         if (userId != createPostFavoriteDto.userId) {
           let user;
-          if (createPostFavoriteDto.userModel == "doctor") {
+          if (createPostFavoriteDto.userModel == "Doctor") {
             user = await this.doctorModel.findById(createPostFavoriteDto.userId);
-          } else if (createPostFavoriteDto.userModel == "user") {
+            console.log("User là bác sĩ: " + user)
+          } else if (createPostFavoriteDto.userModel == "User") {
             user = await this.userModel.findById(createPostFavoriteDto.userId);
+            console.log("User là người dùng: " + user)
           }
           const username = user?.name
-          this.notifyFavorite(userId, userModel, `${username} đã bình luận bài viết của bạn`);
+          this.notifyFavorite(userId, userModel, `${username} đã thích bài viết của bạn`,postId);
         }
         const totalFavorites = await this.postFavoriteModel.countDocuments({ post: postId });
         return { isFavorited: true, totalFavorites };
@@ -104,8 +110,18 @@ export class PostFavoriteService {
     }
   }
 
-  async notifyFavorite(userId: string, userModel: string, message: string) {
+  async notifyFavorite(userId: string, userModel: string, message: string, postId: string) {
     try {
+      // Tạo thông báo cho người dùng
+      const user = await this.userModel.findById(userId);
+      const notification = {
+        userId: userId,
+        userModel: userModel,
+        type: 'ForPost',
+        content: message,
+        navigatePath: `post-detail/${postId}`,
+      };
+      await this.notificationService.createNotification(notification);
       if (userModel == 'User') {
         const user = await this.userModel.findById(userId);
         if (user) {
