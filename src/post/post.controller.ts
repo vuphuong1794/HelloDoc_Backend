@@ -13,22 +13,16 @@ export class PostController {
   constructor(private readonly postService: PostService) { }
 
   @Post('create')
-  @UseInterceptors(
-      FileFieldsInterceptor([
-        { name: 'images', maxCount: 10 },
-        { name: 'videos', maxCount: 10 }
-      ]),
-    ) // 'images' là tên field form-data
+  @UseInterceptors(FilesInterceptor('images'))
   async createPost(
     @UploadedFiles() 
-    files: { 
-      images?: Express.Multer.File[]; 
-      videos?: Express.Multer.File[] 
-    },
+    @UploadedFiles() files: Express.Multer.File[],
     @Body() createPostDto: CreatePostDto,
   ) {
-    console.log(createPostDto);
-    return this.postService.create(createPostDto, files);
+    if (files && files.length > 0) {
+      createPostDto.images = files;
+    }
+    return this.postService.create(createPostDto);
   }
 
   @Get()
