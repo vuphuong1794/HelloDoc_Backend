@@ -6,7 +6,7 @@ import {
   FilesInterceptor,   
   FileFieldsInterceptor
  } from '@nestjs/platform-express';
-import { Request } from 'express';
+import { Request, Express } from 'express';
 
 @Controller('post')
 export class PostController {
