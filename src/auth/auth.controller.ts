@@ -41,6 +41,18 @@ export class AuthController {
     return { message: 'OTP đã được gửi đến email', otp };
   }
 
+  @Post('request-otp-signup')
+  async requestOtpForSignUp(@Body('email') email: string) {
+    if (!email) {
+      throw new BadRequestException('Email không được để trống');
+    }
+
+    const otp = await this.authService.requestOtpSignup(email);
+
+    // Với mục đích demo, trả về otp (sản phẩm thật thì không trả)
+    return { message: 'OTP đã được gửi đến email', otp };
+  }
+
   // Xác minh OTP
   @Post('verify-otp')
   async verifyOtp(

@@ -10,7 +10,7 @@ export class ReportController {
     reporter: string;
     reporterModel: 'User' | 'Doctor';
     content: string;
-    type: 'Người dùng' | 'Ứng dụng' | 'Bài viết';
+    type: 'Người dùng' | 'Bác sĩ' | 'Ứng dụng' | 'Bài viết';
     reportedId: string;
     postId?: string
   }) {

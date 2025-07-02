@@ -1,17 +1,13 @@
-import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, IsArray, IsMongoId, IsOptional } from 'class-validator';
+import { IsOptional } from 'class-validator';
 import { Express } from 'express';
 
 export class UpdatePostDto {
-    @IsOptional()
-    @IsString()
-    content?: string;
+  @IsOptional()
+  content?: string;
 
-    @IsOptional()
-    @IsArray()
-    media?: string[];
+  @IsOptional()
+  media?: string[]; // Mảng URL ảnh cũ
 
-    @IsOptional()
-    @Type(() => Object)
-    images?: Express.Multer.File[];
+  @IsOptional()
+  images?: Express.Multer.File[]; // Đây là phần cần được xác định rõ
 }
