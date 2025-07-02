@@ -42,6 +42,7 @@ export class PostCommentService {
 
 
       const post = await this.postModel.findById(postId);
+      const postUserId = post?.user instanceof Object ? post?.user.toString() : post?.user;
       if (!post) {
         console.warn(`Bài viết với ID ${postId} không tồn tại`);
         return;  // Hoặc trả về lỗi nếu cần thiết
@@ -72,7 +73,9 @@ export class PostCommentService {
         content: `${user?.name} đã bình luận bài viết của bạn`,
         navigatePath: `post-detail/${postId}`,
       };
-      await this.notificationService.createNotification(notification);
+      if(userId != postUserId) {
+        await this.notificationService.createNotification(notification);
+      }
     
       return await createdPostComment.save();
     } catch (error) {
