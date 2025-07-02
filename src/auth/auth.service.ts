@@ -323,6 +323,24 @@ export class AuthService {
     await transporter.sendMail(mailOptions);
   }
 
+  async requestOtpSignup(email: string): Promise<string> {
+    const user = await this.findUserByEmail(email);
+
+    if (user) {
+      throw new UnauthorizedException('Email đã tồn tại trong hệ thống');
+    }
+
+    const otp = this.generateOTP();
+
+    const cacheKey = `otp:${email}`;
+    console.log(`Setting cache for key: ${cacheKey}`);
+    await this.cacheService.setCache(cacheKey, otp, 300 * 1000);
+
+    // Gửi email
+    await this.sendOTPEmail(email, otp);
+    return otp;
+  }
+
   // Đăng nhập (hoặc yêu cầu OTP)
   async requestOTP(email: string): Promise<string> {
     const user = await this.findUserByEmail(email);
@@ -344,16 +362,26 @@ export class AuthService {
 
   // Xác minh OTP
   async verifyOTP(email: string, inputOtp: string): Promise<boolean> {
-    // Kiểm tra OTP từ db/cache
     const cacheKey = `otp:${email}`;
     console.log(`Trying to get OTP from cache with key: ${cacheKey}`);
+    
     const cachedOtp = await this.cacheService.getCache(cacheKey);
     if (!cachedOtp) {
       console.log('OTP not found or expired in cache.');
       return false;
     }
+
     console.log('Cache HIT - Comparing OTPs...');
-    return cachedOtp === inputOtp;
+    const isValid = cachedOtp === inputOtp;
+
+    if (isValid) {
+      await this.cacheService.deleteCache(cacheKey); // Xoá cache sau khi xác minh thành công
+      console.log('OTP verified successfully. Cache cleared.');
+    } else {
+      console.log('OTP does not match.');
+    }
+
+    return isValid;
   }
 
   async resetPassword(email: string, newPassword: string): Promise<any> {

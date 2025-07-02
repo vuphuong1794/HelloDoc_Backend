@@ -12,7 +12,7 @@ export class Report extends Document {
     @Prop({ required: true })
     content: string;
 
-    @Prop({ required: true, enum: ['Người dùng', 'Ứng dụng', 'Bài viết'] })
+    @Prop({ required: true, enum: ['Người dùng', 'Bác sĩ', 'Ứng dụng', 'Bài viết'] })
     type: string; // Loại báo cáo
 
     @Prop({ default: 'opened', enum: ['opened', 'closed'] })

@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Post } from 'src/schemas/Post.schema';
 import { Model } from 'mongoose';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
-import { UpdatePostDto } from 'src/dtos/updatePost.dto';
+import { UpdatePostDto } from 'src/post/dto/updatePost.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
@@ -151,21 +151,25 @@ export class PostService {
             const existingPost = await this.postModel.findById(id);
             if (!existingPost) throw new NotFoundException('Post not found');
 
-            const uploadedMediaUrls: string[] = [];
+            // Giữ lại media cũ nếu không có media mới được gửi lên
+            const mediaUrls = updatePostDto.media ?? existingPost.media ?? [];
 
-            const images = updatePostDto.images as Express.Multer.File[];
-
-            if (images && images.length > 0) {
+            // Xử lý ảnh mới nếu có
+            const images = (updatePostDto.images ?? []) as Express.Multer.File[];
+            if (images.length > 0) {
+                const newMediaUrls: string[] = [];
                 for (const file of images) {
-                    const uploadResult = await this.cloudinaryService.uploadFile(file, `Posts/${existingPost.user}`);
-                    uploadedMediaUrls.push(uploadResult.secure_url);
+                    const uploadResult = await this.cloudinaryService.uploadFile(
+                        file,
+                        `Posts/${existingPost.user}`,
+                    );
+                    newMediaUrls.push(uploadResult.secure_url);
                 }
-                existingPost.media = uploadedMediaUrls; // cập nhật ảnh mới
-            } else if (updatePostDto.media && updatePostDto.media.length > 0) {
-                //Nếu có gửi lại danh sách media cũ → giữ nguyên
+                // Kết hợp ảnh cũ và ảnh mới
+                existingPost.media = [...mediaUrls, ...newMediaUrls];
+            } else if (updatePostDto.media) {
+                // Nếu chỉ cập nhật media (không có ảnh mới)
                 existingPost.media = updatePostDto.media;
-            } else {
-
             }
 
             if (updatePostDto.content) {
