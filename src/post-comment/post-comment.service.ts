@@ -9,6 +9,9 @@ import { User } from 'src/schemas/user.schema';
 import { Post } from 'src/schemas/Post.schema';
 import { CacheService } from 'src/cache.service';
 import * as admin from 'firebase-admin';
+import { Notification } from 'src/schemas/notification.schema';
+import { NotificationService } from 'src/notification/notification.service';
+import { CreateNotificationDto } from 'src/notification/dto/create-notification.dto';
 
 @Injectable()
 export class PostCommentService {
@@ -18,7 +21,9 @@ export class PostCommentService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
     @InjectModel(Post.name) private postModel: Model<Post>,
+    @InjectModel(Notification.name) private notificationModel: Model<Notification>,
     private cacheService: CacheService,
+    private notificationService: NotificationService,
   ) { }
 
   async createCommentByPostId(postId: string, createPostCommentDto: CreatePostCommentDto) {
@@ -37,6 +42,7 @@ export class PostCommentService {
 
 
       const post = await this.postModel.findById(postId);
+      const postUserId = post?.user instanceof Object ? post?.user.toString() : post?.user;
       if (!post) {
         console.warn(`Bài viết với ID ${postId} không tồn tại`);
         return;  // Hoặc trả về lỗi nếu cần thiết
@@ -48,13 +54,29 @@ export class PostCommentService {
         let user;
         if (createPostCommentDto.userModel == "Doctor") {
           user = await this.doctorModel.findById(createPostCommentDto.userId);
+          console.log("User la bac si: "+user)
         } else if (createPostCommentDto.userModel == "User") {
           user = await this.userModel.findById(createPostCommentDto.userId);
+          console.log("User la nguoi dung: "+user)
         }
         const username = user?.name
         this.notifyComment(userId, userModel, `${username} đã bình luận bài viết của bạn`);
       }
       console.log("Gui thanh cong: "+createdPostComment)
+
+      // Tạo thông báo cho người dùng
+      const user = await this.userModel.findById(userId);
+      const notification = {
+        userId: userId,
+        userModel: userModel,
+        type: 'ForPost',
+        content: `${user?.name} đã bình luận bài viết của bạn`,
+        navigatePath: `post-detail/${postId}`,
+      };
+      if(userId != postUserId) {
+        await this.notificationService.createNotification(notification);
+      }
+    
       return await createdPostComment.save();
     } catch (error) {
       throw new InternalServerErrorException('Lỗi khi tạo bình luận');
