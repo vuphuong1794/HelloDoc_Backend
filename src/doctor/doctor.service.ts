@@ -365,24 +365,21 @@ export class DoctorService {
     };
   }
 
-  // 📌 Lấy thời gian làm việc chưa được đặt 
+  //Lấy thời gian làm việc chưa được đặt 
   async getAvailableWorkingHours(
     doctorID: string,
     numberOfDays: number = 14,
     specificDate?: string,
   ) {
-    // Validate doctor ID
     if (!Types.ObjectId.isValid(doctorID)) {
       throw new BadRequestException('Invalid doctor ID');
     }
 
-    // Fetch doctor
     const doctor = await this.DoctorModel.findById(doctorID);
     if (!doctor) {
       throw new NotFoundException('Doctor not found');
     }
 
-    // Check if doctor has working hours
     if (!doctor.workingHours || doctor.workingHours.length === 0) {
       return {
         doctorID,
@@ -392,17 +389,16 @@ export class DoctorService {
       };
     }
 
-    // Set date range
     const startDate = specificDate ? new Date(specificDate) : new Date();
     if (specificDate && isNaN(startDate.getTime())) {
       throw new BadRequestException('Invalid specific date format');
     }
-    startDate.setHours(0, 0, 0, 0); // Start from beginning of day
+    startDate.setHours(0, 0, 0, 0); 
 
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + (specificDate ? 1 : numberOfDays));
 
-    // Fetch appointments that are not cancelled (exclude cancelled appointments)
+    
     const bookedAppointments = await this.AppointmentModel
       .find({
         doctor: doctorID,
@@ -410,7 +406,7 @@ export class DoctorService {
           $gte: startDate.toISOString().split('T')[0],
           $lt: endDate.toISOString().split('T')[0],
         },
-        status: { $in: ['pending', 'confirmed', 'done'] }, // Exclude cancelled appointments
+        status: { $in: ['pending', 'confirmed', 'done'] }, 
       })
       .select('date time')
       .lean();
@@ -418,12 +414,10 @@ export class DoctorService {
     const availableSlots: any[] = [];
     const currentDate = new Date(startDate);
 
-    // Iterate through each day
     while (currentDate < endDate) {
-      const jsDay = currentDate.getDay(); // JavaScript day (0=Sunday, 1=Monday, ..., 6=Saturday)
+      const jsDay = currentDate.getDay();
       const dateString = currentDate.toISOString().split('T')[0];
 
-      // Skip past dates unless specific date is provided
       const now = new Date();
       const todayStart = new Date(now);
       todayStart.setHours(0, 0, 0, 0);
