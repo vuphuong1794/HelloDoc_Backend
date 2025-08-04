@@ -4,13 +4,12 @@ import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Notification } from 'src/schemas/notification.schema';
 import { Model } from 'mongoose';
-import * as moment from 'moment-timezone';
 
 @Injectable()
 export class NotificationService {
   constructor(
-            @InjectModel(Notification.name) private notificationModel: Model<Notification>,
-        ) { }
+  @InjectModel(Notification.name) private notificationModel: Model<Notification>,
+) { }
         
   async createNotification(createNotificationDto: CreateNotificationDto) {
     try {

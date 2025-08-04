@@ -1,34 +1,28 @@
-import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseInterceptors, Req } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
-import { UpdatePostDto } from 'src/dtos/updatePost.dto';
+import { UpdatePostDto } from 'src/post/dto/updatePost.dto';
 import {
   FilesInterceptor,
   FileFieldsInterceptor
 } from '@nestjs/platform-express';
-import { Express } from 'express';
+import { Request, Express } from 'express';
 
 @Controller('post')
 export class PostController {
   constructor(private readonly postService: PostService) { }
 
   @Post('create')
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-      { name: 'videos', maxCount: 10 }
-    ]),
-  ) // 'images' là tên field form-data
+  @UseInterceptors(FilesInterceptor('images'))
   async createPost(
     @UploadedFiles()
-    files: {
-      images?: Express.Multer.File[];
-      videos?: Express.Multer.File[]
-    },
+    @UploadedFiles() files: Express.Multer.File[],
     @Body() createPostDto: CreatePostDto,
   ) {
-    console.log(createPostDto);
-    return this.postService.create(createPostDto, files);
+    if (files && files.length > 0) {
+      createPostDto.images = files;
+    }
+    return this.postService.create(createPostDto);
   }
 
   @Get()
@@ -52,20 +46,34 @@ export class PostController {
   }
 
   @Patch(':id')
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 }
-    ]),
-  )
+  @UseInterceptors(FilesInterceptor('images'))
   async updatePost(
     @Param('id') id: string,
     @UploadedFiles() images: Express.Multer.File[],
     @Body() updatePostDto: UpdatePostDto,
+    @Req() request: Request, // Add this parameter to access the request
   ) {
+    // Gán images từ multipart vào DTO
     updatePostDto.images = images;
+    console.log(images)
+    // Xử lý media (ảnh cũ) từ form-data
+    // In NestJS, form-data fields (except files) are available in request.body
+    const body = request.body as any; // Type assertion since form-data fields might not be typed
+
+    // Handle media array
+    if (body.media) {
+      // If media is sent as array (media[0], media[1],...)
+      if (Array.isArray(body.media)) {
+        updatePostDto.media = body.media;
+      }
+      // If media is sent as string (single image case)
+      else if (typeof body.media === 'string') {
+        updatePostDto.media = [body.media];
+      }
+    }
+
     return this.postService.update(id, updatePostDto);
   }
-
 
   @Delete(':id')
   async delete(@Param('id') id: string) {
