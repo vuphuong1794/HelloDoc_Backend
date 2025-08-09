@@ -808,20 +808,32 @@ export class DoctorService {
   }
 
   async getDoctorBySpecialtyName(specialtyName: string) {
+    if (!specialtyName) {
+      throw new BadRequestException('Tên chuyên khoa không được để trống');
+    }
+
+    console.log(`Fetching doctors by specialty name: ${specialtyName}`);
+
+    // Tìm chuyên khoa
     const specialty = await this.SpecialtyModel.findOne({ name: specialtyName })
-      .populate('doctors')
       .exec();
 
     if (!specialty) {
       throw new NotFoundException('Chuyên khoa không tìm thấy.');
     }
 
-    if (!specialty.doctors || specialty.doctors.length === 0) {
+    // Tìm tất cả bác sĩ 
+    const doctors = await this.DoctorModel.find({ specialty: specialty._id })
+      .populate('specialty')
+      .exec();
+
+    if (!doctors || doctors.length === 0) {
       throw new NotFoundException('Không có bác sĩ nào thuộc chuyên khoa này.');
     }
 
-    return specialty.doctors;
+    return doctors;
   }
+
 
   async updateFcmToken(userId: string, token: string) {
     console.log(token);
