@@ -35,6 +35,12 @@ export class PostController {
     return this.postService.getAll(limitNum, skipNum);
   }
 
+
+  @Get('search')
+  async searchPost(@Query('q') query: string) {
+    return this.postService.search(query);
+  }
+
   @Get(':id')
   async getOne(@Param('id') id: string) {
     return this.postService.getOne(id);

@@ -393,12 +393,12 @@ export class DoctorService {
     if (specificDate && isNaN(startDate.getTime())) {
       throw new BadRequestException('Invalid specific date format');
     }
-    startDate.setHours(0, 0, 0, 0); 
+    startDate.setHours(0, 0, 0, 0);
 
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + (specificDate ? 1 : numberOfDays));
 
-    
+
     const bookedAppointments = await this.AppointmentModel
       .find({
         doctor: doctorID,
@@ -406,7 +406,7 @@ export class DoctorService {
           $gte: startDate.toISOString().split('T')[0],
           $lt: endDate.toISOString().split('T')[0],
         },
-        status: { $in: ['pending', 'confirmed', 'done'] }, 
+        status: { $in: ['pending', 'confirmed', 'done'] },
       })
       .select('date time')
       .lean();
@@ -805,6 +805,22 @@ export class DoctorService {
     console.log('Setting cache...');
     await this.cacheService.setCache(cacheKey, doctor, 30 * 1000);
     return doctor;
+  }
+
+  async getDoctorBySpecialtyName(specialtyName: string) {
+    const specialty = await this.SpecialtyModel.findOne({ name: specialtyName })
+      .populate('doctors')
+      .exec();
+
+    if (!specialty) {
+      throw new NotFoundException('Chuyên khoa không tìm thấy.');
+    }
+
+    if (!specialty.doctors || specialty.doctors.length === 0) {
+      throw new NotFoundException('Không có bác sĩ nào thuộc chuyên khoa này.');
+    }
+
+    return specialty.doctors;
   }
 
   async updateFcmToken(userId: string, token: string) {

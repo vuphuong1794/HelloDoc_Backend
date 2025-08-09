@@ -48,6 +48,12 @@ export class DoctorController {
     return this.doctorService.getDoctorById(id);
   }
 
+  @Get('get-by-speacialtyName/:name')
+  async getDoctorsBySpecialtyName(@Param('name') name: string) {
+    return this.doctorService.getDoctorBySpecialtyName(name);
+  }
+
+
   @Post('register')
   async register(@Body() signUpData: SignupDto) {
     return this.doctorService.registerDoctor(signUpData);
