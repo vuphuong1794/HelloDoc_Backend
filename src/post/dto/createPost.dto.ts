@@ -16,4 +16,7 @@ export class CreatePostDto {
 
     @IsOptional()
     images?: Express.Multer.File[];
+
+    @IsOptional()
+    keywords?: string;
 }
