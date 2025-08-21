@@ -204,21 +204,17 @@ export class PostService {
 
     async search(query: string) {
         return this.postModel.find({
-            keywords: { $regex: `(^|,)${query}($|,)`, $options: 'i' }
+            $or: [
+                { title: { $regex: query, $options: 'i' } },
+                { content: { $regex: query, $options: 'i' } },
+                { category: { $regex: query, $options: 'i' } }
+            ]
         })
             .limit(5)
             .populate('user', '_id name avatarURL');
     }
 
 
-    // return this.postModel.find({
-    //     $or: [
-    //         { title: { $regex: query, $options: 'i' } },
-    //         { content: { $regex: query, $options: 'i' } },
-    //         { category: { $regex: query, $options: 'i' } }
-    //     ]
-    // })
-    //     .limit(5)
-    //     .populate('user', '_id name avatarURL');
+
 }
 

@@ -815,8 +815,13 @@ export class DoctorService {
     console.log(`Fetching doctors by specialty name: ${specialtyName}`);
 
     // Tìm chuyên khoa
-    const specialty = await this.SpecialtyModel.findOne({ name: specialtyName })
-      .exec();
+    const specialty = await this.SpecialtyModel.findOne({
+      $or: [
+        { specialtyNormalized: { $regex: new RegExp(specialtyName, 'i') } },
+        { name: { $regex: new RegExp(specialtyName, 'i') } }
+      ]
+    }
+    )
 
     if (!specialty) {
       throw new NotFoundException('Chuyên khoa không tìm thấy.');
@@ -833,6 +838,21 @@ export class DoctorService {
 
     return doctors;
   }
+
+  //tìm bác sĩ theo khoa không dấu
+  // async searchDoctors(query: string) {
+  //   return this.SpecialtyModel.find({
+  //     $or: [
+  //       { specialtyNormalized: { $regex: new RegExp(query, 'i') } },
+  //       { name: { $regex: new RegExp(query, 'i') } }
+  //     ]
+  //   })
+  //     .limit(5)
+  //     .populate({
+  //       path: 'doctors',
+  //       select: 'name avatarURL'
+  //     });
+  // }
 
 
   async updateFcmToken(userId: string, token: string) {

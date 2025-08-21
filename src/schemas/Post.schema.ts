@@ -27,6 +27,9 @@ export class Post {
     @Prop({ type: String, default: '' })
     keywords: string;
 
+    @Prop({ type: String, default: '' })
+    specialtyNormalized?: string;
+
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

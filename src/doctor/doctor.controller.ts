@@ -55,6 +55,12 @@ export class DoctorController {
     return this.doctorService.getDoctorBySpecialtyName(name);
   }
 
+  //lấy danh sách bác sĩ theo chuyên khoa không dấu
+  // @Get('search-by-specialty')
+  // async searchDoctorsBySpecialty(@Query('query') query: string) {
+  //   return this.doctorService.searchDoctors(query);
+  // }
+
 
   @Post('register')
   async register(@Body() signUpData: SignupDto) {
