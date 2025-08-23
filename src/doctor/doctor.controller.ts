@@ -13,6 +13,7 @@ import {
   UploadedFiles,
   NotFoundException,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { SignupDto } from 'src/dtos/signup.dto';
@@ -47,6 +48,19 @@ export class DoctorController {
   async getDoctorById(@Param('id') id: string) {
     return this.doctorService.getDoctorById(id);
   }
+
+  @Get('get-by-specialty-name')
+  async getDoctorsBySpecialtyName(@Query('name') name: string) {
+    console.log('Received query name:', name);
+    return this.doctorService.getDoctorBySpecialtyName(name);
+  }
+
+  //lấy danh sách bác sĩ theo chuyên khoa không dấu
+  // @Get('search-by-specialty')
+  // async searchDoctorsBySpecialty(@Query('query') query: string) {
+  //   return this.doctorService.searchDoctors(query);
+  // }
+
 
   @Post('register')
   async register(@Body() signUpData: SignupDto) {

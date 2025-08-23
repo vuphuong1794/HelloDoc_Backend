@@ -2,10 +2,10 @@ import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
 import { UpdatePostDto } from 'src/post/dto/updatePost.dto';
-import { 
-  FilesInterceptor,   
+import {
+  FilesInterceptor,
   FileFieldsInterceptor
- } from '@nestjs/platform-express';
+} from '@nestjs/platform-express';
 import { Request, Express } from 'express';
 
 @Controller('post')
@@ -15,7 +15,7 @@ export class PostController {
   @Post('create')
   @UseInterceptors(FilesInterceptor('images'))
   async createPost(
-    @UploadedFiles() 
+    @UploadedFiles()
     @UploadedFiles() files: Express.Multer.File[],
     @Body() createPostDto: CreatePostDto,
   ) {
@@ -30,10 +30,16 @@ export class PostController {
     @Query('limit') limit = '10',
     @Query('skip') skip = '0'
   ) {
-  const limitNum = parseInt(limit);
-  const skipNum = parseInt(skip);
-  return this.postService.getAll(limitNum, skipNum);
-}
+    const limitNum = parseInt(limit);
+    const skipNum = parseInt(skip);
+    return this.postService.getAll(limitNum, skipNum);
+  }
+
+
+  @Get('search')
+  async searchPost(@Query('q') query: string) {
+    return this.postService.search(query);
+  }
 
   @Get(':id')
   async getOne(@Param('id') id: string) {
@@ -59,19 +65,19 @@ export class PostController {
     // Xử lý media (ảnh cũ) từ form-data
     // In NestJS, form-data fields (except files) are available in request.body
     const body = request.body as any; // Type assertion since form-data fields might not be typed
-    
+
     // Handle media array
     if (body.media) {
       // If media is sent as array (media[0], media[1],...)
       if (Array.isArray(body.media)) {
         updatePostDto.media = body.media;
-      } 
+      }
       // If media is sent as string (single image case)
       else if (typeof body.media === 'string') {
         updatePostDto.media = [body.media];
       }
     }
-    
+
     return this.postService.update(id, updatePostDto);
   }
 

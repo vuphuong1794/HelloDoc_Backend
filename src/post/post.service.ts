@@ -57,6 +57,7 @@ export class PostService {
                 userModel: createPostDto.userModel,
                 content: createPostDto.content,
                 media: uploadedMediaUrls,
+                keywords: createPostDto.keywords || '',
             });
 
             return createdPost.save();
@@ -69,19 +70,19 @@ export class PostService {
     async getAll(limit: number, skip: number): Promise<{ posts: Post[]; hasMore: boolean }> {
         try {
             const total = await this.postModel.countDocuments({
-            $or: [{ isHidden: false }, { isHidden: { $exists: false } }],
+                $or: [{ isHidden: false }, { isHidden: { $exists: false } }],
             });
 
             const posts = await this.postModel
-            .find({ $or: [{ isHidden: false }, { isHidden: { $exists: false } }] })
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .populate({
-                path: 'user',
-                select: 'name imageUrl avatarURL',
-            })
-            .exec();
+                .find({ $or: [{ isHidden: false }, { isHidden: { $exists: false } }] })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .populate({
+                    path: 'user',
+                    select: 'name imageUrl avatarURL',
+                })
+                .exec();
 
             const hasMore = skip + posts.length < total;
 
@@ -200,4 +201,20 @@ export class PostService {
             throw new InternalServerErrorException('Lỗi khi xóa bài viết');
         }
     }
+
+    async search(query: string) {
+        return this.postModel.find({
+            $or: [
+                { title: { $regex: query, $options: 'i' } },
+                { content: { $regex: query, $options: 'i' } },
+                { category: { $regex: query, $options: 'i' } }
+            ]
+        })
+            .limit(5)
+            .populate('user', '_id name avatarURL');
+    }
+
+
+
 }
+
