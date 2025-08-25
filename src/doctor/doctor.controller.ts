@@ -225,4 +225,9 @@ export class DoctorController {
   async updateFcmToken(@Param('id') id: string, @Body('token') token: string) {
     return this.doctorService.updateFcmToken(id, token);
   }
+
+  @Get('doctorName/:name')
+  async getDoctorsByName(@Param('name') name: string) {
+    return this.doctorService.getDoctorsByName(name);
+  }
 }
