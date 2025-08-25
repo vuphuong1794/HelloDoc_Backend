@@ -863,4 +863,29 @@ export class DoctorService {
       { new: true }
     );
   }
+
+  async getDoctorsByName(name: string) {
+    if (!name) {
+      throw new BadRequestException('Tên bác sĩ không được để trống');
+    }
+
+    console.log(`Fetching doctors by name: ${name}`);
+
+    // Tìm tất cả bác sĩ có tên khớp và chỉ lấy trường cần thiết
+    const doctors = await this.DoctorModel.find(
+      { name: { $regex: new RegExp(name, 'i') } }
+    )
+      .populate('specialty')
+      .select('_id name email phone avatarURL address verified');
+
+    console.log(`[DoctorService] Found ${doctors.length} doctors`);
+
+    if (!doctors || doctors.length === 0) {
+      console.error(`[DoctorService] Không có bác sĩ nào với tên "${name}"`);
+      throw new NotFoundException('Không có bác sĩ nào với tên này.');
+    }
+
+    return doctors;
+  }
+
 }
