@@ -207,7 +207,8 @@ export class PostService {
             $or: [
                 { title: { $regex: query, $options: 'i' } },
                 { content: { $regex: query, $options: 'i' } },
-                { category: { $regex: query, $options: 'i' } }
+                { category: { $regex: query, $options: 'i' } },
+                { keywords: { $regex: query, $options: 'i' } }
             ]
         })
             .limit(5)
