@@ -8,8 +8,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 import { CacheService } from 'src/cache.service';
-import { Express } from 'express';
-
+import * as dayjs from 'dayjs';
 @Injectable()
 export class PostService {
     constructor(
@@ -52,12 +51,16 @@ export class PostService {
                 }
             }
 
+            const nowVN = dayjs().add(7, "hour").toDate();
+
             const createdPost = new this.postModel({
                 user: createPostDto.userId,
                 userModel: createPostDto.userModel,
                 content: createPostDto.content,
                 media: uploadedMediaUrls,
                 keywords: createPostDto.keywords || '',
+                createdAt: nowVN,
+                updatedAt: nowVN
             });
 
             return createdPost.save();
@@ -211,8 +214,8 @@ export class PostService {
                 { keywords: { $regex: query, $options: 'i' } }
             ]
         })
-            .limit(5)
-            .populate('user', '_id name avatarURL');
+        .limit(5)
+        .populate('user', '_id name avatarURL');
     }
 
 
