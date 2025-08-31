@@ -1,9 +1,13 @@
-// src/post/post.controller.ts - DEBUG VERSION
+//post.controller.ts
+
 import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseInterceptors, Req } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
 import { UpdatePostDto } from 'src/post/dto/updatePost.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import {
+  FilesInterceptor,
+  FileFieldsInterceptor
+} from '@nestjs/platform-express';
 import { Request, Express } from 'express';
 
 @Controller('post')
@@ -13,28 +17,14 @@ export class PostController {
   @Post('create')
   @UseInterceptors(FilesInterceptor('images'))
   async createPost(
+    @UploadedFiles()
     @UploadedFiles() files: Express.Multer.File[],
     @Body() createPostDto: CreatePostDto,
   ) {
-    console.log(`=== POST CREATION REQUEST ===`);
-    console.log(`Files:`, files?.length || 0);
-    console.log(`DTO:`, JSON.stringify(createPostDto, null, 2));
-
     if (files && files.length > 0) {
       createPostDto.images = files;
     }
-
-    const result = await this.postService.create(createPostDto);
-    console.log(`=== POST CREATION RESPONSE ===`);
-    console.log(`Created post ID: ${result._id}`);
-    return result;
-  }
-
-  // Debug endpoint to create minimal post
-  @Post('debug/create-minimal')
-  async createMinimalPost(@Body() body: { content: string; userId: string }) {
-    console.log(`=== CREATING MINIMAL POST FOR DEBUG ===`);
-    return this.postService.forceCreateMinimalPost(body.content, body.userId);
+    return this.postService.create(createPostDto);
   }
 
   @Get()
@@ -44,53 +34,74 @@ export class PostController {
   ) {
     const limitNum = parseInt(limit);
     const skipNum = parseInt(skip);
-    console.log(`=== GET ALL POSTS REQUEST ===`);
-    console.log(`Limit: ${limitNum}, Skip: ${skipNum}`);
-
-    const result = await this.postService.getAll(limitNum, skipNum);
-    console.log(`=== GET ALL POSTS RESPONSE ===`);
-    console.log(`Found ${result.posts.length} posts, Total: ${result.total}`);
-    return result;
+    return this.postService.getAll(limitNum, skipNum);
   }
 
-  @Get('debug/tracking')
-  async getTrackingInfo() {
-    return this.postService.getTrackingInfo();
-  }
-
-  @Get('debug/check/:id')
-  async checkPost(@Param('id') id: string) {
-    console.log(`=== CHECKING POST ${id} ===`);
-    const result = await this.postService.checkPostExists(id);
-    console.log(`Check result:`, result);
-    return result;
+  @Get('search')
+  async searchPost(@Query('q') query: string) {
+    return this.postService.search(query);
   }
 
   @Get(':id')
   async getOne(@Param('id') id: string) {
-    console.log(`=== GET SINGLE POST ${id} ===`);
     return this.postService.getOne(id);
   }
 
   @Get('get-by-user-id/:id')
   async getByUserId(@Param('id') id: string) {
-    console.log(`=== GET POSTS BY USER ${id} ===`);
     return this.postService.getByUserId(id);
   }
 
-  // Temporarily disable update/delete to isolate the issue
   @Patch(':id')
-  async updatePost(@Param('id') id: string) {
-    return { message: 'Update disabled for debugging' };
+  @UseInterceptors(FilesInterceptor('images'))
+  async updatePost(
+    @Param('id') id: string,
+    @UploadedFiles() images: Express.Multer.File[],
+    @Body() updatePostDto: UpdatePostDto,
+    @Req() request: Request, // Add this parameter to access the request
+  ) {
+    // Gán images từ multipart vào DTO
+    updatePostDto.images = images;
+    console.log(images)
+    // Xử lý media (ảnh cũ) từ form-data
+    // In NestJS, form-data fields (except files) are available in request.body
+    const body = request.body as any; // Type assertion since form-data fields might not be typed
+
+    // Handle media array
+    if (body.media) {
+      // If media is sent as array (media[0], media[1],...)
+      if (Array.isArray(body.media)) {
+        updatePostDto.media = body.media;
+      }
+      // If media is sent as string (single image case)
+      else if (typeof body.media === 'string') {
+        updatePostDto.media = [body.media];
+      }
+    }
+
+    return this.postService.update(id, updatePostDto);
   }
 
   @Delete(':id')
   async delete(@Param('id') id: string) {
-    return { message: 'Delete disabled for debugging' };
+    return this.postService.delete(id);
   }
 
-  @Get('search')
-  async searchPost(@Query('q') query: string) {
-    return { message: 'Search disabled for debugging', results: [] };
+  @Get('semantic-search')
+  async semanticSearch(
+    @Query('q') query: string,
+    @Query('limit') limit: number = 10,
+    @Query('minSimilarity') minSimilarity: number = 0.5
+  ) {
+    return this.postService.semanticSearch(query, Number(limit), Number(minSimilarity));
+  }
+
+  @Get(':id/similar')
+  async findSimilarPosts(
+    @Param('id') id: string,
+    @Query('limit') limit: number = 5,
+    @Query('minSimilarity') minSimilarity: number = 0.6
+  ) {
+    return this.postService.findSimilarPosts(id, Number(limit), Number(minSimilarity));
   }
 }

@@ -1,4 +1,4 @@
-// src/post/post.service.ts - VERSION ĐỂ DEBUG
+// src/post/post.service.ts
 import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post } from 'src/schemas/Post.schema';
@@ -10,11 +10,12 @@ import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 import { CacheService } from 'src/cache.service';
 import { Express } from 'express';
+import { EmbeddingService } from 'src/embedding/embedding.service';
+import { VectorSearchService } from 'src/vector-db/vector-db.service';
 
 @Injectable()
 export class PostService {
     private readonly logger = new Logger(PostService.name);
-    private postTracker = new Map<string, { createdAt: Date, lastSeen: Date, content: string }>();
 
     constructor(
         @InjectModel(User.name) private userModel: Model<User>,
@@ -22,116 +23,33 @@ export class PostService {
         @InjectModel(Post.name) private postModel: Model<Post>,
         private cloudinaryService: CloudinaryService,
         private cacheService: CacheService,
-        // KHÔNG inject EmbeddingService và VectorSearchService để loại trừ hoàn toàn
-        // private embeddingService: EmbeddingService,
-        // private vectorSearchService: VectorSearchService,
-    ) {
-        // Enable mongoose debug mode
-        if (process.env.NODE_ENV !== 'production') {
-            require('mongoose').set('debug', (collectionName, method, query, doc) => {
-                this.logger.log(`MONGOOSE DEBUG: ${collectionName}.${method}`, {
-                    query: JSON.stringify(query),
-                    doc: doc ? JSON.stringify(doc).substring(0, 200) + '...' : 'none'
-                });
-            });
-        }
+        private embeddingService: EmbeddingService,
+        private vectorSearchService: VectorSearchService,
+    ) { }
 
-        // Track all database operations
-        this.setupDatabaseHooks();
-    }
+    private async findOwnerById(ownerId: string): Promise<User | Doctor> {
+        try {
+            const owner = await this.userModel.findById(ownerId).lean() ||
+                await this.doctorModel.findById(ownerId).lean();
 
-    private setupDatabaseHooks() {
-        // Monitor all post operations
-        this.postModel.schema.pre('save', function () {
-            console.log(`PRE-SAVE: Post ${this._id} is being saved`);
-            console.log(`Content: ${this.content?.substring(0, 50)}...`);
-        });
-
-        this.postModel.schema.post('save', function () {
-            console.log(`POST-SAVE: Post ${this._id} has been saved successfully`);
-        });
-
-        // 'remove' middleware is not supported on models, use 'deleteOne' or 'findOneAndDelete' instead
-        // this.postModel.schema.pre('remove', function () {
-        //     console.log(`PRE-REMOVE: Post ${this._id} is being removed`);
-        // });
-
-        // this.postModel.schema.post('remove', function () {
-        //     console.log(`POST-REMOVE: Post ${this._id} has been removed`);
-        // });
-
-        this.postModel.schema.pre('deleteOne', function () {
-            console.log(`PRE-DELETE-ONE: Post being deleted with query:`, this.getQuery());
-        });
-
-        this.postModel.schema.post('deleteOne', function () {
-            console.log(`POST-DELETE-ONE: Post deleted`);
-        });
-
-        this.postModel.schema.pre('deleteMany', function () {
-            console.log(`PRE-DELETE-MANY: Posts being deleted with query:`, this.getQuery());
-        });
-
-        this.postModel.schema.post('deleteMany', function () {
-            console.log(`POST-DELETE-MANY: Posts deleted`);
-        });
-
-        this.postModel.schema.pre('findOneAndDelete', function () {
-            console.log(`PRE-FIND-ONE-AND-DELETE: Query:`, this.getQuery());
-        });
-
-        this.postModel.schema.post('findOneAndDelete', function () {
-            console.log(`POST-FIND-ONE-AND-DELETE: Post deleted`);
-        });
-
-        this.postModel.schema.pre('findOneAndUpdate', function () {
-            console.log(`PRE-FIND-ONE-AND-UPDATE: Query:`, this.getQuery());
-            console.log(`Update:`, this.getUpdate());
-        });
-
-        this.postModel.schema.post('findOneAndUpdate', function (doc) {
-            console.log(`POST-FIND-ONE-AND-UPDATE: Updated post ${doc?._id}`);
-        });
-
-        this.postModel.schema.pre('updateOne', function () {
-            console.log(`PRE-UPDATE-ONE: Query:`, this.getQuery());
-            console.log(`Update:`, this.getUpdate());
-        });
-
-        this.postModel.schema.post('updateOne', function () {
-            console.log(`POST-UPDATE-ONE: Post updated`);
-        });
-    }
-
-    private trackPost(postId: string, content: string) {
-        this.postTracker.set(postId, {
-            createdAt: new Date(),
-            lastSeen: new Date(),
-            content: content.substring(0, 100)
-        });
-        this.logger.log(`TRACKING: Started tracking post ${postId}`);
-    }
-
-    private updateTracker(postId: string) {
-        const tracked = this.postTracker.get(postId);
-        if (tracked) {
-            tracked.lastSeen = new Date();
-            this.logger.log(`TRACKING: Updated last seen for post ${postId}`);
+            if (!owner) {
+                throw new NotFoundException(`Không tìm thấy người dùng với id ${ownerId}`);
+            }
+            return owner;
+        } catch (error) {
+            this.logger.error(`Error finding owner: ${error.message}`);
+            throw new InternalServerErrorException('Lỗi khi tìm người dùng');
         }
     }
 
     async create(createPostDto: CreatePostDto): Promise<Post> {
-        const startTime = Date.now();
-        this.logger.log(`=== STARTING POST CREATION ===`);
-        this.logger.log(`User: ${createPostDto.userId}`);
-        this.logger.log(`Content: ${createPostDto.content}`);
-
         try {
+            this.logger.log(`Creating post for user: ${createPostDto.userId}`);
+
             const uploadedMediaUrls: string[] = [];
 
             // Upload images if provided
             if (createPostDto.images && createPostDto.images.length > 0) {
-                this.logger.log(`Uploading ${createPostDto.images.length} images...`);
                 for (const file of createPostDto.images) {
                     try {
                         const uploadResult = await this.cloudinaryService.uploadFile(
@@ -139,129 +57,136 @@ export class PostService {
                             `Posts/${createPostDto.userId}`
                         );
                         uploadedMediaUrls.push(uploadResult.secure_url);
-                        this.logger.log(`Image uploaded: ${uploadResult.secure_url}`);
+                        this.logger.log(`Ảnh đã tải lên Cloudinary: ${uploadResult.secure_url}`);
                     } catch (error) {
-                        this.logger.error('Cloudinary upload error:', error);
+                        this.logger.error('Lỗi Cloudinary khi upload media:', error);
                         throw new BadRequestException('Lỗi khi tải media lên Cloudinary');
                     }
                 }
             }
 
-            // Create the most minimal post possible
+            // Create post data object - KHÔNG tạo embedding ngay
             const postData = {
                 user: createPostDto.userId,
-                userModel: createPostDto.userModel || 'User',
+                userModel: createPostDto.userModel,
                 content: createPostDto.content,
                 media: uploadedMediaUrls,
                 keywords: createPostDto.keywords || '',
                 isHidden: false,
                 createdAt: new Date(),
-                updatedAt: new Date()
+                updatedAt: new Date(),
+                // KHÔNG khởi tạo embedding fields
             };
 
-            this.logger.log(`Creating post with data:`, JSON.stringify(postData, null, 2));
-
-            // Create and save
+            // Create and save the post
             const createdPost = new this.postModel(postData);
-            this.logger.log(`Post model created, attempting to save...`);
-
             const savedPost = await createdPost.save();
-            const saveTime = Date.now() - startTime;
 
-            this.logger.log(`✅ POST SAVED SUCCESSFULLY in ${saveTime}ms`);
-            this.logger.log(`Post ID: ${savedPost._id}`);
-            this.logger.log(`Post content: ${savedPost.content}`);
+            this.logger.log(`Post saved to database with ID: ${savedPost._id}`);
 
-            // Start tracking this post
-            this.trackPost(savedPost._id.toString(), savedPost.content);
-
-            // Immediate verification
-            const verification1 = await this.postModel.findById(savedPost._id).lean();
-            if (verification1) {
-                this.logger.log(`✅ IMMEDIATE VERIFICATION 1 PASSED: Post ${savedPost._id} found`);
-            } else {
-                this.logger.error(`❌ IMMEDIATE VERIFICATION 1 FAILED: Post ${savedPost._id} NOT found`);
+            // Verify post exists immediately after save
+            const verificationPost = await this.postModel.findById(savedPost._id).lean();
+            if (!verificationPost) {
+                this.logger.error(`Post ${savedPost._id} not found immediately after save!`);
+                throw new Error('Post was not saved properly');
             }
 
-            // Second verification after 1 second
-            setTimeout(async () => {
-                try {
-                    const verification2 = await this.postModel.findById(savedPost._id).lean();
-                    if (verification2) {
-                        this.logger.log(`✅ VERIFICATION 2 (1s later) PASSED: Post ${savedPost._id} still exists`);
-                    } else {
-                        this.logger.error(`❌ VERIFICATION 2 (1s later) FAILED: Post ${savedPost._id} DISAPPEARED!`);
-                        this.logPostDisappearance(savedPost._id.toString());
-                    }
-                } catch (error) {
-                    this.logger.error(`Error in verification 2: ${error.message}`);
-                }
-            }, 1000);
+            this.logger.log(`Post verification successful: ${savedPost._id}`);
 
-            // Third verification after 10 seconds
-            setTimeout(async () => {
-                try {
-                    const verification3 = await this.postModel.findById(savedPost._id).lean();
-                    if (verification3) {
-                        this.logger.log(`✅ VERIFICATION 3 (10s later) PASSED: Post ${savedPost._id} still exists`);
-                        this.updateTracker(savedPost._id.toString());
-                    } else {
-                        this.logger.error(`❌ VERIFICATION 3 (10s later) FAILED: Post ${savedPost._id} DISAPPEARED!`);
-                        this.logPostDisappearance(savedPost._id.toString());
-                    }
-                } catch (error) {
-                    this.logger.error(`Error in verification 3: ${error.message}`);
-                }
-            }, 10000);
+            // Schedule embedding generation for much later (30 seconds)
+            // This completely separates embedding from post creation
+            this.scheduleEmbeddingGeneration(savedPost._id.toString(), savedPost.content, savedPost.keywords);
 
-            // Fourth verification after 30 seconds
-            setTimeout(async () => {
-                try {
-                    const verification4 = await this.postModel.findById(savedPost._id).lean();
-                    if (verification4) {
-                        this.logger.log(`✅ VERIFICATION 4 (30s later) PASSED: Post ${savedPost._id} still exists`);
-                        this.updateTracker(savedPost._id.toString());
-                    } else {
-                        this.logger.error(`❌ VERIFICATION 4 (30s later) FAILED: Post ${savedPost._id} DISAPPEARED!`);
-                        this.logPostDisappearance(savedPost._id.toString());
-                    }
-                } catch (error) {
-                    this.logger.error(`Error in verification 4: ${error.message}`);
-                }
-            }, 30000);
-
-            this.logger.log(`=== POST CREATION COMPLETED ===`);
             return savedPost;
-
         } catch (error) {
-            this.logger.error('❌ ERROR IN POST CREATION:', error);
-            this.logger.error('Stack trace:', error.stack);
+            this.logger.error('Error creating post:', error);
             throw new InternalServerErrorException(`Lỗi khi tạo bài viết: ${error.message}`);
         }
     }
 
-    private logPostDisappearance(postId: string) {
-        const tracked = this.postTracker.get(postId);
-        if (tracked) {
-            const timeSinceCreation = Date.now() - tracked.createdAt.getTime();
-            this.logger.error(`🚨 POST DISAPPEARED ANALYSIS:`);
-            this.logger.error(`Post ID: ${postId}`);
-            this.logger.error(`Content: ${tracked.content}`);
-            this.logger.error(`Created at: ${tracked.createdAt.toISOString()}`);
-            this.logger.error(`Last seen: ${tracked.lastSeen.toISOString()}`);
-            this.logger.error(`Time since creation: ${timeSinceCreation}ms`);
+    // Schedule embedding generation for later - completely separated from post creation
+    private scheduleEmbeddingGeneration(postId: string, content: string, keywords?: string): void {
+        // Wait 30 seconds before trying to generate embedding
+        setTimeout(async () => {
+            try {
+                this.logger.log(`Starting scheduled embedding generation for post: ${postId}`);
+
+                // Double-check post still exists
+                const post = await this.postModel.findById(postId).select('_id content keywords embedding').lean();
+                if (!post) {
+                    this.logger.warn(`Post ${postId} not found during scheduled embedding generation`);
+                    return;
+                }
+
+                // Skip if embedding already exists
+                if (post.embedding && Array.isArray(post.embedding) && post.embedding.length > 0) {
+                    this.logger.log(`Post ${postId} already has embedding, skipping scheduled generation`);
+                    return;
+                }
+
+                await this.safeGenerateEmbedding(postId, content, keywords);
+            } catch (error) {
+                this.logger.error(`Scheduled embedding generation failed for post ${postId}: ${error.message}`);
+                // Don't rethrow - this should never affect the main post
+            }
+        }, 30000); // 30 seconds delay
+    }
+
+    // Ultra-safe embedding generation that will NEVER affect the original post
+    private async safeGenerateEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
+        try {
+            const textForEmbedding = `${content} ${keywords || ''}`.trim();
+
+            if (!textForEmbedding || textForEmbedding.length === 0) {
+                this.logger.log(`No content for embedding generation for post ${postId}`);
+                return;
+            }
+
+            this.logger.log(`Generating embedding for post ${postId} with content length: ${textForEmbedding.length}`);
+
+            // Generate embedding
+            const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
+
+            if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
+                this.logger.warn(`Invalid embedding generated for post ${postId}`);
+                return;
+            }
+
+            // Use the safest possible update method
+            const updateResult = await this.postModel.findByIdAndUpdate(
+                postId,
+                {
+                    $set: {
+                        embedding: embedding,
+                        embeddingModel: this.embeddingService.getModelName(),
+                        embeddingUpdatedAt: new Date(),
+                    }
+                },
+                {
+                    new: false, // Don't return the updated document
+                    lean: true, // Use lean for better performance
+                    upsert: false, // Never create if not exists
+                }
+            ).select('_id').lean(); // Only select _id to minimize data transfer
+
+            if (updateResult) {
+                this.logger.log(`Successfully added embedding to post ${postId}`);
+            } else {
+                this.logger.warn(`Post ${postId} not found during embedding update`);
+            }
+
+        } catch (error) {
+            this.logger.error(`Safe embedding generation failed for post ${postId}: ${error.message}`);
+            this.logger.error(`Error details:`, error.stack);
+            // Never rethrow - this must not affect the post
         }
     }
 
     async getAll(limit: number, skip: number): Promise<{ posts: Post[]; hasMore: boolean; total: number }> {
         try {
-            this.logger.log(`Getting all posts: limit=${limit}, skip=${skip}`);
-
             const total = await this.postModel.countDocuments({
                 $or: [{ isHidden: false }, { isHidden: { $exists: false } }],
             });
-
-            this.logger.log(`Total posts found: ${total}`);
 
             const posts = await this.postModel
                 .find({ $or: [{ isHidden: false }, { isHidden: { $exists: false } }] })
@@ -272,19 +197,12 @@ export class PostService {
                     path: 'user',
                     select: 'name imageUrl avatarURL',
                 })
-                .lean()
+                .lean() // Use lean for better performance
                 .exec();
 
-            this.logger.log(`Retrieved ${posts.length} posts`);
-
-            // Update tracker for found posts
-            posts.forEach(post => {
-                this.updateTracker(post._id.toString());
-            });
-
             const hasMore = skip + posts.length < total;
-            return { posts, hasMore, total };
 
+            return { posts, hasMore, total };
         } catch (error) {
             this.logger.error('Error getting paginated posts:', error);
             throw new InternalServerErrorException('Lỗi khi lấy danh sách bài viết');
@@ -293,8 +211,6 @@ export class PostService {
 
     async getOne(id: string): Promise<Post> {
         try {
-            this.logger.log(`Getting post by ID: ${id}`);
-
             const post = await this.postModel
                 .findById(id)
                 .populate({
@@ -304,30 +220,27 @@ export class PostService {
                 .exec();
 
             if (!post) {
-                this.logger.error(`Post ${id} not found`);
-                // Check if we were tracking this post
-                const tracked = this.postTracker.get(id);
-                if (tracked) {
-                    this.logger.error(`This post was being tracked! It definitely existed before.`);
-                    this.logPostDisappearance(id);
-                }
                 throw new NotFoundException(`Không tìm thấy bài viết với id ${id}`);
             }
-
-            this.logger.log(`Found post: ${post._id}`);
-            this.updateTracker(id);
             return post;
-
         } catch (error) {
             this.logger.error('Error getting post:', error);
             throw new InternalServerErrorException('Lỗi khi lấy bài viết');
         }
     }
 
+    async deleteCache(ownerId: string) {
+        try {
+            const cacheKey = `posts_by_owner_${ownerId}`;
+            await this.cacheService.deleteCache(cacheKey);
+        } catch (error) {
+            this.logger.error('Error deleting cache:', error);
+        }
+    }
+
     async getByUserId(ownerId: string): Promise<Post[]> {
         try {
-            this.logger.log(`Getting posts by user ID: ${ownerId}`);
-
+            await this.findOwnerById(ownerId);
             const posts = await this.postModel
                 .find({
                     user: ownerId,
@@ -343,89 +256,169 @@ export class PostService {
                 })
                 .exec();
 
-            this.logger.log(`Found ${posts.length} posts for user ${ownerId}`);
-
-            // Update tracker for found posts
-            posts.forEach(post => {
-                this.updateTracker(post._id.toString());
-            });
-
             return posts;
-
         } catch (error) {
             this.logger.error('Error getting posts by owner:', error);
             throw new InternalServerErrorException('Lỗi khi lấy bài viết của người dùng');
         }
     }
 
-    // Debug methods
-    async checkPostExists(postId: string): Promise<{ exists: boolean; details?: any }> {
-        try {
-            const post = await this.postModel.findById(postId).lean();
-            const tracked = this.postTracker.get(postId);
-
-            return {
-                exists: !!post,
-                details: {
-                    found: !!post,
-                    tracked: !!tracked,
-                    trackingInfo: tracked,
-                    timestamp: new Date().toISOString()
-                }
-            };
-        } catch (error) {
-            this.logger.error(`Error checking post existence: ${error.message}`);
-            return { exists: false, details: { error: error.message } };
-        }
-    }
-
-    async getTrackingInfo(): Promise<any> {
-        return {
-            totalTracked: this.postTracker.size,
-            posts: Array.from(this.postTracker.entries()).map(([id, info]) => ({
-                id,
-                ...info
-            }))
-        };
-    }
-
-    async forceCreateMinimalPost(content: string, userId: string): Promise<Post> {
-        try {
-            this.logger.log(`=== FORCE CREATING MINIMAL POST ===`);
-
-            // The absolute minimum required
-            const minimalData = {
-                user: userId,
-                content: content,
-                isHidden: false,
-                createdAt: new Date()
-            };
-
-            const post = await this.postModel.create(minimalData);
-            this.logger.log(`Minimal post created with ID: ${post._id}`);
-
-            this.trackPost(post._id.toString(), content);
-            return post;
-
-        } catch (error) {
-            this.logger.error('Error creating minimal post:', error);
-            throw error;
-        }
-    }
-
-    // Temporarily disable all other methods that might interfere
     async update(id: string, updatePostDto: UpdatePostDto) {
-        this.logger.log(`UPDATE TEMPORARILY DISABLED FOR DEBUGGING`);
-        throw new BadRequestException('Update temporarily disabled for debugging');
+        try {
+            this.logger.log(`Updating post ${id}`);
+
+            const existingPost = await this.postModel.findById(id);
+            if (!existingPost) {
+                throw new NotFoundException('Post not found');
+            }
+
+            const mediaUrls = updatePostDto.media ?? existingPost.media ?? [];
+            const images = (updatePostDto.images ?? []) as Express.Multer.File[];
+
+            // Handle new image uploads
+            if (images.length > 0) {
+                const newMediaUrls: string[] = [];
+                for (const file of images) {
+                    const uploadResult = await this.cloudinaryService.uploadFile(
+                        file,
+                        `Posts/${existingPost.user}`
+                    );
+                    newMediaUrls.push(uploadResult.secure_url);
+                }
+                existingPost.media = [...mediaUrls, ...newMediaUrls];
+            } else if (updatePostDto.media) {
+                existingPost.media = updatePostDto.media;
+            }
+
+            // Update content if provided
+            if (updatePostDto.content !== undefined) {
+                existingPost.content = updatePostDto.content;
+            }
+
+            // Update keywords if provided
+            if (updatePostDto.keywords !== undefined) {
+                existingPost.keywords = updatePostDto.keywords;
+            }
+
+            //existingPost.updatedAt = new Date();
+            const updatedPost = await existingPost.save();
+
+            this.logger.log(`Post updated successfully: ${id}`);
+
+            // Schedule embedding update if content changed (but don't wait for it)
+            if (updatePostDto.content !== undefined || updatePostDto.keywords !== undefined) {
+                this.scheduleEmbeddingGeneration(id, updatedPost.content, updatedPost.keywords);
+            }
+
+            return updatedPost;
+
+        } catch (error) {
+            this.logger.error(`Error updating post ${id}:`, error);
+            throw new InternalServerErrorException('Lỗi khi cập nhật bài viết');
+        }
     }
 
     async delete(id: string): Promise<{ message: string }> {
-        this.logger.log(`DELETE TEMPORARILY DISABLED FOR DEBUGGING`);
-        throw new BadRequestException('Delete temporarily disabled for debugging');
+        try {
+            const updated = await this.postModel.findByIdAndUpdate(
+                id,
+                { isHidden: true, updatedAt: new Date() },
+                { new: true }
+            );
+            if (!updated) {
+                throw new NotFoundException(`Post with id ${id} not found`);
+            }
+
+            return { message: `Post with id ${id} deleted successfully` };
+        } catch (error) {
+            this.logger.error('Error deleting post:', error);
+            throw new InternalServerErrorException('Lỗi khi xóa bài viết');
+        }
     }
 
     async search(query: string) {
-        this.logger.log(`SEARCH TEMPORARILY DISABLED FOR DEBUGGING`);
-        return [];
+        return this.postModel.find({
+            $and: [
+                {
+                    $or: [
+                        { content: { $regex: query, $options: 'i' } },
+                        { keywords: { $regex: query, $options: 'i' } }
+                    ]
+                },
+                {
+                    $or: [
+                        { isHidden: false },
+                        { isHidden: { $exists: false } }
+                    ]
+                }
+            ]
+        })
+            .limit(5)
+            .populate('user', '_id name avatarURL')
+            .lean();
+    }
+
+    async semanticSearch(
+        query: string,
+        limit: number = 10,
+        minSimilarity: number = 0.5
+    ): Promise<Array<{ post: Post; similarity: number }>> {
+        try {
+            return await this.vectorSearchService.semanticSearch(query, limit, minSimilarity);
+        } catch (error) {
+            this.logger.error('Error in semantic search:', error);
+            throw new InternalServerErrorException('Lỗi khi tìm kiếm ngữ nghĩa');
+        }
+    }
+
+    async findSimilarPosts(
+        postId: string,
+        limit: number = 5,
+        minSimilarity: number = 0.6
+    ): Promise<Array<{ post: Post; similarity: number }>> {
+        try {
+            const post = await this.postModel.findById(postId).lean();
+            if (!post) {
+                throw new NotFoundException('Post not found');
+            }
+
+            if (!post.embedding || !Array.isArray(post.embedding) || post.embedding.length === 0) {
+                // Schedule embedding generation but return empty for now
+                this.scheduleEmbeddingGeneration(postId, post.content, post.keywords);
+                return [];
+            }
+
+            const similarPosts = await this.vectorSearchService.findSimilarPosts(
+                post.embedding,
+                limit,
+                minSimilarity,
+                postId
+            );
+
+            return similarPosts;
+        } catch (error) {
+            this.logger.error('Error finding similar posts:', error);
+            throw new InternalServerErrorException('Lỗi khi tìm bài viết tương tự');
+        }
+    }
+
+    async ensureAllPostsHaveEmbeddings(): Promise<void> {
+        try {
+            await this.vectorSearchService.ensureEmbeddingsExist();
+        } catch (error) {
+            this.logger.error('Error ensuring embeddings exist:', error);
+            // Don't throw - this is a background task
+        }
+    }
+
+    // Debug method to check post existence
+    async checkPostExists(postId: string): Promise<boolean> {
+        try {
+            const post = await this.postModel.findById(postId).select('_id').lean();
+            return !!post;
+        } catch (error) {
+            this.logger.error(`Error checking post existence: ${error.message}`);
+            return false;
+        }
     }
 }
