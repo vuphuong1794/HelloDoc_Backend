@@ -43,9 +43,8 @@ export class PostService {
     }
 
     async create(createPostDto: CreatePostDto): Promise<Post> {
+        let savedPost: Post;
         try {
-            this.logger.log(`Creating post for user: ${createPostDto.userId}`);
-
             const uploadedMediaUrls: string[] = [];
 
             // Upload images if provided
@@ -65,7 +64,7 @@ export class PostService {
                 }
             }
 
-            // Create post data object - KHÔNG tạo embedding ngay
+            // Create post data object
             const postData = {
                 user: createPostDto.userId,
                 userModel: createPostDto.userModel,
@@ -73,112 +72,98 @@ export class PostService {
                 media: uploadedMediaUrls,
                 keywords: createPostDto.keywords || '',
                 isHidden: false,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                // KHÔNG khởi tạo embedding fields
+                // Initialize embedding fields to prevent conflicts
+                embedding: null,
+                embeddingModel: null,
+                embeddingUpdatedAt: null,
             };
 
             // Create and save the post
             const createdPost = new this.postModel(postData);
-            const savedPost = await createdPost.save();
+            savedPost = await createdPost.save();
 
-            this.logger.log(`Post saved to database with ID: ${savedPost._id}`);
+            this.logger.log(`Post created successfully with ID: ${savedPost._id}`);
 
-            // Verify post exists immediately after save
-            const verificationPost = await this.postModel.findById(savedPost._id).lean();
-            if (!verificationPost) {
-                this.logger.error(`Post ${savedPost._id} not found immediately after save!`);
-                throw new Error('Post was not saved properly');
-            }
-
-            this.logger.log(`Post verification successful: ${savedPost._id}`);
-
-            // Schedule embedding generation for much later (30 seconds)
-            // This completely separates embedding from post creation
-            this.scheduleEmbeddingGeneration(savedPost._id.toString(), savedPost.content, savedPost.keywords);
+            // IMPORTANT: Return immediately after successful save
+            // Generate embedding asynchronously without blocking
+            this.generateEmbeddingAsync(savedPost._id.toString(), savedPost.content, savedPost.keywords);
 
             return savedPost;
         } catch (error) {
             this.logger.error('Error creating post:', error);
-            throw new InternalServerErrorException(`Lỗi khi tạo bài viết: ${error.message}`);
+            throw new InternalServerErrorException('Lỗi khi tạo bài viết');
         }
     }
 
-    // Schedule embedding generation for later - completely separated from post creation
-    private scheduleEmbeddingGeneration(postId: string, content: string, keywords?: string): void {
-        // Wait 30 seconds before trying to generate embedding
+    // Separate async method for embedding generation that won't affect the main post
+    private generateEmbeddingAsync(postId: string, content: string, keywords?: string): void {
+        // Use setTimeout instead of setImmediate for better error isolation
         setTimeout(async () => {
             try {
-                this.logger.log(`Starting scheduled embedding generation for post: ${postId}`);
-
-                // Double-check post still exists
-                const post = await this.postModel.findById(postId).select('_id content keywords embedding').lean();
-                if (!post) {
-                    this.logger.warn(`Post ${postId} not found during scheduled embedding generation`);
-                    return;
-                }
-
-                // Skip if embedding already exists
-                if (post.embedding && Array.isArray(post.embedding) && post.embedding.length > 0) {
-                    this.logger.log(`Post ${postId} already has embedding, skipping scheduled generation`);
-                    return;
-                }
-
-                await this.safeGenerateEmbedding(postId, content, keywords);
+                await this.generateAndStoreEmbedding(postId, content, keywords);
             } catch (error) {
-                this.logger.error(`Scheduled embedding generation failed for post ${postId}: ${error.message}`);
-                // Don't rethrow - this should never affect the main post
+                this.logger.error(`Failed to generate embedding for post ${postId}: ${error.message}`);
+                // Don't let embedding errors affect the post itself
             }
-        }, 30000); // 30 seconds delay
+        }, 1000); // Wait 1 second before generating embedding
     }
 
-    // Ultra-safe embedding generation that will NEVER affect the original post
-    private async safeGenerateEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
+    // Improved embedding generation method
+    private async generateAndStoreEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
         try {
+            // Check if post still exists before generating embedding
+            const existingPost = await this.postModel.findById(postId).select('_id content keywords embedding');
+            if (!existingPost) {
+                this.logger.warn(`Post ${postId} not found when generating embedding`);
+                return;
+            }
+
+            // Skip if embedding already exists
+            if (existingPost.embedding && Array.isArray(existingPost.embedding) && existingPost.embedding.length > 0) {
+                this.logger.log(`Post ${postId} already has embedding, skipping`);
+                return;
+            }
+
             const textForEmbedding = `${content} ${keywords || ''}`.trim();
 
-            if (!textForEmbedding || textForEmbedding.length === 0) {
-                this.logger.log(`No content for embedding generation for post ${postId}`);
-                return;
-            }
+            if (textForEmbedding && textForEmbedding.length > 0) {
+                this.logger.log(`Generating embedding for post ${postId}`);
 
-            this.logger.log(`Generating embedding for post ${postId} with content length: ${textForEmbedding.length}`);
+                const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
 
-            // Generate embedding
-            const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
-
-            if (!embedding || !Array.isArray(embedding) || embedding.length === 0) {
-                this.logger.warn(`Invalid embedding generated for post ${postId}`);
-                return;
-            }
-
-            // Use the safest possible update method
-            const updateResult = await this.postModel.findByIdAndUpdate(
-                postId,
-                {
-                    $set: {
-                        embedding: embedding,
-                        embeddingModel: this.embeddingService.getModelName(),
-                        embeddingUpdatedAt: new Date(),
+                // Use atomic update with careful conditions
+                const updateResult = await this.postModel.updateOne(
+                    {
+                        _id: postId,
+                        // Only update if embedding doesn't exist or is empty
+                        $or: [
+                            { embedding: { $exists: false } },
+                            { embedding: null },
+                            { embedding: { $size: 0 } }
+                        ]
+                    },
+                    {
+                        $set: {
+                            embedding,
+                            embeddingModel: this.embeddingService.getModelName(),
+                            embeddingUpdatedAt: new Date(),
+                        }
                     }
-                },
-                {
-                    new: false, // Don't return the updated document
-                    lean: true, // Use lean for better performance
-                    upsert: false, // Never create if not exists
+                );
+
+                if (updateResult.modifiedCount > 0) {
+                    this.logger.log(`Successfully generated embedding for post ${postId}`);
+                } else if (updateResult.matchedCount === 0) {
+                    this.logger.warn(`Post ${postId} not found or already has embedding`);
+                } else {
+                    this.logger.log(`Post ${postId} embedding was not updated (may already exist)`);
                 }
-            ).select('_id').lean(); // Only select _id to minimize data transfer
-
-            if (updateResult) {
-                this.logger.log(`Successfully added embedding to post ${postId}`);
             } else {
-                this.logger.warn(`Post ${postId} not found during embedding update`);
+                this.logger.warn(`No content available for embedding generation for post ${postId}`);
             }
-
         } catch (error) {
-            this.logger.error(`Safe embedding generation failed for post ${postId}: ${error.message}`);
-            this.logger.error(`Error details:`, error.stack);
-            // Never rethrow - this must not affect the post
+            this.logger.error(`Error generating embedding for post ${postId}: ${error.message}`, error.stack);
+            // Don't rethrow the error to prevent affecting the main post
         }
     }
 
@@ -197,7 +182,6 @@ export class PostService {
                     path: 'user',
                     select: 'name imageUrl avatarURL',
                 })
-                .lean() // Use lean for better performance
                 .exec();
 
             const hasMore = skip + posts.length < total;
@@ -264,13 +248,17 @@ export class PostService {
     }
 
     async update(id: string, updatePostDto: UpdatePostDto) {
+        let updatedPost: Post;
+
         try {
-            this.logger.log(`Updating post ${id}`);
+            this.logger.log(`Updating post ${id} with data:`, JSON.stringify(updatePostDto, null, 2));
 
             const existingPost = await this.postModel.findById(id);
             if (!existingPost) {
                 throw new NotFoundException('Post not found');
             }
+
+            this.logger.log(`Found existing post:`, JSON.stringify(existingPost.toObject(), null, 2));
 
             const mediaUrls = updatePostDto.media ?? existingPost.media ?? [];
             const images = (updatePostDto.images ?? []) as Express.Multer.File[];
@@ -300,14 +288,13 @@ export class PostService {
                 existingPost.keywords = updatePostDto.keywords;
             }
 
-            //existingPost.updatedAt = new Date();
-            const updatedPost = await existingPost.save();
+            updatedPost = await existingPost.save();
 
-            this.logger.log(`Post updated successfully: ${id}`);
+            this.logger.log(`Post updated successfully:`, JSON.stringify((updatedPost as any).toObject(), null, 2));
 
-            // Schedule embedding update if content changed (but don't wait for it)
+            // Update embedding asynchronously if content or keywords changed
             if (updatePostDto.content !== undefined || updatePostDto.keywords !== undefined) {
-                this.scheduleEmbeddingGeneration(id, updatedPost.content, updatedPost.keywords);
+                this.updateEmbeddingAsync(updatedPost._id.toString(), updatedPost.content, updatedPost.keywords);
             }
 
             return updatedPost;
@@ -318,11 +305,47 @@ export class PostService {
         }
     }
 
+    // Separate method for updating embeddings
+    private updateEmbeddingAsync(postId: string, content: string, keywords?: string): void {
+        setTimeout(async () => {
+            try {
+                await this.updateEmbedding(postId, content, keywords);
+            } catch (error) {
+                this.logger.error(`Failed to update embedding for post ${postId}: ${error.message}`);
+            }
+        }, 1000);
+    }
+
+    private async updateEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
+        try {
+            const textForEmbedding = `${content} ${keywords || ''}`.trim();
+
+            if (textForEmbedding && textForEmbedding.length > 0) {
+                const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
+
+                await this.postModel.updateOne(
+                    { _id: postId },
+                    {
+                        $set: {
+                            embedding,
+                            embeddingModel: this.embeddingService.getModelName(),
+                            embeddingUpdatedAt: new Date(),
+                        }
+                    }
+                );
+
+                this.logger.log(`Updated embedding for post ${postId}`);
+            }
+        } catch (error) {
+            this.logger.error(`Error updating embedding for post ${postId}: ${error.message}`);
+        }
+    }
+
     async delete(id: string): Promise<{ message: string }> {
         try {
             const updated = await this.postModel.findByIdAndUpdate(
                 id,
-                { isHidden: true, updatedAt: new Date() },
+                { isHidden: true },
                 { new: true }
             );
             if (!updated) {
@@ -354,8 +377,7 @@ export class PostService {
             ]
         })
             .limit(5)
-            .populate('user', '_id name avatarURL')
-            .lean();
+            .populate('user', '_id name avatarURL');
     }
 
     async semanticSearch(
@@ -377,15 +399,15 @@ export class PostService {
         minSimilarity: number = 0.6
     ): Promise<Array<{ post: Post; similarity: number }>> {
         try {
-            const post = await this.postModel.findById(postId).lean();
+            const post = await this.postModel.findById(postId);
             if (!post) {
                 throw new NotFoundException('Post not found');
             }
 
             if (!post.embedding || !Array.isArray(post.embedding) || post.embedding.length === 0) {
-                // Schedule embedding generation but return empty for now
-                this.scheduleEmbeddingGeneration(postId, post.content, post.keywords);
-                return [];
+                // Generate embedding if missing, but don't wait for it
+                this.generateEmbeddingAsync(postId, post.content, post.keywords);
+                return []; // Return empty array for now
             }
 
             const similarPosts = await this.vectorSearchService.findSimilarPosts(
@@ -403,22 +425,6 @@ export class PostService {
     }
 
     async ensureAllPostsHaveEmbeddings(): Promise<void> {
-        try {
-            await this.vectorSearchService.ensureEmbeddingsExist();
-        } catch (error) {
-            this.logger.error('Error ensuring embeddings exist:', error);
-            // Don't throw - this is a background task
-        }
-    }
-
-    // Debug method to check post existence
-    async checkPostExists(postId: string): Promise<boolean> {
-        try {
-            const post = await this.postModel.findById(postId).select('_id').lean();
-            return !!post;
-        } catch (error) {
-            this.logger.error(`Error checking post existence: ${error.message}`);
-            return false;
-        }
+        await this.vectorSearchService.ensureEmbeddingsExist();
     }
 }
