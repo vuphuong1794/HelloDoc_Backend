@@ -6,6 +6,9 @@ import { PostFavorite } from './post-favorite.schema';
 
 @Schema({ timestamps: true })
 export class Post {
+    @Prop({ type: mongoose.Schema.Types.ObjectId, auto: true })
+    _id: Types.ObjectId;
+
     @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'userModel' })
     user: Types.ObjectId;
 
@@ -27,8 +30,17 @@ export class Post {
     @Prop({ type: String, default: '' })
     keywords: string;
 
-    @Prop({ type: String, default: '' })
-    specialtyNormalized?: string;
+    @Prop({ type: [Number], required: false })
+    embedding: number[];
+
+    @Prop({ default: 'sentence-transformers/all-MiniLM-L6-v2' })
+    embeddingModel: string;
+
+    @Prop()
+    embeddingUpdatedAt: Date;
+
+    @Prop({ default: 0 })
+    searchScore: number;
 
 }
 

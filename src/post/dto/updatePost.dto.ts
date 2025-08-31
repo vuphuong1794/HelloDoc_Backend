@@ -10,4 +10,8 @@ export class UpdatePostDto {
 
   @IsOptional()
   images?: Express.Multer.File[]; // Đây là phần cần được xác định rõ
+
+  @IsOptional()
+  keywords?: string;
+
 }
