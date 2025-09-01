@@ -1,4 +1,3 @@
-// src/vector-search/vector-search.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -66,7 +65,6 @@ export class VectorSearchService {
 
             const results = await this.postModel.aggregate(aggregationPipeline);
 
-            // Populate user information
             const populatedResults = await Promise.all(
                 results.map(async (item) => {
                     const post = await this.postModel.findById(item._id)
@@ -89,7 +87,6 @@ export class VectorSearchService {
         } catch (error) {
             this.logger.error(`Vector search failed: ${error.message}`);
 
-            // Fallback to manual similarity calculation
             return this.manualSimilaritySearch(queryEmbedding, limit, minSimilarity, excludePostId);
         }
     }
@@ -151,6 +148,10 @@ export class VectorSearchService {
             // cho threshold thấp (0.3) để lấy nhiều ứng viên, lọc sau
 
             const q = query.toLowerCase();
+
+            // Chỉ giữ lại khi similarity >= ngưỡng
+            //const filteredResults = results.filter(item => item.similarity >= effectiveMinSim);
+
 
             let filteredResults = results.filter(item => {
                 const content = item.post.content?.toLowerCase() || '';

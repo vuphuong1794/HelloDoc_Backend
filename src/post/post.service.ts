@@ -1,4 +1,3 @@
-// src/post/post.service.ts
 import { Injectable, NotFoundException, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Post } from 'src/schemas/Post.schema';
@@ -48,7 +47,6 @@ export class PostService {
         try {
             const uploadedMediaUrls: string[] = [];
 
-            // Upload images if provided
             if (createPostDto.images && createPostDto.images.length > 0) {
                 for (const file of createPostDto.images) {
                     try {
@@ -113,17 +111,16 @@ export class PostService {
         }
     }
 
-    // Improved embedding generation method
     private async generateAndStoreEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
         try {
-            // Check if post still exists before generating embedding
+            // Check if post exists
             const existingPost = await this.postModel.findById(postId).select('_id content keywords embedding');
             if (!existingPost) {
                 this.logger.warn(`Post ${postId} not found when generating embedding`);
                 return;
             }
 
-            // Skip if embedding already exists
+            // Check if embedding already exists
             if (existingPost.embedding && Array.isArray(existingPost.embedding) && existingPost.embedding.length > 0) {
                 this.logger.log(`Post ${postId} already has embedding, skipping`);
                 return;
@@ -136,7 +133,6 @@ export class PostService {
 
                 const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
 
-                // Use atomic update with careful conditions
                 const updateResult = await this.postModel.findByIdAndUpdate(
                     postId,
                     {
@@ -158,7 +154,6 @@ export class PostService {
             }
         } catch (error) {
             this.logger.error(`Error generating embedding for post ${postId}: ${error.message}`, error.stack);
-            // Don't rethrow the error to prevent affecting the main post
         }
     }
 
@@ -258,7 +253,6 @@ export class PostService {
             const mediaUrls = updatePostDto.media ?? existingPost.media ?? [];
             const images = (updatePostDto.images ?? []) as Express.Multer.File[];
 
-            // Handle new image uploads
             if (images.length > 0) {
                 const newMediaUrls: string[] = [];
                 for (const file of images) {
@@ -273,12 +267,10 @@ export class PostService {
                 existingPost.media = updatePostDto.media;
             }
 
-            // Update content if provided
             if (updatePostDto.content !== undefined) {
                 existingPost.content = updatePostDto.content;
             }
 
-            // Update keywords if provided
             if (updatePostDto.keywords !== undefined) {
                 existingPost.keywords = updatePostDto.keywords;
             }
@@ -287,7 +279,7 @@ export class PostService {
 
             this.logger.log(`Post updated successfully:`, JSON.stringify((updatedPost as any).toObject(), null, 2));
 
-            // Update embedding asynchronously if content or keywords changed
+            // Update embedding if content or keywords changed
             if (updatePostDto.content !== undefined || updatePostDto.keywords !== undefined) {
                 this.updateEmbeddingAsync(updatedPost._id.toString(), updatedPost.content, updatedPost.keywords);
             }
@@ -300,7 +292,6 @@ export class PostService {
         }
     }
 
-    // Separate method for updating embeddings
     private updateEmbeddingAsync(postId: string, content: string, keywords?: string): void {
         setTimeout(async () => {
             try {
@@ -413,5 +404,65 @@ export class PostService {
 
     async ensureAllPostsHaveEmbeddings(): Promise<void> {
         await this.vectorSearchService.ensureEmbeddingsExist();
+    }
+
+    // ================ Hybrid Search ================
+
+    async hybridSearch(q: string, limit = 5, minSimilarity = 0.75) {
+        // 1. Tạo embedding cho query
+        const queryEmbedding = await this.embeddingService.generateEmbedding(q);
+
+        // 2. Lấy toàn bộ post (có thể thay bằng ANN index để tối ưu sau)
+        const posts = await this.postModel.find({ isHidden: false });
+
+        // 3. Tính cosine similarity
+        const withSimilarity = posts.map((post: any) => {
+            const similarity = this.cosineSimilarity(queryEmbedding, post.embedding);
+            return { post, similarity };
+        });
+
+        // 4. Semantic filter
+        const semanticResults = withSimilarity
+            .filter((item) => item.similarity >= minSimilarity)
+            .map((item) => ({
+                ...item,
+                keywordScore: 0,
+            }));
+
+        // 5. Full-text search (chỉ lấy content, title, keywords)
+        const regex = new RegExp(q, 'i');
+        const keywordResults = await this.postModel.find({
+            $or: [{ content: regex }, { keywords: regex }],
+            isHidden: false,
+        });
+
+        const keywordWithScore = keywordResults.map((post: any) => ({
+            post,
+            similarity: 0,
+            keywordScore: 1, // cho điểm 1 nếu match exact keyword
+        }));
+
+        // 6. Gộp 2 danh sách
+        const combined = [...semanticResults, ...keywordWithScore];
+
+        // 7. Tính finalScore
+        const results = combined.map((item) => ({
+            post: item.post,
+            similarity: item.similarity,
+            keywordScore: item.keywordScore,
+            finalScore: item.similarity * 0.7 + item.keywordScore * 0.3, // α=0.7, β=0.3
+        }));
+
+        // 8. Sort theo finalScore
+        return results
+            .sort((a, b) => b.finalScore - a.finalScore)
+            .slice(0, limit);
+    }
+
+    private cosineSimilarity(vecA: number[], vecB: number[]): number {
+        const dot = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+        const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+        const normB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+        return dot / (normA * normB);
     }
 }

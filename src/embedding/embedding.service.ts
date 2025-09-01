@@ -1,4 +1,3 @@
-// src/embedding/embedding.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { HfInference } from '@huggingface/inference';
 import axios from 'axios';
@@ -18,12 +17,10 @@ export class EmbeddingService {
             this.logger.log('EmbeddingService initialized successfully');
         } catch (error) {
             this.logger.error('Failed to initialize EmbeddingService:', error);
-            // Don't throw error - use fallback methods
         }
     }
 
     async generateEmbedding(text: string): Promise<number[]> {
-        // Input validation
         if (!text || typeof text !== 'string') {
             this.logger.warn('Invalid input for embedding generation');
             return this.createEmptyEmbedding();
@@ -35,7 +32,7 @@ export class EmbeddingService {
             return this.createEmptyEmbedding();
         }
 
-        // Truncate very long text to prevent API issues
+        // Truncate text to a reasonable length to avoid API issues
         const maxLength = 500; // Reasonable limit for embedding
         const truncatedText = cleanText.length > maxLength
             ? cleanText.substring(0, maxLength) + '...'
@@ -279,7 +276,6 @@ export class EmbeddingService {
         return this.embeddingModel;
     }
 
-    // Health check method
     async healthCheck(): Promise<boolean> {
         try {
             const testEmbedding = await this.generateEmbedding('test');

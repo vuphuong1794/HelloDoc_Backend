@@ -1,5 +1,3 @@
-//post.controller.ts
-
 import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseInterceptors, Req } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
@@ -58,22 +56,21 @@ export class PostController {
     @Param('id') id: string,
     @UploadedFiles() images: Express.Multer.File[],
     @Body() updatePostDto: UpdatePostDto,
-    @Req() request: Request, // Add this parameter to access the request
+    @Req() request: Request,
   ) {
-    // Gán images từ multipart vào DTO
+
     updatePostDto.images = images;
     console.log(images)
-    // Xử lý media (ảnh cũ) từ form-data
-    // In NestJS, form-data fields (except files) are available in request.body
-    const body = request.body as any; // Type assertion since form-data fields might not be typed
 
-    // Handle media array
+    const body = request.body as any;
+
+
     if (body.media) {
-      // If media is sent as array (media[0], media[1],...)
+
       if (Array.isArray(body.media)) {
         updatePostDto.media = body.media;
       }
-      // If media is sent as string (single image case)
+
       else if (typeof body.media === 'string') {
         updatePostDto.media = [body.media];
       }
@@ -103,5 +100,15 @@ export class PostController {
     @Query('minSimilarity') minSimilarity: number = 0.6
   ) {
     return this.postService.findSimilarPosts(id, Number(limit), Number(minSimilarity));
+  }
+
+  // ================ Hybrid Search ================
+  @Get('hybrid-search/search/test/2')
+  async hybridSearch(
+    @Query('q') query: string,
+    @Query('limit') limit: number = 5,
+    @Query('minSimilarity') minSimilarity: number = 0.75
+  ) {
+    return this.postService.hybridSearch(query, Number(limit));
   }
 }
