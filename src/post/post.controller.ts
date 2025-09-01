@@ -87,7 +87,7 @@ export class PostController {
     return this.postService.delete(id);
   }
 
-  @Get('semantic-search')
+  @Get('semantic-search/seach/test')
   async semanticSearch(
     @Query('q') query: string,
     @Query('limit') limit: number = 10,

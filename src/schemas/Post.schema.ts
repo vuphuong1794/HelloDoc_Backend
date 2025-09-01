@@ -30,7 +30,7 @@ export class Post {
     @Prop({ type: String, default: '' })
     keywords: string;
 
-    @Prop({ type: [Number], required: false })
+    @Prop({ type: [Number], default: [] })
     embedding: number[];
 
     @Prop({ default: 'sentence-transformers/all-MiniLM-L6-v2' })

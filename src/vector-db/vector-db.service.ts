@@ -25,7 +25,7 @@ export class VectorSearchService {
             const aggregationPipeline: any[] = [
                 {
                     $vectorSearch: {
-                        index: 'vector_index',
+                        index: 'default',
                         path: 'embedding',
                         queryVector: queryEmbedding,
                         numCandidates: Math.max(100, limit * 10),
@@ -69,10 +69,14 @@ export class VectorSearchService {
             // Populate user information
             const populatedResults = await Promise.all(
                 results.map(async (item) => {
-                    const post = await this.postModel.findById(item._id).populate({
-                        path: 'user',
-                        select: 'name avatarURL imageUrl',
-                    });
+                    const post = await this.postModel.findById(item._id)
+                        .select('-embedding') //không trả về embedding
+                        .populate({
+                            path: 'user',
+                            select: 'name avatarURL imageUrl',
+
+
+                        });
                     return {
                         post: post ? post.toObject() : null,
                         similarity: item.similarity,
@@ -130,6 +134,7 @@ export class VectorSearchService {
         }
     }
 
+
     async semanticSearch(
         query: string,
         limit: number = 10,
@@ -137,12 +142,46 @@ export class VectorSearchService {
     ): Promise<Array<{ post: Post; similarity: number }>> {
         try {
             const queryEmbedding = await this.embeddingService.generateEmbedding(query);
-            return this.findSimilarPosts(queryEmbedding, limit, minSimilarity);
+
+            // Nếu query ngắn thì nâng threshold, nhưng không quá gắt
+            const queryWordCount = query.trim().split(/\s+/).length;
+            const effectiveMinSim = queryWordCount <= 2 ? Math.max(0.7, minSimilarity) : minSimilarity;
+
+            const results = await this.findSimilarPosts(queryEmbedding, limit * 2, 0.3);
+            // cho threshold thấp (0.3) để lấy nhiều ứng viên, lọc sau
+
+            const q = query.toLowerCase();
+
+            let filteredResults = results.filter(item => {
+                const content = item.post.content?.toLowerCase() || '';
+                const keywords = item.post.keywords?.toLowerCase() || '';
+                const q = query.toLowerCase();
+
+                // Chỉ giữ lại khi similarity >= ngưỡng
+                // Nhưng nếu có từ khóa trùng thì cộng thêm 0.1 vào similarity để đẩy lên
+                let sim = item.similarity;
+                if (content.includes(q) || keywords.includes(q)) {
+                    sim += 0.1;
+                }
+
+                return sim >= effectiveMinSim;
+            });
+
+
+            // Nếu lọc xong rỗng → fallback giữ top N similarity cao nhất
+            if (filteredResults.length === 0) {
+                this.logger.warn(`No results above threshold, returning top similarity results instead`);
+                filteredResults = results.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
+            }
+
+            return filteredResults.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
         } catch (error) {
             this.logger.error(`Semantic search failed: ${error.message}`);
             return [];
         }
     }
+
+
 
     async ensureEmbeddingsExist(): Promise<void> {
         try {

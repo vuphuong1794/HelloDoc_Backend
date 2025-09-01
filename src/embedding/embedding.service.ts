@@ -179,7 +179,7 @@ export class EmbeddingService {
             const words = text.toLowerCase()
                 .replace(/[^\w\s]/g, '') // Remove punctuation
                 .split(/\s+/)
-                .filter(word => word.length > 2);
+                .filter(word => word.length > 2)
 
             const embedding = new Array(this.embeddingDimensions).fill(0);
 

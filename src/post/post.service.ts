@@ -65,27 +65,23 @@ export class PostService {
             }
 
             // Create post data object
-            const postData = {
+            const postData = new this.postModel({
                 user: createPostDto.userId,
                 userModel: createPostDto.userModel,
                 content: createPostDto.content,
                 media: uploadedMediaUrls,
                 keywords: createPostDto.keywords || '',
                 isHidden: false,
-                // Initialize embedding fields to prevent conflicts
-                embedding: null,
-                embeddingModel: null,
-                embeddingUpdatedAt: null,
-            };
 
-            // Create and save the post
-            const createdPost = new this.postModel(postData);
-            savedPost = await createdPost.save();
+                embedding: [],
+                embeddingModel: '',
+                embeddingUpdatedAt: null,
+            });
+
+            savedPost = await postData.save();
 
             this.logger.log(`Post created successfully with ID: ${savedPost._id}`);
 
-            // IMPORTANT: Return immediately after successful save
-            // Generate embedding asynchronously without blocking
             this.generateEmbeddingAsync(savedPost._id.toString(), savedPost.content, savedPost.keywords);
 
             return savedPost;
@@ -96,16 +92,15 @@ export class PostService {
     }
 
     // Separate async method for embedding generation that won't affect the main post
-    private generateEmbeddingAsync(postId: string, content: string, keywords?: string): void {
+    private async generateEmbeddingAsync(postId: string, content: string, keywords?: string): Promise<void> {
         // Use setTimeout instead of setImmediate for better error isolation
-        setTimeout(async () => {
-            try {
-                await this.generateAndStoreEmbedding(postId, content, keywords);
-            } catch (error) {
-                this.logger.error(`Failed to generate embedding for post ${postId}: ${error.message}`);
-                // Don't let embedding errors affect the post itself
-            }
-        }, 1000); // Wait 1 second before generating embedding
+
+        try {
+            await this.generateAndStoreEmbedding(postId, content, keywords);
+        } catch (error) {
+            this.logger.error(`Failed to generate embedding for post ${postId}: ${error.message}`);
+            // Don't let embedding errors affect the post itself
+        }
     }
 
     // Improved embedding generation method
@@ -132,34 +127,24 @@ export class PostService {
                 const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
 
                 // Use atomic update with careful conditions
-                const updateResult = await this.postModel.updateOne(
-                    {
-                        _id: postId,
-                        // Only update if embedding doesn't exist or is empty
-                        $or: [
-                            { embedding: { $exists: false } },
-                            { embedding: null },
-                            { embedding: { $size: 0 } }
-                        ]
-                    },
+                const updateResult = await this.postModel.findByIdAndUpdate(
+                    postId,
                     {
                         $set: {
                             embedding,
                             embeddingModel: this.embeddingService.getModelName(),
                             embeddingUpdatedAt: new Date(),
                         }
-                    }
+                    },
+                    { new: true }
                 );
 
-                if (updateResult.modifiedCount > 0) {
-                    this.logger.log(`Successfully generated embedding for post ${postId}`);
-                } else if (updateResult.matchedCount === 0) {
-                    this.logger.warn(`Post ${postId} not found or already has embedding`);
+
+                if (updateResult) {
+                    this.logger.log(`Embedding generated and stored for post ${postId}`);
                 } else {
-                    this.logger.log(`Post ${postId} embedding was not updated (may already exist)`);
+                    this.logger.log(`Embedding already exists for post ${postId}, skipping`);
                 }
-            } else {
-                this.logger.warn(`No content available for embedding generation for post ${postId}`);
             }
         } catch (error) {
             this.logger.error(`Error generating embedding for post ${postId}: ${error.message}`, error.stack);
