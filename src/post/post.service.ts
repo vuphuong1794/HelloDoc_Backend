@@ -10,6 +10,7 @@ import { Doctor } from 'src/schemas/doctor.schema';
 import { User } from 'src/schemas/user.schema';
 import { CacheService } from 'src/cache.service';
 import { Express } from 'express';
+import * as dayjs from 'dayjs';
 import { EmbeddingService } from 'src/embedding/embedding.service';
 import { VectorSearchService } from 'src/vector-db/vector-db.service';
 
@@ -64,6 +65,8 @@ export class PostService {
                 }
             }
 
+            const nowVN = dayjs().add(7, "hour").toDate();
+
             // Create post data object
             const postData = new this.postModel({
                 user: createPostDto.userId,
@@ -76,7 +79,13 @@ export class PostService {
                 embedding: [],
                 embeddingModel: '',
                 embeddingUpdatedAt: null,
+
+                createdAt: nowVN,
+                updatedAt: nowVN
             });
+
+
+
 
             savedPost = await postData.save();
 
@@ -90,6 +99,7 @@ export class PostService {
             throw new InternalServerErrorException('Lỗi khi tạo bài viết');
         }
     }
+
 
     // Separate async method for embedding generation that won't affect the main post
     private async generateEmbeddingAsync(postId: string, content: string, keywords?: string): Promise<void> {
@@ -346,19 +356,11 @@ export class PostService {
 
     async search(query: string) {
         return this.postModel.find({
-            $and: [
-                {
-                    $or: [
-                        { content: { $regex: query, $options: 'i' } },
-                        { keywords: { $regex: query, $options: 'i' } }
-                    ]
-                },
-                {
-                    $or: [
-                        { isHidden: false },
-                        { isHidden: { $exists: false } }
-                    ]
-                }
+            $or: [
+                { title: { $regex: query, $options: 'i' } },
+                { content: { $regex: query, $options: 'i' } },
+                { category: { $regex: query, $options: 'i' } },
+                { keywords: { $regex: query, $options: 'i' } }
             ]
         })
             .limit(5)

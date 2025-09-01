@@ -4,7 +4,7 @@ import { IsString, IsEmail, IsBoolean, IsOptional, IsNumber, Min, IsUrl } from '
 import { PostComment } from './post-comment.schema';
 import { PostFavorite } from './post-favorite.schema';
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true})
 export class Post {
     @Prop({ type: mongoose.Schema.Types.ObjectId, auto: true })
     _id: Types.ObjectId;
