@@ -27,6 +27,9 @@ export class PostService {
         private vectorSearchService: VectorSearchService,
     ) { }
 
+    /**
+     * Tìm chủ sở hữu bài viết (có thể là User hoặc Doctor) theo ID
+     */
     private async findOwnerById(ownerId: string): Promise<User | Doctor> {
         try {
             const owner = await this.userModel.findById(ownerId).lean() ||
@@ -42,11 +45,18 @@ export class PostService {
         }
     }
 
+    /**
+     * Tạo mới bài viết
+     * - Upload ảnh lên Cloudinary
+     * - Lưu post vào MongoDB
+     * - Gọi async để tạo embedding
+     */
     async create(createPostDto: CreatePostDto): Promise<Post> {
         let savedPost: Post;
         try {
             const uploadedMediaUrls: string[] = [];
 
+            // Upload từng ảnh nếu có
             if (createPostDto.images && createPostDto.images.length > 0) {
                 for (const file of createPostDto.images) {
                     try {
@@ -65,7 +75,7 @@ export class PostService {
 
             const nowVN = dayjs().add(7, "hour").toDate();
 
-            // Create post data object
+            // Tạo document post mới
             const postData = new this.postModel({
                 user: createPostDto.userId,
                 userModel: createPostDto.userModel,
@@ -82,13 +92,11 @@ export class PostService {
                 updatedAt: nowVN
             });
 
-
-
-
             savedPost = await postData.save();
 
             this.logger.log(`Post created successfully with ID: ${savedPost._id}`);
 
+            // Tạo embedding async (không block quá trình create)
             this.generateEmbeddingAsync(savedPost._id.toString(), savedPost.content, savedPost.keywords);
 
             return savedPost;
@@ -98,29 +106,29 @@ export class PostService {
         }
     }
 
-
-    // Separate async method for embedding generation that won't affect the main post
+    /**
+     * Hàm tạo embedding async cho post (không ảnh hưởng đến create chính)
+     */
     private async generateEmbeddingAsync(postId: string, content: string, keywords?: string): Promise<void> {
-        // Use setTimeout instead of setImmediate for better error isolation
-
         try {
             await this.generateAndStoreEmbedding(postId, content, keywords);
         } catch (error) {
             this.logger.error(`Failed to generate embedding for post ${postId}: ${error.message}`);
-            // Don't let embedding errors affect the post itself
         }
     }
 
+    /**
+     * Sinh embedding và lưu vào DB
+     */
     private async generateAndStoreEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
         try {
-            // Check if post exists
             const existingPost = await this.postModel.findById(postId).select('_id content keywords embedding');
             if (!existingPost) {
                 this.logger.warn(`Post ${postId} not found when generating embedding`);
                 return;
             }
 
-            // Check if embedding already exists
+            // Nếu đã có embedding thì bỏ qua
             if (existingPost.embedding && Array.isArray(existingPost.embedding) && existingPost.embedding.length > 0) {
                 this.logger.log(`Post ${postId} already has embedding, skipping`);
                 return;
@@ -133,7 +141,7 @@ export class PostService {
 
                 const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
 
-                const updateResult = await this.postModel.findByIdAndUpdate(
+                await this.postModel.findByIdAndUpdate(
                     postId,
                     {
                         $set: {
@@ -145,18 +153,16 @@ export class PostService {
                     { new: true }
                 );
 
-
-                if (updateResult) {
-                    this.logger.log(`Embedding generated and stored for post ${postId}`);
-                } else {
-                    this.logger.log(`Embedding already exists for post ${postId}, skipping`);
-                }
+                this.logger.log(`Embedding generated and stored for post ${postId}`);
             }
         } catch (error) {
             this.logger.error(`Error generating embedding for post ${postId}: ${error.message}`, error.stack);
         }
     }
 
+    /**
+     * Lấy danh sách bài viết (có phân trang)
+     */
     async getAll(limit: number, skip: number): Promise<{ posts: Post[]; hasMore: boolean; total: number }> {
         try {
             const total = await this.postModel.countDocuments({
@@ -183,6 +189,9 @@ export class PostService {
         }
     }
 
+    /**
+     * Lấy chi tiết 1 bài viết theo ID
+     */
     async getOne(id: string): Promise<Post> {
         try {
             const post = await this.postModel
@@ -203,6 +212,9 @@ export class PostService {
         }
     }
 
+    /**
+     * Xóa cache của post theo user
+     */
     async deleteCache(ownerId: string) {
         try {
             const cacheKey = `posts_by_owner_${ownerId}`;
@@ -212,6 +224,9 @@ export class PostService {
         }
     }
 
+    /**
+     * Lấy danh sách bài viết theo userId
+     */
     async getByUserId(ownerId: string): Promise<Post[]> {
         try {
             await this.findOwnerById(ownerId);
@@ -237,6 +252,11 @@ export class PostService {
         }
     }
 
+    /**
+     * Cập nhật bài viết
+     * - Có thể upload ảnh mới
+     * - Nếu content/keywords thay đổi thì cập nhật embedding
+     */
     async update(id: string, updatePostDto: UpdatePostDto) {
         let updatedPost: Post;
 
@@ -248,11 +268,10 @@ export class PostService {
                 throw new NotFoundException('Post not found');
             }
 
-            this.logger.log(`Found existing post:`, JSON.stringify(existingPost.toObject(), null, 2));
-
             const mediaUrls = updatePostDto.media ?? existingPost.media ?? [];
             const images = (updatePostDto.images ?? []) as Express.Multer.File[];
 
+            // Upload ảnh mới nếu có
             if (images.length > 0) {
                 const newMediaUrls: string[] = [];
                 for (const file of images) {
@@ -267,6 +286,7 @@ export class PostService {
                 existingPost.media = updatePostDto.media;
             }
 
+            // Cập nhật content & keywords
             if (updatePostDto.content !== undefined) {
                 existingPost.content = updatePostDto.content;
             }
@@ -279,7 +299,7 @@ export class PostService {
 
             this.logger.log(`Post updated successfully:`, JSON.stringify((updatedPost as any).toObject(), null, 2));
 
-            // Update embedding if content or keywords changed
+            // Nếu có thay đổi content/keywords -> cập nhật embedding
             if (updatePostDto.content !== undefined || updatePostDto.keywords !== undefined) {
                 this.updateEmbeddingAsync(updatedPost._id.toString(), updatedPost.content, updatedPost.keywords);
             }
@@ -292,6 +312,9 @@ export class PostService {
         }
     }
 
+    /**
+     * Async cập nhật embedding
+     */
     private updateEmbeddingAsync(postId: string, content: string, keywords?: string): void {
         setTimeout(async () => {
             try {
@@ -302,6 +325,9 @@ export class PostService {
         }, 1000);
     }
 
+    /**
+     * Thực sự cập nhật embedding vào DB
+     */
     private async updateEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
         try {
             const textForEmbedding = `${content} ${keywords || ''}`.trim();
@@ -327,6 +353,9 @@ export class PostService {
         }
     }
 
+    /**
+     * "Xóa" bài viết (chỉ set isHidden = true)
+     */
     async delete(id: string): Promise<{ message: string }> {
         try {
             const updated = await this.postModel.findByIdAndUpdate(
@@ -345,6 +374,9 @@ export class PostService {
         }
     }
 
+    /**
+     * Tìm kiếm cơ bản (regex, full-text)
+     */
     async search(query: string) {
         return this.postModel.find({
             $or: [
@@ -358,6 +390,9 @@ export class PostService {
             .populate('user', '_id name avatarURL');
     }
 
+    /**
+     * Tìm kiếm ngữ nghĩa bằng vector database
+     */
     async semanticSearch(
         query: string,
         limit: number = 10,
@@ -371,6 +406,9 @@ export class PostService {
         }
     }
 
+    /**
+     * Tìm bài viết tương tự dựa vào embedding
+     */
     async findSimilarPosts(
         postId: string,
         limit: number = 5,
@@ -382,37 +420,41 @@ export class PostService {
                 throw new NotFoundException('Post not found');
             }
 
+            // Nếu chưa có embedding thì generate trước (trả về rỗng tạm thời)
             if (!post.embedding || !Array.isArray(post.embedding) || post.embedding.length === 0) {
-                // Generate embedding if missing, but don't wait for it
                 this.generateEmbeddingAsync(postId, post.content, post.keywords);
-                return []; // Return empty array for now
+                return [];
             }
 
-            const similarPosts = await this.vectorSearchService.findSimilarPosts(
+            return await this.vectorSearchService.findSimilarPosts(
                 post.embedding,
                 limit,
                 minSimilarity,
                 postId
             );
-
-            return similarPosts;
         } catch (error) {
             this.logger.error('Error finding similar posts:', error);
             throw new InternalServerErrorException('Lỗi khi tìm bài viết tương tự');
         }
     }
 
+    /**
+     * Đảm bảo tất cả posts đều có embedding
+     */
     async ensureAllPostsHaveEmbeddings(): Promise<void> {
         await this.vectorSearchService.ensureEmbeddingsExist();
     }
 
     // ================ Hybrid Search ================
 
+    /**
+     * Hybrid search = Semantic (vector) + Keyword (regex)
+     */
     async hybridSearch(q: string, limit = 5, minSimilarity = 0.75) {
         // 1. Tạo embedding cho query
         const queryEmbedding = await this.embeddingService.generateEmbedding(q);
 
-        // 2. Lấy toàn bộ post (có thể thay bằng ANN index để tối ưu sau)
+        // 2. Lấy toàn bộ posts
         const posts = await this.postModel.find({ isHidden: false });
 
         // 3. Tính cosine similarity
@@ -421,7 +463,7 @@ export class PostService {
             return { post, similarity };
         });
 
-        // 4. Semantic filter
+        // 4. Lọc semantic
         const semanticResults = withSimilarity
             .filter((item) => item.similarity >= minSimilarity)
             .map((item) => ({
@@ -429,7 +471,7 @@ export class PostService {
                 keywordScore: 0,
             }));
 
-        // 5. Full-text search (chỉ lấy content, title, keywords)
+        // 5. Full-text search
         const regex = new RegExp(q, 'i');
         const keywordResults = await this.postModel.find({
             $or: [{ content: regex }, { keywords: regex }],
@@ -445,7 +487,7 @@ export class PostService {
         // 6. Gộp 2 danh sách
         const combined = [...semanticResults, ...keywordWithScore];
 
-        // 7. Tính finalScore
+        // 7. Tính finalScore (kết hợp semantic & keyword)
         const results = combined.map((item) => ({
             post: item.post,
             similarity: item.similarity,
@@ -453,12 +495,15 @@ export class PostService {
             finalScore: item.similarity * 0.7 + item.keywordScore * 0.3, // α=0.7, β=0.3
         }));
 
-        // 8. Sort theo finalScore
+        // 8. Sắp xếp theo finalScore
         return results
             .sort((a, b) => b.finalScore - a.finalScore)
             .slice(0, limit);
     }
 
+    /**
+     * Tính cosine similarity giữa 2 vector
+     */
     private cosineSimilarity(vecA: number[], vecB: number[]): number {
         const dot = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
         const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
