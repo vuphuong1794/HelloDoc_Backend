@@ -17,7 +17,6 @@ import { title } from 'process';
 @Injectable()
 export class PostService {
     private readonly logger = new Logger(PostService.name);
-
     constructor(
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(Doctor.name) private doctorModel: Model<Doctor>,
@@ -28,9 +27,6 @@ export class PostService {
         private vectorSearchService: VectorSearchService,
     ) { }
 
-    /**
-     * Tìm chủ sở hữu bài viết (có thể là User hoặc Doctor) theo ID
-     */
     private async findOwnerById(ownerId: string): Promise<User | Doctor> {
         try {
             const owner = await this.userModel.findById(ownerId).lean() ||
@@ -46,12 +42,6 @@ export class PostService {
         }
     }
 
-    /**
-     * Tạo mới bài viết
-     * - Upload ảnh lên Cloudinary
-     * - Lưu post vào MongoDB
-     * - Gọi async để tạo embedding
-     */
     async create(createPostDto: CreatePostDto): Promise<Post> {
         let savedPost: Post;
         try {
@@ -107,63 +97,6 @@ export class PostService {
         }
     }
 
-    /**
-     * Hàm tạo embedding async cho post (không ảnh hưởng đến create chính)
-     */
-    private async generateEmbeddingAsync(postId: string, content: string, keywords?: string): Promise<void> {
-        try {
-            await this.generateAndStoreEmbedding(postId, content, keywords);
-        } catch (error) {
-            this.logger.error(`Failed to generate embedding for post ${postId}: ${error.message}`);
-        }
-    }
-
-    /**
-     * Sinh embedding và lưu vào DB
-     */
-    private async generateAndStoreEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
-        try {
-            const existingPost = await this.postModel.findById(postId).select('_id content keywords embedding');
-            if (!existingPost) {
-                this.logger.warn(`Post ${postId} not found when generating embedding`);
-                return;
-            }
-
-            // Nếu đã có embedding thì bỏ qua
-            if (existingPost.embedding && Array.isArray(existingPost.embedding) && existingPost.embedding.length > 0) {
-                this.logger.log(`Post ${postId} already has embedding, skipping`);
-                return;
-            }
-
-            const textForEmbedding = `${content} ${keywords || ''}`.trim();
-
-            if (textForEmbedding && textForEmbedding.length > 0) {
-                this.logger.log(`Generating embedding for post ${postId}`);
-
-                const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
-
-                await this.postModel.findByIdAndUpdate(
-                    postId,
-                    {
-                        $set: {
-                            embedding,
-                            embeddingModel: this.embeddingService.getModelName(),
-                            embeddingUpdatedAt: new Date(),
-                        }
-                    },
-                    { new: true }
-                );
-
-                this.logger.log(`Embedding generated and stored for post ${postId}`);
-            }
-        } catch (error) {
-            this.logger.error(`Error generating embedding for post ${postId}: ${error.message}`, error.stack);
-        }
-    }
-
-    /**
-     * Lấy danh sách bài viết (có phân trang)
-     */
     async getAll(limit: number, skip: number): Promise<{ posts: Post[]; hasMore: boolean; total: number }> {
         try {
             const total = await this.postModel.countDocuments({
@@ -190,9 +123,6 @@ export class PostService {
         }
     }
 
-    /**
-     * Lấy chi tiết 1 bài viết theo ID
-     */
     async getOne(id: string): Promise<Post> {
         try {
             const post = await this.postModel
@@ -213,9 +143,6 @@ export class PostService {
         }
     }
 
-    /**
-     * Xóa cache của post theo user
-     */
     async deleteCache(ownerId: string) {
         try {
             const cacheKey = `posts_by_owner_${ownerId}`;
@@ -225,9 +152,6 @@ export class PostService {
         }
     }
 
-    /**
-     * Lấy danh sách bài viết theo userId
-     */
     async getByUserId(ownerId: string): Promise<Post[]> {
         try {
             await this.findOwnerById(ownerId);
@@ -253,11 +177,6 @@ export class PostService {
         }
     }
 
-    /**
-     * Cập nhật bài viết
-     * - Có thể upload ảnh mới
-     * - Nếu content/keywords thay đổi thì cập nhật embedding
-     */
     async update(id: string, updatePostDto: UpdatePostDto) {
         let updatedPost: Post;
 
@@ -313,50 +232,6 @@ export class PostService {
         }
     }
 
-    /**
-     * Async cập nhật embedding
-     */
-    private updateEmbeddingAsync(postId: string, content: string, keywords?: string): void {
-        setTimeout(async () => {
-            try {
-                await this.updateEmbedding(postId, content, keywords);
-            } catch (error) {
-                this.logger.error(`Failed to update embedding for post ${postId}: ${error.message}`);
-            }
-        }, 1000);
-    }
-
-    /**
-     * Thực sự cập nhật embedding vào DB
-     */
-    private async updateEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
-        try {
-            const textForEmbedding = `${content} ${keywords || ''}`.trim();
-
-            if (textForEmbedding && textForEmbedding.length > 0) {
-                const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
-
-                await this.postModel.updateOne(
-                    { _id: postId },
-                    {
-                        $set: {
-                            embedding,
-                            embeddingModel: this.embeddingService.getModelName(),
-                            embeddingUpdatedAt: new Date(),
-                        }
-                    }
-                );
-
-                this.logger.log(`Updated embedding for post ${postId}`);
-            }
-        } catch (error) {
-            this.logger.error(`Error updating embedding for post ${postId}: ${error.message}`);
-        }
-    }
-
-    /**
-     * "Xóa" bài viết (chỉ set isHidden = true)
-     */
     async delete(id: string): Promise<{ message: string }> {
         try {
             const updated = await this.postModel.findByIdAndUpdate(
@@ -375,15 +250,11 @@ export class PostService {
         }
     }
 
-    /**
-     * Tìm kiếm cơ bản (regex, full-text)
-     */
     async search(query: string) {
         return this.postModel.find({
             $or: [
                 { title: { $regex: query, $options: 'i' } },
                 { content: { $regex: query, $options: 'i' } },
-                { category: { $regex: query, $options: 'i' } },
                 { keywords: { $regex: query, $options: 'i' } }
             ]
         })
@@ -391,29 +262,11 @@ export class PostService {
             .populate('user', '_id name avatarURL');
     }
 
-    /**
-     * Tìm kiếm ngữ nghĩa bằng vector database
-     */
-    async semanticSearch(
-        query: string,
-        limit: number = 10,
-        minSimilarity: number = 0.5
-    ): Promise<Array<{ post: Post; similarity: number }>> {
-        try {
-            return await this.vectorSearchService.semanticSearch(query, limit, minSimilarity);
-        } catch (error) {
-            this.logger.error('Error in semantic search:', error);
-            throw new InternalServerErrorException('Lỗi khi tìm kiếm ngữ nghĩa');
-        }
-    }
-
-    /**
-     * Tìm bài viết tương tự dựa vào embedding
-     */
+    // Tìm bài viết tương tự dựa trên embedding của bài viết hiện tại
     async findSimilarPosts(
         postId: string,
         limit: number = 5,
-        minSimilarity: number = 0.6
+        minSimilarity: number = 0.5
     ): Promise<Array<{ post: Post; similarity: number }>> {
         try {
             const post = await this.postModel.findById(postId);
@@ -439,18 +292,7 @@ export class PostService {
         }
     }
 
-    /**
-     * Đảm bảo tất cả posts đều có embedding
-     */
-    async ensureAllPostsHaveEmbeddings(): Promise<void> {
-        await this.vectorSearchService.ensureEmbeddingsExist();
-    }
-
-    // ================ Hybrid Search ================
-
-    /**
-     * Hybrid search = Semantic (vector) + Keyword (regex)
-     */
+    // Kết hợp tìm kiếm ngữ nghĩa và từ khóa
     async hybridSearch(q: string, limit = 5, minSimilarity = 0.75) {
         // 1. Tạo embedding cho query
         const queryEmbedding = await this.embeddingService.generateEmbedding(q);
@@ -475,7 +317,7 @@ export class PostService {
         // 5. Full-text search
         const regex = new RegExp(q, 'i');
         const keywordResults = await this.postModel.find({
-            $or: [ { keywords: regex }],
+            $or: [{ keywords: regex }],
             isHidden: false,
         });
 
@@ -502,9 +344,8 @@ export class PostService {
             .slice(0, limit);
     }
 
-    /**
-     * Tính cosine similarity giữa 2 vector
-     */
+
+    //Tính cosine similarity giữa 2 vector
     private cosineSimilarity(vecA: number[], vecB: number[]): number {
         const dot = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
         const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
@@ -512,30 +353,131 @@ export class PostService {
         return dot / (normA * normB);
     }
 
-    async searchPosts(query: string) {
-        const results = await this.postModel.aggregate([
-            {
-                $search: {
-                    index: 'vector_index', // tên index Atlas Search 
-                    text: {
-                        query: query,
-                        path: ['content', 'keywords'], // field muốn search
-                    },
-                },
-            },
-            {
-                $project: {
-                    title: 1,
-                    content: 1,
-                    keywords: 1,
-                    score: { $meta: 'searchScore' }, // lấy score 
-                },
-            },
-            {
-                $sort: { score: -1 },
-            },
-        ]);
 
-        return results;
+    //Hàm tạo embedding async cho post (nhằm tránh block quá trình tạo post chính)
+    private async generateEmbeddingAsync(postId: string, content: string, keywords?: string): Promise<void> {
+        try {
+            await this.generateAndStoreEmbedding(postId, content, keywords);
+        } catch (error) {
+            this.logger.error(`Failed to generate embedding for post ${postId}: ${error.message}`);
+        }
     }
+
+    // tạo embedding và lưu vào DB
+    private async generateAndStoreEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
+        try {
+            const existingPost = await this.postModel.findById(postId).select('_id content keywords embedding');
+            if (!existingPost) {
+                this.logger.warn(`Post ${postId} not found when generating embedding`);
+                return;
+            }
+
+            // Nếu đã có embedding thì bỏ qua
+            if (existingPost.embedding && Array.isArray(existingPost.embedding) && existingPost.embedding.length > 0) {
+                this.logger.log(`Post ${postId} already has embedding, skipping`);
+                return;
+            }
+
+            const textForEmbedding = `${keywords || ''}`.trim();
+
+            if (textForEmbedding && textForEmbedding.length > 0) {
+                this.logger.log(`Generating embedding for post ${postId}`);
+
+                const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
+
+                await this.postModel.findByIdAndUpdate(
+                    postId,
+                    {
+                        $set: {
+                            embedding,
+                            embeddingModel: this.embeddingService.getModelName(),
+                            embeddingUpdatedAt: new Date(),
+                        }
+                    },
+                    { new: true }
+                );
+
+                this.logger.log(`Embedding generated and stored for post ${postId}`);
+            }
+        } catch (error) {
+            this.logger.error(`Error generating embedding for post ${postId}: ${error.message}`, error.stack);
+        }
+    }
+
+    // Cập nhật embedding async (không block quá trình update chính)
+    private updateEmbeddingAsync(postId: string, content: string, keywords?: string): void {
+        setTimeout(async () => {
+            try {
+                await this.updateEmbedding(postId, content, keywords);
+            } catch (error) {
+                this.logger.error(`Failed to update embedding for post ${postId}: ${error.message}`);
+            }
+        }, 1000);
+    }
+
+    // Cập nhật embedding cho post
+    private async updateEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
+        try {
+            const textForEmbedding = `${content} ${keywords || ''}`.trim();
+
+            if (textForEmbedding && textForEmbedding.length > 0) {
+                const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
+
+                await this.postModel.updateOne(
+                    { _id: postId },
+                    {
+                        $set: {
+                            embedding,
+                            embeddingModel: this.embeddingService.getModelName(),
+                            embeddingUpdatedAt: new Date(),
+                        }
+                    }
+                );
+
+                this.logger.log(`Updated embedding for post ${postId}`);
+            }
+        } catch (error) {
+            this.logger.error(`Error updating embedding for post ${postId}: ${error.message}`);
+        }
+    }
+
+    // async searchPosts(query: string) {
+    //     const results = await this.postModel.aggregate([
+    //         {
+    //             $search: {
+    //                 index: 'vector_index', // tên index Atlas Search 
+    //                 text: {
+    //                     query: query,
+    //                     path: ['content', 'keywords'], // field muốn search
+    //                 },
+    //             },
+    //         },
+    //         {
+    //             $project: {
+    //                 title: 1,
+    //                 content: 1,
+    //                 keywords: 1,
+    //                 score: { $meta: 'searchScore' }, // lấy score 
+    //             },
+    //         },
+    //         {
+    //             $sort: { score: -1 },
+    //         },
+    //     ]);
+
+    //     return results;
+    // }
+
+    // async semanticSearch(
+    //     query: string,
+    //     limit: number = 10,
+    //     minSimilarity: number = 0.7
+    // ): Promise<Array<{ post: Post; similarity: number }>> {
+    //     try {
+    //         return await this.vectorSearchService.semanticSearch(query, limit, minSimilarity);
+    //     } catch (error) {
+    //         this.logger.error('Error in semantic search:', error);
+    //         throw new InternalServerErrorException('Lỗi khi tìm kiếm ngữ nghĩa');
+    //     }
+    // }
 }

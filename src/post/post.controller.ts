@@ -87,15 +87,6 @@ export class PostController {
     return this.postService.delete(id);
   }
 
-  @Get('semantic-search/seach/test')
-  async semanticSearch(
-    @Query('q') query: string,
-    @Query('limit') limit: number = 10,
-    @Query('minSimilarity') minSimilarity: number = 0.5
-  ) {
-    return this.postService.semanticSearch(query, Number(limit), Number(minSimilarity));
-  }
-
   @Get(':id/similar')
   async findSimilarPosts(
     @Param('id') id: string,
@@ -115,24 +106,13 @@ export class PostController {
     return this.postService.hybridSearch(query, Number(limit));
   }
 
-
-  // GET /search?query=hoa mắt chóng mặt&limit=5
-  @Get("searchpost")
-  async search(
-    @Query('query') query: string,
-    @Query('limit') limit = 5
-  ) {
-    return this.vectorSearchService.semanticSearch(query, Number(limit));
-  }
-
-
-  @Get('search/advanced')
-  async advancedSearch(
-    @Query('query') query: string,
-  ) {
-    return this.postService.searchPosts(
-      query,
-    );
-  }
+  // @Get('semantic-search/search/test')
+  // async semanticSearch(
+  //   @Query('q') query: string,
+  //   @Query('limit') limit: number = 10,
+  //   @Query('minSimilarity') minSimilarity: number = 0.7
+  // ) {
+  //   return this.postService.semanticSearch(query, Number(limit), Number(minSimilarity));
+  // }
 
 }
