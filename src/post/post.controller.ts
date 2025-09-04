@@ -2,6 +2,8 @@ import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
 import { UpdatePostDto } from 'src/post/dto/updatePost.dto';
+import { VectorSearchService } from 'src/vector-db/vector-db.service';
+
 import {
   FilesInterceptor,
   FileFieldsInterceptor
@@ -11,6 +13,7 @@ import { Request, Express } from 'express';
 @Controller('post')
 export class PostController {
   constructor(private readonly postService: PostService) { }
+  private readonly vectorSearchService: VectorSearchService
 
   @Post('create')
   @UseInterceptors(FilesInterceptor('images'))
@@ -111,4 +114,25 @@ export class PostController {
   ) {
     return this.postService.hybridSearch(query, Number(limit));
   }
+
+
+  // GET /search?query=hoa mắt chóng mặt&limit=5
+  @Get("searchpost")
+  async search(
+    @Query('query') query: string,
+    @Query('limit') limit = 5
+  ) {
+    return this.vectorSearchService.semanticSearch(query, Number(limit));
+  }
+
+
+  @Get('search/advanced')
+  async advancedSearch(
+    @Query('query') query: string,
+  ) {
+    return this.postService.searchPosts(
+      query,
+    );
+  }
+
 }

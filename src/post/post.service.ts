@@ -12,6 +12,7 @@ import { Express } from 'express';
 import * as dayjs from 'dayjs';
 import { EmbeddingService } from 'src/embedding/embedding.service';
 import { VectorSearchService } from 'src/vector-db/vector-db.service';
+import { title } from 'process';
 
 @Injectable()
 export class PostService {
@@ -474,7 +475,7 @@ export class PostService {
         // 5. Full-text search
         const regex = new RegExp(q, 'i');
         const keywordResults = await this.postModel.find({
-            $or: [{ content: regex }, { keywords: regex }],
+            $or: [ { keywords: regex }],
             isHidden: false,
         });
 
@@ -509,5 +510,32 @@ export class PostService {
         const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
         const normB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
         return dot / (normA * normB);
+    }
+
+    async searchPosts(query: string) {
+        const results = await this.postModel.aggregate([
+            {
+                $search: {
+                    index: 'vector_index', // tên index Atlas Search 
+                    text: {
+                        query: query,
+                        path: ['content', 'keywords'], // field muốn search
+                    },
+                },
+            },
+            {
+                $project: {
+                    title: 1,
+                    content: 1,
+                    keywords: 1,
+                    score: { $meta: 'searchScore' }, // lấy score 
+                },
+            },
+            {
+                $sort: { score: -1 },
+            },
+        ]);
+
+        return results;
     }
 }
