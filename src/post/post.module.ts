@@ -9,6 +9,7 @@ import { Doctor, DoctorSchema } from 'src/schemas/doctor.schema';
 import { CacheService } from 'src/cache.service';
 import { EmbeddingService } from 'src/embedding/embedding.service';
 import { VectorSearchService } from 'src/vector-db/vector-db.service';
+import { HuggingFaceService } from 'src/huggingFace/huggingface.service';
 
 @Module({
   imports: [
@@ -20,6 +21,6 @@ import { VectorSearchService } from 'src/vector-db/vector-db.service';
 
     ])],
   controllers: [PostController],
-  providers: [PostService, CacheService, EmbeddingService, VectorSearchService],
+  providers: [PostService, CacheService, EmbeddingService, VectorSearchService, HuggingFaceService],
 })
 export class PostModule { }

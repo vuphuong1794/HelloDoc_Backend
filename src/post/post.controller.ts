@@ -35,6 +35,7 @@ export class PostController {
     return this.postService.getAll(limitNum, skipNum);
   }
 
+
   @Get('search')
   async searchPost(@Query('q') query: string) {
     return this.postService.search(query);
@@ -56,21 +57,22 @@ export class PostController {
     @Param('id') id: string,
     @UploadedFiles() images: Express.Multer.File[],
     @Body() updatePostDto: UpdatePostDto,
-    @Req() request: Request,
+    @Req() request: Request, // Add this parameter to access the request
   ) {
-
+    // Gán images từ multipart vào DTO
     updatePostDto.images = images;
     console.log(images)
+    // Xử lý media (ảnh cũ) từ form-data
+    // In NestJS, form-data fields (except files) are available in request.body
+    const body = request.body as any; // Type assertion since form-data fields might not be typed
 
-    const body = request.body as any;
-
-
+    // Handle media array
     if (body.media) {
-
+      // If media is sent as array (media[0], media[1],...)
       if (Array.isArray(body.media)) {
         updatePostDto.media = body.media;
       }
-
+      // If media is sent as string (single image case)
       else if (typeof body.media === 'string') {
         updatePostDto.media = [body.media];
       }
@@ -84,31 +86,12 @@ export class PostController {
     return this.postService.delete(id);
   }
 
-  @Get('semantic-search/seach/test')
-  async semanticSearch(
+  @Get('search/advanced')
+  async advancedSearch(
     @Query('q') query: string,
-    @Query('limit') limit: number = 10,
-    @Query('minSimilarity') minSimilarity: number = 0.5
   ) {
-    return this.postService.semanticSearch(query, Number(limit), Number(minSimilarity));
-  }
-
-  @Get(':id/similar')
-  async findSimilarPosts(
-    @Param('id') id: string,
-    @Query('limit') limit: number = 5,
-    @Query('minSimilarity') minSimilarity: number = 0.6
-  ) {
-    return this.postService.findSimilarPosts(id, Number(limit), Number(minSimilarity));
-  }
-
-  // ================ Hybrid Search ================
-  @Get('hybrid-search/search/test/2')
-  async hybridSearch(
-    @Query('q') query: string,
-    @Query('limit') limit: number = 5,
-    @Query('minSimilarity') minSimilarity: number = 0.75
-  ) {
-    return this.postService.hybridSearch(query, Number(limit));
+    return this.postService.searchPosts(
+      query,
+    );
   }
 }

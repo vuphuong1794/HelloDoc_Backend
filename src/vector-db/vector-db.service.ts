@@ -186,7 +186,7 @@ export class VectorSearchService {
             const effectiveMinSim = queryWordCount <= 2 ? Math.max(0.7, minSimilarity) : minSimilarity;
 
             // Bước 3: Tìm kiếm với ngưỡng thấp để lấy nhiều ứng viên
-            const results = await this.findSimilarPosts(queryEmbedding, limit * 2, 0.3);
+            const results = await this.findSimilarPosts(queryEmbedding, limit * 2, 0.6);
             // Dùng threshold 0.3 thấp để lấy nhiều ứng viên, sau đó filter kỹ hơn
 
             // Bước 4: Lọc kết quả với logic nâng cao
