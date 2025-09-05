@@ -4,50 +4,38 @@ import { Model } from 'mongoose';
 import { Post } from 'src/schemas/Post.schema';
 import { EmbeddingService } from 'src/embedding/embedding.service';
 
-/**
- * Service xử lý tìm kiếm vector/semantic search trên collection Post
- * Sử dụng embedding vectors để tìm các bài viết tương tự về mặt ngữ nghĩa
- */
 @Injectable()
 export class VectorSearchService {
     private readonly logger = new Logger(VectorSearchService.name);
 
     constructor(
-        @InjectModel(Post.name) private postModel: Model<Post>, // MongoDB model cho Post
-        private embeddingService: EmbeddingService, // Service tạo embedding
+        @InjectModel(Post.name) private postModel: Model<Post>,
+        private embeddingService: EmbeddingService,
     ) { }
 
-    /**
-     * Tìm các bài viết tương tự dựa trên vector embedding
-     * @param queryEmbedding - Vector embedding của query (384 chiều)
-     * @param limit - Số lượng kết quả tối đa (mặc định 5)
-     * @param minSimilarity - Ngưỡng similarity tối thiểu (mặc định 0.6)
-     * @param excludePostId - ID bài viết cần loại trừ khỏi kết quả
-     * @returns Promise<Array<{ post: Post; similarity: number }>> - Array các bài viết với điểm similarity
-     */
+    //Tìm các bài viết tương tự dựa trên vector embedding
     async findSimilarPosts(
-        queryEmbedding: number[],
-        limit: number = 5,
-        minSimilarity: number = 0.6,
-        excludePostId?: string
+        queryEmbedding: number[], //Vector embedding của query (384 chiều)
+        limit: number = 5, //Số lượng kết quả tối đa
+        minSimilarity: number = 0.7, //Ngưỡng similarity tối thiểu
+        excludePostId?: string //ID bài viết cần loại trừ
     ): Promise<Array<{ post: Post; similarity: number }>> {
         try {
-            // Phương pháp 1: Sử dụng MongoDB Atlas Vector Search (hiệu quả nhất)
+            // Phương pháp 1: Sử dụng MongoDB Atlas Vector Search
             const aggregationPipeline: any[] = [
                 {
-                    // $vectorSearch: Pipeline stage đặc biệt của MongoDB Atlas
                     $vectorSearch: {
-                        index: 'vector_index', // Tên vector search index đã tạo trong Atlas
+                        index: 'vector_index',
                         path: 'embedding', // Field chứa vector trong document
                         queryVector: queryEmbedding, // Vector query để so sánh
-                        numCandidates: Math.max(100, limit * 10), // Số ứng viên để xét (tối thiểu 100)
+                        numCandidates: Math.max(100, limit * 10), // Số ứng viên để xét 
                         limit: limit * 3, // Lấy nhiều hơn limit để sau đó filter
                     },
                 },
                 {
                     // Lọc các bài viết không bị ẩn và loại trừ bài viết cụ thể
                     $match: {
-                        isHidden: { $ne: true }, // Không lấy bài viết bị ẩn
+                        isHidden: { $ne: true },
                         ...(excludePostId && { _id: { $ne: excludePostId } }), // Loại trừ bài viết cụ thể
                     },
                 },
@@ -88,10 +76,10 @@ export class VectorSearchService {
             const populatedResults = await Promise.all(
                 results.map(async (item) => {
                     const post = await this.postModel.findById(item._id)
-                        .select('-embedding') // Không trả về embedding (tiết kiệm bandwidth)
+                        .select('-embedding')
                         .populate({
-                            path: 'user', // Populate thông tin user
-                            select: 'name avatarURL imageUrl', // Chỉ lấy các field cần thiết
+                            path: 'user',
+                            select: 'name avatarURL imageUrl',
                         });
                     return {
                         post: post ? post.toObject() : null,
@@ -111,14 +99,7 @@ export class VectorSearchService {
         }
     }
 
-    /**
-     * Phương pháp backup: Tính similarity thủ công khi MongoDB Atlas Vector Search không khả dụng
-     * @param queryEmbedding - Vector embedding của query
-     * @param limit - Số lượng kết quả tối đa
-     * @param minSimilarity - Ngưỡng similarity tối thiểu
-     * @param excludePostId - ID bài viết cần loại trừ
-     * @returns Promise<Array<{ post: Post; similarity: number }>>
-     */
+    //Tính similarity thủ công khi MongoDB Atlas Vector Search không khả dụng
     private async manualSimilaritySearch(
         queryEmbedding: number[],
         limit: number,
@@ -129,15 +110,15 @@ export class VectorSearchService {
             // Bước 1: Lấy tất cả bài viết có embedding (giới hạn 100 để tránh quá tải)
             const posts = await this.postModel
                 .find({
-                    isHidden: { $ne: true }, // Không lấy bài viết bị ẩn
-                    embedding: { $exists: true, $ne: null }, // Chỉ lấy bài viết có embedding
-                    ...(excludePostId && { _id: { $ne: excludePostId } }), // Loại trừ bài viết cụ thể
+                    isHidden: { $ne: true },
+                    embedding: { $exists: true, $ne: null },
+                    ...(excludePostId && { _id: { $ne: excludePostId } }),
                 })
                 .populate({
                     path: 'user',
                     select: 'name avatarURL imageUrl',
                 })
-                .limit(100) // Giới hạn 100 bài viết để tránh tính toán quá nhiều
+                .limit(100)
                 .exec();
 
             // Bước 2: Tính cosine similarity cho từng bài viết
@@ -164,13 +145,7 @@ export class VectorSearchService {
         }
     }
 
-    /**
-     * Tìm kiếm ngữ nghĩa (semantic search) dựa trên text query
-     * @param query - Câu query dạng text
-     * @param limit - Số lượng kết quả tối đa (mặc định 10)
-     * @param minSimilarity - Ngưỡng similarity tối thiểu (mặc định 0.5)
-     * @returns Promise<Array<{ post: Post; similarity: number }>>
-     */
+    // tìm kiếm ngữ nghĩa (semantic search) 
     async semanticSearch(
         query: string,
         limit: number = 10,
@@ -187,7 +162,6 @@ export class VectorSearchService {
 
             // Bước 3: Tìm kiếm với ngưỡng thấp để lấy nhiều ứng viên
             const results = await this.findSimilarPosts(queryEmbedding, limit * 2, 0.3);
-            // Dùng threshold 0.3 thấp để lấy nhiều ứng viên, sau đó filter kỹ hơn
 
             // Bước 4: Lọc kết quả với logic nâng cao
             let filteredResults = results.filter(item => {
@@ -219,54 +193,6 @@ export class VectorSearchService {
         } catch (error) {
             this.logger.error(`Semantic search failed: ${error.message}`);
             return [];
-        }
-    }
-
-    /**
-     * Đảm bảo tất cả bài viết đều có embedding
-     * Hàm này nên được chạy định kỳ (cron job) để cập nhật embedding cho bài viết mới
-     * @returns Promise<void>
-     */
-    async ensureEmbeddingsExist(): Promise<void> {
-        try {
-            // Bước 1: Tìm các bài viết chưa có embedding
-            const postsWithoutEmbeddings = await this.postModel
-                .find({
-                    embedding: { $exists: false }, // Chưa có embedding
-                    isHidden: { $ne: true }, // Không bị ẩn
-                    content: { $exists: true, $ne: '' }, // Có nội dung
-                })
-                .limit(50) // Giới hạn 50 bài viết mỗi lần chạy để tránh quá tải
-                .exec();
-
-            if (postsWithoutEmbeddings.length > 0) {
-                this.logger.log(`Generating embeddings for ${postsWithoutEmbeddings.length} posts`);
-
-                // Bước 2: Tạo embedding cho từng bài viết
-                for (const post of postsWithoutEmbeddings) {
-                    try {
-                        // Kết hợp content và keywords để tạo text đầy đủ cho embedding
-                        const textForEmbedding = `${post.content} ${post.keywords || ''}`.trim();
-
-                        if (textForEmbedding) {
-                            // Tạo embedding từ text
-                            const embedding = await this.embeddingService.generateEmbedding(textForEmbedding);
-
-                            // Cập nhật bài viết với embedding mới
-                            await this.postModel.findByIdAndUpdate(post._id, {
-                                embedding,
-                                embeddingModel: this.embeddingService.getModelName(), // Lưu tên model để tracking
-                                embeddingUpdatedAt: new Date(), // Timestamp cập nhật embedding
-                            });
-                        }
-                    } catch (error) {
-                        this.logger.error(`Failed to generate embedding for post ${post._id}: ${error.message}`);
-                        // Tiếp tục với bài viết tiếp theo nếu một bài viết lỗi
-                    }
-                }
-            }
-        } catch (error) {
-            this.logger.error(`Error ensuring embeddings exist: ${error.message}`);
         }
     }
 }
