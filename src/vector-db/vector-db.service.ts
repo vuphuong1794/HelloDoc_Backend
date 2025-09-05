@@ -37,7 +37,7 @@ export class VectorSearchService {
                 {
                     // $vectorSearch: Pipeline stage đặc biệt của MongoDB Atlas
                     $vectorSearch: {
-                        index: 'default', // Tên vector search index đã tạo trong Atlas
+                        index: 'vector_index', // Tên vector search index đã tạo trong Atlas
                         path: 'embedding', // Field chứa vector trong document
                         queryVector: queryEmbedding, // Vector query để so sánh
                         numCandidates: Math.max(100, limit * 10), // Số ứng viên để xét (tối thiểu 100)

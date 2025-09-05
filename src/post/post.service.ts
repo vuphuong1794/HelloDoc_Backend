@@ -135,7 +135,7 @@ export class PostService {
                 return;
             }
 
-            const textForEmbedding = `${content} ${keywords || ''}`.trim();
+            const textForEmbedding = `${keywords || ''}`.trim();
 
             if (textForEmbedding && textForEmbedding.length > 0) {
                 this.logger.log(`Generating embedding for post ${postId}`);
@@ -424,7 +424,6 @@ export class PostService {
             // Nếu chưa có embedding thì generate trước (trả về rỗng tạm thời)
             if (!post.embedding || !Array.isArray(post.embedding) || post.embedding.length === 0) {
                 this.generateEmbeddingAsync(postId, post.content, post.keywords);
-                return [];
             }
 
             return await this.vectorSearchService.findSimilarPosts(

@@ -88,7 +88,6 @@ async getCommentsByPostId(postId: string, limit = 10, skip = 0) {
   try {
     // Truy vấn dư ra 1 phần tử để kiểm tra còn hay không
     const postComments = await this.postCommentModel.find({ post: postId })
-      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit + 1)
       .populate({
