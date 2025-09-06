@@ -53,7 +53,7 @@ export class EmbeddingService {
                     try {
                         const response = await this.generateWithHuggingFace(truncatedText);
                         if (this.isValidEmbedding(response)) {
-                            this.logger.log('Successfully generated embedding with Hugging Face API');
+                            this.logger.log('BUOC 1: Successfully generated embedding with Hugging Face API');
                             return response;
                         }
                     } catch (hfError) {
@@ -65,7 +65,7 @@ export class EmbeddingService {
                 try {
                     const response = await this.generateWithDirectRequest(truncatedText);
                     if (this.isValidEmbedding(response)) {
-                        this.logger.log('Successfully generated embedding with direct request');
+                        this.logger.log('BUOC 2: Successfully generated embedding with direct request');
                         return response;
                     }
                 } catch (directError) {
@@ -186,6 +186,7 @@ export class EmbeddingService {
             this.logger.error(`Error creating fallback embedding: ${error.message}`);
             // Backup của backup: tạo vector uniform
             const embedding = new Array(this.embeddingDimensions).fill(0.001);
+            this.logger.log('BUOC 3: Successfully generated embedding with fallback method');
             return this.normalizeVector(embedding);
         }
     }
@@ -203,11 +204,7 @@ export class EmbeddingService {
         return Math.abs(hash);
     }
 
-    /**
-     * Normalize vector để có magnitude = 1 (unit vector)
-     * @param vector - Vector cần normalize
-     * @returns number[] - Vector đã được normalize
-     */
+    // Chia mỗi phần tử cho magnitude để có unit vector
     private normalizeVector(vector: number[]): number[] {
         // Tính magnitude (độ dài) của vector
         const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
