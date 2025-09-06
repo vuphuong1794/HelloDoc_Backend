@@ -440,32 +440,32 @@ export class PostService {
         }
     }
 
-    // async searchPosts(query: string) {
-    //     const results = await this.postModel.aggregate([
-    //         {
-    //             $search: {
-    //                 index: 'vector_index', // tên index Atlas Search 
-    //                 text: {
-    //                     query: query,
-    //                     path: ['content', 'keywords'], // field muốn search
-    //                 },
-    //             },
-    //         },
-    //         {
-    //             $project: {
-    //                 title: 1,
-    //                 content: 1,
-    //                 keywords: 1,
-    //                 score: { $meta: 'searchScore' }, // lấy score 
-    //             },
-    //         },
-    //         {
-    //             $sort: { score: -1 },
-    //         },
-    //     ]);
+    async searchPosts(query: string) {
+        const results = await this.postModel.aggregate([
+            {
+                $search: {
+                    index: 'vector_index', // tên index Atlas Search 
+                    text: {
+                        query: query,
+                        path: ['keywords'], // field muốn search
+                    },
+                },
+            },
+            {
+                $project: {
+                    title: 1,
+                    content: 1,
+                    keywords: 1,
+                    score: { $meta: 'searchScore' }, // lấy score 
+                },
+            },
+            {
+                $sort: { score: -1 },
+            },
+        ]);
 
-    //     return results;
-    // }
+        return results;
+    }
 
     // async semanticSearch(
     //     query: string,

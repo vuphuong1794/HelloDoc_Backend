@@ -106,6 +106,11 @@ export class PostController {
     return this.postService.hybridSearch(query, Number(limit));
   }
 
+    @Get('search/advanced')
+  async searchPostAdvanced(@Query('query') query: string) {
+    return this.postService.searchPosts(query);
+  }
+
   // @Get('semantic-search/search/test')
   // async semanticSearch(
   //   @Query('q') query: string,
