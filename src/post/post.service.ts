@@ -88,7 +88,7 @@ export class PostService {
             this.logger.log(`Post created successfully with ID: ${savedPost._id}`);
 
             // Tạo embedding async (không block quá trình create)
-            this.generateEmbeddingAsync(savedPost._id.toString(), savedPost.content, savedPost.keywords);
+            this.generateEmbeddingAsync(savedPost._id.toString(), savedPost.keywords);
 
             return savedPost;
         } catch (error) {
@@ -276,7 +276,7 @@ export class PostService {
 
             // Nếu chưa có embedding thì generate trước (trả về rỗng tạm thời)
             if (!post.embedding || !Array.isArray(post.embedding) || post.embedding.length === 0) {
-                this.generateEmbeddingAsync(postId, post.content, post.keywords);
+                this.generateEmbeddingAsync(postId, post.keywords);
                 return [];
             }
 
@@ -355,16 +355,16 @@ export class PostService {
 
 
     //Hàm tạo embedding async cho post (nhằm tránh block quá trình tạo post chính)
-    private async generateEmbeddingAsync(postId: string, content: string, keywords?: string): Promise<void> {
+    async generateEmbeddingAsync(postId: string, keywords?: string): Promise<void> {
         try {
-            await this.generateAndStoreEmbedding(postId, content, keywords);
+            await this.generateAndStoreEmbedding(postId, keywords);
         } catch (error) {
             this.logger.error(`Failed to generate embedding for post ${postId}: ${error.message}`);
         }
     }
 
     // tạo embedding và lưu vào DB
-    private async generateAndStoreEmbedding(postId: string, content: string, keywords?: string): Promise<void> {
+    async generateAndStoreEmbedding(postId: string, keywords?: string): Promise<void> {
         try {
             const existingPost = await this.postModel.findById(postId).select('_id content keywords embedding');
             if (!existingPost) {
@@ -441,32 +441,58 @@ export class PostService {
         }
     }
 
-    // async searchPosts(query: string) {
-    //     const results = await this.postModel.aggregate([
-    //         {
-    //             $search: {
-    //                 index: 'vector_index', // tên index Atlas Search 
-    //                 text: {
-    //                     query: query,
-    //                     path: ['content', 'keywords'], // field muốn search
-    //                 },
-    //             },
-    //         },
-    //         {
-    //             $project: {
-    //                 title: 1,
-    //                 content: 1,
-    //                 keywords: 1,
-    //                 score: { $meta: 'searchScore' }, // lấy score 
-    //             },
-    //         },
-    //         {
-    //             $sort: { score: -1 },
-    //         },
-    //     ]);
+    async searchPosts(query: string) {
+        const results = await this.postModel.aggregate([
+            {
+                $search: {
+                    index: 'vector_index', // tên index Atlas Search 
+                    text: {
+                        query: query,
+                        path: ['content', 'keywords'], // field muốn search
+                    },
+                },
+            },
+            {
+                $project: {
+                    title: 1,
+                    content: 1,
+                    keywords: 1,
+                    score: { $meta: 'searchScore' }, // lấy score 
+                },
+            },
+            {
+                $sort: { score: -1 },
+            },
+        ]);
 
-    //     return results;
-    // }
+        return results;
+    }
+
+    //hàm kiểm tra bài viết có keyword hay chưa
+    async hasKeywords(post: Post) {
+        return post.keywords && post.keywords.trim().length > 0;
+    }
+
+    //kiểm tra bài viết có embedding hay chưa
+    async hasEmbedding(post: Post) {
+        return post.embedding && Array.isArray(post.embedding) && post.embedding.length > 0;
+    }
+
+    async updatePostKeywords(postId: string, keywords: string): Promise<void> {
+        try {
+            const post = await this.postModel.findById(postId);
+            if (!post) {
+                throw new NotFoundException('Post not found');
+            }
+
+            post.keywords = keywords;
+            await post.save();
+            this.logger.log(`Updated keywords for post ${postId}`);
+        } catch (error) {
+            this.logger.error(`Error updating keywords for post ${postId}: ${error.message}`);
+            throw error;
+        }
+    }
 
     // async semanticSearch(
     //     query: string,

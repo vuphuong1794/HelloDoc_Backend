@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Post } from 'src/schemas/Post.schema';
 import { EmbeddingService } from 'src/embedding/embedding.service';
 
@@ -17,7 +17,7 @@ export class VectorSearchService {
     async findSimilarPosts(
         queryEmbedding: number[], //Vector embedding của query (384 chiều)
         limit: number = 5, //Số lượng kết quả tối đa
-        minSimilarity: number = 0.7, //Ngưỡng similarity tối thiểu
+        minSimilarity: number = 0.6, //Ngưỡng similarity tối thiểu
         excludePostId?: string //ID bài viết cần loại trừ
     ): Promise<Array<{ post: Post; similarity: number }>> {
         try {
@@ -36,7 +36,7 @@ export class VectorSearchService {
                     // Lọc các bài viết không bị ẩn và loại trừ bài viết cụ thể
                     $match: {
                         isHidden: { $ne: true },
-                        ...(excludePostId && { _id: { $ne: excludePostId } }), // Loại trừ bài viết cụ thể
+                        ...(excludePostId && { _id: { $ne: new mongoose.Types.ObjectId(excludePostId) } }),
                     },
                 },
                 {
@@ -145,54 +145,54 @@ export class VectorSearchService {
         }
     }
 
-    // tìm kiếm ngữ nghĩa (semantic search) 
-    async semanticSearch(
-        query: string,
-        limit: number = 10,
-        minSimilarity: number = 0.7
-    ): Promise<Array<{ post: Post; similarity: number }>> {
-        try {
-            // Bước 1: Tạo embedding từ text query
-            const queryEmbedding = await this.embeddingService.generateEmbedding(query);
+    // // tìm kiếm ngữ nghĩa (semantic search) 
+    // async semanticSearch(
+    //     query: string,
+    //     limit: number = 10,
+    //     minSimilarity: number = 0.7
+    // ): Promise<Array<{ post: Post; similarity: number }>> {
+    //     try {
+    //         // Bước 1: Tạo embedding từ text query
+    //         const queryEmbedding = await this.embeddingService.generateEmbedding(query);
 
-            // Bước 2: Điều chỉnh ngưỡng similarity dựa trên độ dài query
-            // Query ngắn (≤2 từ) thường ít chính xác → tăng ngưỡng để lọc kỹ hơn
-            const queryWordCount = query.trim().split(/\s+/).length;
-            const effectiveMinSim = queryWordCount <= 2 ? Math.max(0.7, minSimilarity) : minSimilarity;
+    //         // Bước 2: Điều chỉnh ngưỡng similarity dựa trên độ dài query
+    //         // Query ngắn (≤2 từ) thường ít chính xác → tăng ngưỡng để lọc kỹ hơn
+    //         const queryWordCount = query.trim().split(/\s+/).length;
+    //         const effectiveMinSim = queryWordCount <= 2 ? Math.max(0.7, minSimilarity) : minSimilarity;
 
-            // Bước 3: Tìm kiếm với ngưỡng thấp để lấy nhiều ứng viên
-            const results = await this.findSimilarPosts(queryEmbedding, limit * 2, 0.3);
+    //         // Bước 3: Tìm kiếm với ngưỡng thấp để lấy nhiều ứng viên
+    //         const results = await this.findSimilarPosts(queryEmbedding, limit * 2, 0.3);
 
-            // Bước 4: Lọc kết quả với logic nâng cao
-            let filteredResults = results.filter(item => {
-                const content = item.post.content?.toLowerCase() || '';
-                const keywords = item.post.keywords?.toLowerCase() || '';
-                const q = query.toLowerCase();
+    //         // Bước 4: Lọc kết quả với logic nâng cao
+    //         let filteredResults = results.filter(item => {
+    //             const content = item.post.content?.toLowerCase() || '';
+    //             const keywords = item.post.keywords?.toLowerCase() || '';
+    //             const q = query.toLowerCase();
 
-                // Tính similarity có điều chỉnh:
-                // Nếu content hoặc keywords chứa exact query → bonus +0.1 similarity
-                let adjustedSim = item.similarity;
-                if (content.includes(q) || keywords.includes(q)) {
-                    adjustedSim += 0.1; // Bonus cho exact match
-                }
+    //             // Tính similarity có điều chỉnh:
+    //             // Nếu content hoặc keywords chứa exact query → bonus +0.1 similarity
+    //             let adjustedSim = item.similarity;
+    //             if (content.includes(q) || keywords.includes(q)) {
+    //                 adjustedSim += 0.1; // Bonus cho exact match
+    //             }
 
-                // Chỉ giữ lại khi similarity (đã điều chỉnh) >= ngưỡng
-                return adjustedSim >= effectiveMinSim;
-            });
+    //             // Chỉ giữ lại khi similarity (đã điều chỉnh) >= ngưỡng
+    //             return adjustedSim >= effectiveMinSim;
+    //         });
 
-            // Bước 5: Fallback nếu không có kết quả thỏa mãn
-            if (filteredResults.length === 0) {
-                this.logger.warn(`No results above threshold, returning top similarity results instead`);
-                // Nếu lọc quá gắt không còn kết quả → lấy top similarity cao nhất
-                filteredResults = results.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
-            }
+    //         // Bước 5: Fallback nếu không có kết quả thỏa mãn
+    //         if (filteredResults.length === 0) {
+    //             this.logger.warn(`No results above threshold, returning top similarity results instead`);
+    //             // Nếu lọc quá gắt không còn kết quả → lấy top similarity cao nhất
+    //             filteredResults = results.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
+    //         }
 
-            // Bước 6: Sắp xếp và giới hạn kết quả cuối cùng
-            return filteredResults.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
+    //         // Bước 6: Sắp xếp và giới hạn kết quả cuối cùng
+    //         return filteredResults.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
 
-        } catch (error) {
-            this.logger.error(`Semantic search failed: ${error.message}`);
-            return [];
-        }
-    }
+    //     } catch (error) {
+    //         this.logger.error(`Semantic search failed: ${error.message}`);
+    //         return [];
+    //     }
+    // }
 }

@@ -1,7 +1,7 @@
 import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseInterceptors, Req } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
-import { UpdatePostDto } from 'src/post/dto/updatePost.dto';
+import { UpdateKeywordsDto, UpdatePostDto } from 'src/post/dto/updatePost.dto';
 import { VectorSearchService } from 'src/vector-db/vector-db.service';
 
 import {
@@ -9,6 +9,8 @@ import {
   FileFieldsInterceptor
 } from '@nestjs/platform-express';
 import { Request, Express } from 'express';
+import { updateUserDto } from 'src/dtos/updateUser.dto';
+import { generate } from 'rxjs';
 
 @Controller('post')
 export class PostController {
@@ -91,7 +93,7 @@ export class PostController {
   async findSimilarPosts(
     @Param('id') id: string,
     @Query('limit') limit: number = 5,
-    @Query('minSimilarity') minSimilarity: number = 0.6
+    @Query('minSimilarity') minSimilarity: number = 0.5
   ) {
     return this.postService.findSimilarPosts(id, Number(limit), Number(minSimilarity));
   }
@@ -115,4 +117,39 @@ export class PostController {
   //   return this.postService.semanticSearch(query, Number(limit), Number(minSimilarity));
   // }
 
+  @Get('search/advanced')
+  async advancedSearch(
+    @Query('query') query: string,
+
+  ) {
+    return this.postService.searchPosts(query);
+  }
+
+  @Get('has-keywords/:id')
+  async hasKeywords(@Param('id') id: string) {
+    const post = await this.postService.getOne(id);
+    return this.postService.hasKeywords(post);
+  }
+
+  @Get('has-embedding/:id')
+  async hasEmbedding(@Param('id') id: string) {
+    const post = await this.postService.getOne(id);
+    return this.postService.hasEmbedding(post);
+  }
+
+  //tao embedding cho tat ca bai viet
+  @Get('generate-embeddings/:id')
+  async generateEmbeddings(@Param('id') id: string) {
+    return this.postService.generateAndStoreEmbedding(id);
+  }
+
+  @Patch('update/postKeywords/:id')
+  async updatePostKeywords(@Param('id') id: string, @Body() body: UpdateKeywordsDto) {
+    return this.postService.updatePostKeywords(id, body.keywords);
+  }
+
+  @Post('generateEmbedding/:id')
+  async generateEmbedding(@Body() keywords: string, @Param('id') id: string) {
+    return this.postService.generateEmbeddingAsync(id, keywords);
+  }
 }
