@@ -442,31 +442,30 @@ export class PostService {
     }
 
     async searchPosts(query: string) {
+        const queryVector = await this.embeddingService.generateEmbedding(query);
         const results = await this.postModel.aggregate([
             {
-                $search: {
-                    index: 'vector_index', // tên index Atlas Search 
-                    text: {
-                        query: query,
-                        path: ['content', 'keywords'], // field muốn search
-                    },
-                },
+            $vectorSearch: {
+                index: 'vector_index',
+                path: 'embedding', // field chứa embedding
+                queryVector: queryVector,
+                numCandidates: 100,
+                limit: 10,
+            },
             },
             {
-                $project: {
-                    title: 1,
-                    content: 1,
-                    keywords: 1,
-                    score: { $meta: 'searchScore' }, // lấy score 
-                },
+            $project: {
+                title: 1,
+                content: 1,
+                keywords: 1,
+                score: { $meta: 'vectorSearchScore' },
             },
-            {
-                $sort: { score: -1 },
             },
         ]);
 
         return results;
-    }
+        }
+
 
     //hàm kiểm tra bài viết có keyword hay chưa
     async hasKeywords(post: Post) {

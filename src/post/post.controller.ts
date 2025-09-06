@@ -122,14 +122,6 @@ export class PostController {
   //   return this.postService.semanticSearch(query, Number(limit), Number(minSimilarity));
   // }
 
-  @Get('search/advanced')
-  async advancedSearch(
-    @Query('query') query: string,
-
-  ) {
-    return this.postService.searchPosts(query);
-  }
-
   @Get('has-keywords/:id')
   async hasKeywords(@Param('id') id: string) {
     const post = await this.postService.getOne(id);
