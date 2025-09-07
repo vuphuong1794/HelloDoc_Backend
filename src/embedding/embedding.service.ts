@@ -2,10 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HfInference } from '@huggingface/inference';
 import axios from 'axios';
 
-/**
- * Service xử lý việc tạo embedding vectors từ text
- * Embedding là cách biểu diễn text dưới dạng vector số để máy tính có thể hiểu và so sánh
- */
 @Injectable()
 export class EmbeddingService {
     private readonly logger = new Logger(EmbeddingService.name);
@@ -15,11 +11,10 @@ export class EmbeddingService {
     private readonly embeddingModel = 'sentence-transformers/all-MiniLM-L6-v2'; // Model tạo embedding
     private readonly embeddingDimensions = 384; // Số chiều của vector embedding
     private readonly maxRetries = 3; // Số lần thử lại khi API lỗi
-    private readonly retryDelay = 1000; // Thời gian chờ giữa các lần thử (1 giây)
+    private readonly retryDelay = 1000; // Thời gian chờ giữa các lần thử 
 
     constructor() {
         try {
-            // Khởi tạo Hugging Face client với API token từ environment
             this.hf = new HfInference(process.env.HF_API_TOKEN);
             this.logger.log('EmbeddingService initialized successfully');
         } catch (error) {
@@ -27,11 +22,7 @@ export class EmbeddingService {
         }
     }
 
-    /**
-     * Hàm chính để tạo embedding từ text
-     * @param text - Văn bản cần chuyển thành embedding
-     * @returns Promise<number[]> - Vector embedding có 384 chiều
-     */
+    //Hàm chính để tạo embedding từ text
     async generateEmbedding(text: string): Promise<number[]> {
 
         // Bước 1: Kiểm tra tính hợp lệ của input
@@ -47,7 +38,7 @@ export class EmbeddingService {
         }
 
         // Bước 2: Làm sạch và giới hạn độ dài text để tránh vượt quá limit API
-        const maxLength = 500; // Giới hạn 500 ký tự
+        const maxLength = 500;
         const truncatedText = cleanText.length > maxLength
             ? cleanText.substring(0, maxLength) + '...'
             : cleanText;
@@ -62,7 +53,7 @@ export class EmbeddingService {
                     try {
                         const response = await this.generateWithHuggingFace(truncatedText);
                         if (this.isValidEmbedding(response)) {
-                            this.logger.log('Successfully generated embedding with Hugging Face API');
+                            this.logger.log('BUOC 1: Successfully generated embedding with Hugging Face API');
                             return response;
                         }
                     } catch (hfError) {
@@ -74,7 +65,7 @@ export class EmbeddingService {
                 try {
                     const response = await this.generateWithDirectRequest(truncatedText);
                     if (this.isValidEmbedding(response)) {
-                        this.logger.log('Successfully generated embedding with direct request');
+                        this.logger.log('BUOC 2: Successfully generated embedding with direct request');
                         return response;
                     }
                 } catch (directError) {
@@ -99,11 +90,7 @@ export class EmbeddingService {
         return this.createFallbackEmbedding(truncatedText);
     }
 
-    /**
-     * Tạo embedding sử dụng Hugging Face SDK
-     * @param text - Text cần embedding
-     * @returns Promise<number[]> - Vector embedding
-     */
+    // tạo embedding với Hugging Face SDK
     private async generateWithHuggingFace(text: string): Promise<number[]> {
         const response = await this.hf.featureExtraction({
             model: this.embeddingModel,
@@ -118,11 +105,7 @@ export class EmbeddingService {
         throw new Error('Invalid response format from Hugging Face API');
     }
 
-    /**
-     * Tạo embedding sử dụng HTTP request trực tiếp đến Hugging Face API
-     * @param text - Text cần embedding
-     * @returns Promise<number[]> - Vector embedding
-     */
+    //Tạo embedding sử dụng HTTP request trực tiếp đến Hugging Face API
     private async generateWithDirectRequest(text: string): Promise<number[]> {
         if (!process.env.HF_API_TOKEN) {
             throw new Error('HF_API_TOKEN not available');
@@ -148,84 +131,23 @@ export class EmbeddingService {
         throw new Error('Invalid response format from direct request');
     }
 
-    /**
-     * Kiểm tra tính hợp lệ của embedding vector
-     * @param embedding - Vector cần kiểm tra
-     * @returns boolean - True nếu hợp lệ
-     */
+    // Kiểm tra tính hợp lệ của embedding vector
     private isValidEmbedding(embedding: any): boolean {
         return Array.isArray(embedding) &&
             embedding.length === this.embeddingDimensions &&
             embedding.every(val => typeof val === 'number' && !isNaN(val));
     }
 
-    /**
-     * Utility function để sleep/chờ
-     * @param ms - Số millisecond cần chờ
-     * @returns Promise<void>
-     */
     private sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    /**
-     * Tạo embedding cho nhiều text cùng lúc (batch processing)
-     * @param texts - Array các text cần embedding
-     * @returns Promise<number[][]> - Array các vector embedding
-     */
-    async generateEmbeddings(texts: string[]): Promise<number[][]> {
-        try {
-            // Xử lý theo batch để tránh quá tải API
-            const batchSize = 5; // Mỗi batch 5 text
-            const results: number[][] = [];
-
-            // Chia thành các batch nhỏ
-            for (let i = 0; i < texts.length; i += batchSize) {
-                const batch = texts.slice(i, i + batchSize);
-
-                // Tạo embedding parallel cho các text trong batch
-                const batchPromises = batch.map(text => this.generateEmbedding(text));
-                const batchResults = await Promise.allSettled(batchPromises);
-
-                // Xử lý kết quả từng text trong batch
-                batchResults.forEach((result, index) => {
-                    if (result.status === 'fulfilled') {
-                        results.push(result.value);
-                    } else {
-                        this.logger.error(`Failed to generate embedding for text ${i + index}: ${result.reason}`);
-                        // Nếu lỗi, sử dụng fallback embedding
-                        results.push(this.createFallbackEmbedding(batch[index]));
-                    }
-                });
-
-                // Nghỉ một chút giữa các batch để tránh rate limiting
-                if (i + batchSize < texts.length) {
-                    await this.sleep(100);
-                }
-            }
-
-            return results;
-        } catch (error) {
-            this.logger.error(`Error generating multiple embeddings: ${error.message}`);
-            // Nếu toàn bộ process lỗi, tạo fallback cho tất cả
-            return texts.map(text => this.createFallbackEmbedding(text));
-        }
-    }
-
-    /**
-     * Tạo embedding rỗng (vector toàn số 0)
-     * @returns number[] - Vector có 384 phần tử = 0
-     */
+    // Tạo vector embedding toàn số 0
     private createEmptyEmbedding(): number[] {
         return new Array(this.embeddingDimensions).fill(0);
     }
 
-    /**
-     * Tạo embedding backup khi API không khả dụng
-     * Sử dụng hash function để tạo vector deterministic từ nội dung text
-     * @param text - Text cần tạo fallback embedding
-     * @returns number[] - Vector embedding backup
-     */
+    // Tạo fallback embedding đơn giản dựa trên hash và tần suất từ
     private createFallbackEmbedding(text: string): number[] {
         try {
             // Bước 1: Tiền xử lý text - tách từ và làm sạch
@@ -264,15 +186,12 @@ export class EmbeddingService {
             this.logger.error(`Error creating fallback embedding: ${error.message}`);
             // Backup của backup: tạo vector uniform
             const embedding = new Array(this.embeddingDimensions).fill(0.001);
+            this.logger.log('BUOC 3: Successfully generated embedding with fallback method');
             return this.normalizeVector(embedding);
         }
     }
 
-    /**
-     * Hash function đơn giản để chuyển string thành số
-     * @param str - String cần hash
-     * @returns number - Giá trị hash
-     */
+    //Hash function đơn giản để chuyển string thành số
     private hashString(str: string): number {
         let hash = 0;
         if (str.length === 0) return hash;
@@ -285,11 +204,7 @@ export class EmbeddingService {
         return Math.abs(hash);
     }
 
-    /**
-     * Normalize vector để có magnitude = 1 (unit vector)
-     * @param vector - Vector cần normalize
-     * @returns number[] - Vector đã được normalize
-     */
+    // Chia mỗi phần tử cho magnitude để có unit vector
     private normalizeVector(vector: number[]): number[] {
         // Tính magnitude (độ dài) của vector
         const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
@@ -357,34 +272,52 @@ export class EmbeddingService {
         }
     }
 
-    /**
-     * Getter cho số chiều embedding
-     * @returns number - Số chiều (384)
-     */
     getDimensions(): number {
         return this.embeddingDimensions;
     }
 
-    /**
-     * Getter cho tên model
-     * @returns string - Tên model
-     */
     getModelName(): string {
         return this.embeddingModel;
     }
 
-    /**
-     * Health check để kiểm tra service hoạt động bình thường
-     * @returns Promise<boolean> - True nếu service OK
-     */
-    async healthCheck(): Promise<boolean> {
-        try {
-            // Thử tạo embedding với text test
-            const testEmbedding = await this.generateEmbedding('test');
-            return this.isValidEmbedding(testEmbedding);
-        } catch (error) {
-            this.logger.error(`EmbeddingService health check failed: ${error.message}`);
-            return false;
-        }
-    }
+
+    // //Tạo embedding cho nhiều text cùng lúc (batch processing)
+    // async generateEmbeddings(texts: string[]): Promise<number[][]> {
+    //     try {
+    //         // Xử lý theo batch để tránh quá tải API
+    //         const batchSize = 5; // Mỗi batch 5 text
+    //         const results: number[][] = [];
+
+    //         // Chia thành các batch nhỏ
+    //         for (let i = 0; i < texts.length; i += batchSize) {
+    //             const batch = texts.slice(i, i + batchSize);
+
+    //             // Tạo embedding parallel cho các text trong batch
+    //             const batchPromises = batch.map(text => this.generateEmbedding(text));
+    //             const batchResults = await Promise.allSettled(batchPromises);
+
+    //             // Xử lý kết quả từng text trong batch
+    //             batchResults.forEach((result, index) => {
+    //                 if (result.status === 'fulfilled') {
+    //                     results.push(result.value);
+    //                 } else {
+    //                     this.logger.error(`Failed to generate embedding for text ${i + index}: ${result.reason}`);
+    //                     // Nếu lỗi, sử dụng fallback embedding
+    //                     results.push(this.createFallbackEmbedding(batch[index]));
+    //                 }
+    //             });
+
+    //             // Nghỉ một chút giữa các batch để tránh rate limiting
+    //             if (i + batchSize < texts.length) {
+    //                 await this.sleep(100);
+    //             }
+    //         }
+
+    //         return results;
+    //     } catch (error) {
+    //         this.logger.error(`Error generating multiple embeddings: ${error.message}`);
+    //         // Nếu toàn bộ process lỗi, tạo fallback cho tất cả
+    //         return texts.map(text => this.createFallbackEmbedding(text));
+    //     }
+    // }
 }

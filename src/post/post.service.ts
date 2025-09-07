@@ -10,6 +10,9 @@ import { User } from 'src/schemas/user.schema';
 import { CacheService } from 'src/cache.service';
 import { Express } from 'express';
 import * as dayjs from 'dayjs';
+import { EmbeddingService } from 'src/embedding/embedding.service';
+import { VectorSearchService } from 'src/vector-db/vector-db.service';
+import { title } from 'process';
 
 @Injectable()
 export class PostService {
@@ -19,6 +22,8 @@ export class PostService {
         @InjectModel(Post.name) private postModel: Model<Post>,
         private cloudinaryService: CloudinaryService,
         private cacheService: CacheService,
+        private embeddingService: EmbeddingService,
+        private vectorSearchService: VectorSearchService,
     ) { }
 
     private async findOwnerById(ownerId: string): Promise<User | Doctor> {
@@ -220,23 +225,142 @@ export class PostService {
             .populate('user', '_id name avatarURL');
     }
 
+    /**
+     * Tìm kiếm ngữ nghĩa bằng vector database
+     */
+    async semanticSearch(
+        query: string,
+        limit: number = 10,
+        minSimilarity: number = 0.5
+    ): Promise<Array<{ post: Post; similarity: number }>> {
+        try {
+            return await this.vectorSearchService.semanticSearch(query, limit, minSimilarity);
+        } catch (error) {
+            throw new InternalServerErrorException('Lỗi khi tìm kiếm ngữ nghĩa');
+        }
+    }
+
+    // /**
+    //  * Tìm bài viết tương tự dựa vào embedding
+    //  */
+    // async findSimilarPosts(
+    //     postId: string,
+    //     limit: number = 5,
+    //     minSimilarity: number = 0.6
+    // ): Promise<Array<{ post: Post; similarity: number }>> {
+    //     try {
+    //         const post = await this.postModel.findById(postId);
+    //         if (!post) {
+    //             throw new NotFoundException('Post not found');
+    //         }
+
+    //         // Nếu chưa có embedding thì generate trước (trả về rỗng tạm thời)
+    //         if (!post.embedding || !Array.isArray(post.embedding) || post.embedding.length === 0) {
+    //             this.generateEmbeddingAsync(postId, post.content, post.keywords);
+    //             return [];
+    //         }
+
+    //         return await this.vectorSearchService.findSimilarPosts(
+    //             post.embedding,
+    //             limit,
+    //             minSimilarity,
+    //             postId
+    //         );
+    //     } catch (error) {
+    //         throw new InternalServerErrorException('Lỗi khi tìm bài viết tương tự');
+    //     }
+    // }
+
+    /**
+     * Đảm bảo tất cả posts đều có embedding
+     */
+    async ensureAllPostsHaveEmbeddings(): Promise<void> {
+        await this.vectorSearchService.ensureEmbeddingsExist();
+    }
+
+    // ================ Hybrid Search ================
+
+    /**
+     * Hybrid search = Semantic (vector) + Keyword (regex)
+     */
+    async hybridSearch(q: string, limit = 5, minSimilarity = 0.75) {
+        // 1. Tạo embedding cho query
+        const queryEmbedding = await this.embeddingService.generateEmbedding(q);
+
+        // 2. Lấy toàn bộ posts
+        const posts = await this.postModel.find({ isHidden: false });
+
+        // 3. Tính cosine similarity
+        const withSimilarity = posts.map((post: any) => {
+            const similarity = this.cosineSimilarity(queryEmbedding, post.embedding);
+            return { post, similarity };
+        });
+
+        // 4. Lọc semantic
+        const semanticResults = withSimilarity
+            .filter((item) => item.similarity >= minSimilarity)
+            .map((item) => ({
+                ...item,
+                keywordScore: 0,
+            }));
+
+        // 5. Full-text search
+        const regex = new RegExp(q, 'i');
+        const keywordResults = await this.postModel.find({
+            $or: [{ keywords: regex }],
+            isHidden: false,
+        });
+
+        const keywordWithScore = keywordResults.map((post: any) => ({
+            post,
+            similarity: 0,
+            keywordScore: 1, // cho điểm 1 nếu match exact keyword
+        }));
+
+        // 6. Gộp 2 danh sách
+        const combined = [...semanticResults, ...keywordWithScore];
+
+        // 7. Tính finalScore (kết hợp semantic & keyword)
+        const results = combined.map((item) => ({
+            post: item.post,
+            similarity: item.similarity,
+            keywordScore: item.keywordScore,
+            finalScore: item.similarity * 0.7 + item.keywordScore * 0.3, // α=0.7, β=0.3
+        }));
+
+        // 8. Sắp xếp theo finalScore
+        return results
+            .sort((a, b) => b.finalScore - a.finalScore)
+            .slice(0, limit);
+    }
+
+    /**
+     * Tính cosine similarity giữa 2 vector
+     */
+    private cosineSimilarity(vecA: number[], vecB: number[]): number {
+        const dot = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+        const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+        const normB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+        return dot / (normA * normB);
+    }
 
     async searchPosts(query: string) {
         const results = await this.postModel.aggregate([
             {
                 $search: {
-                    index: 'default', // tên index Atlas Search bạn tạo
+                    index: 'vector_index', // tên index Atlas Search 
                     text: {
                         query: query,
-                        path: ['content', 'keywords'], // field nào muốn search
+                        path: ['content', 'keywords'], // field muốn search
                     },
                 },
             },
             {
                 $project: {
+                    title: 1,
                     content: 1,
                     keywords: 1,
-                    score: { $meta: 'searchScore' }, // lấy score giống UI
+                    score: { $meta: 'searchScore' }, // lấy score 
                 },
             },
             {
@@ -246,5 +370,4 @@ export class PostService {
 
         return results;
     }
-
 }
