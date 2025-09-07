@@ -1,7 +1,7 @@
 import { Query, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseInterceptors, Req } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from 'src/post/dto/createPost.dto';
-import { UpdatePostDto } from 'src/post/dto/updatePost.dto';
+import { UpdateKeywordsDto, UpdatePostDto } from 'src/post/dto/updatePost.dto';
 import { VectorSearchService } from 'src/vector-db/vector-db.service';
 
 import {
@@ -9,6 +9,8 @@ import {
   FileFieldsInterceptor
 } from '@nestjs/platform-express';
 import { Request, Express } from 'express';
+import { updateUserDto } from 'src/dtos/updateUser.dto';
+import { generate } from 'rxjs';
 
 @Controller('post')
 export class PostController {
@@ -89,23 +91,64 @@ export class PostController {
     return this.postService.delete(id);
   }
 
-  // GET /search?query=hoa mắt chóng mặt&limit=5
-  @Get("searchpost")
-  async search(
-    @Query('query') query: string,
-    @Query('limit') limit = 5
+  @Get(':id/similar')
+  async findSimilarPosts(
+    @Param('id') id: string,
+    @Query('limit') limit: number = 5,
+    @Query('minSimilarity') minSimilarity: number = 0.5
   ) {
-    return this.vectorSearchService.semanticSearch(query, Number(limit));
+    return this.postService.findSimilarPosts(id, Number(limit), Number(minSimilarity));
   }
 
+  // ================ Hybrid Search ================
+  @Get('hybrid-search/search/test/2')
+  async hybridSearch(
+    @Query('q') query: string,
+    @Query('limit') limit: number = 5,
+    @Query('minSimilarity') minSimilarity: number = 0.75
+  ) {
+    return this.postService.hybridSearch(query, Number(limit));
+  }
 
   @Get('search/advanced')
-  async advancedSearch(
-    @Query('query') query: string,
-  ) {
-    return this.postService.searchPosts(
-      query,
-    );
+  async searchPostAdvanced(@Query('query') query: string) {
+    return this.postService.searchPosts(query);
   }
 
+  // @Get('semantic-search/search/test')
+  // async semanticSearch(
+  //   @Query('q') query: string,
+  //   @Query('limit') limit: number = 10,
+  //   @Query('minSimilarity') minSimilarity: number = 0.7
+  // ) {
+  //   return this.postService.semanticSearch(query, Number(limit), Number(minSimilarity));
+  // }
+
+  @Get('has-keywords/:id')
+  async hasKeywords(@Param('id') id: string) {
+    const post = await this.postService.getOne(id);
+    return this.postService.hasKeywords(post);
+  }
+
+  @Get('has-embedding/:id')
+  async hasEmbedding(@Param('id') id: string) {
+    const post = await this.postService.getOne(id);
+    return this.postService.hasEmbedding(post);
+  }
+
+  //tao embedding cho tat ca bai viet
+  @Get('generate-embeddings/:id')
+  async generateEmbeddings(@Param('id') id: string) {
+    return this.postService.generateAndStoreEmbedding(id);
+  }
+
+  @Patch('update/postKeywords/:id')
+  async updatePostKeywords(@Param('id') id: string, @Body() body: UpdateKeywordsDto) {
+    return this.postService.updatePostKeywords(id, body.keywords);
+  }
+
+  @Post('generateEmbedding/:id')
+  async generateEmbedding(@Body() keywords: string, @Param('id') id: string) {
+    return this.postService.generateEmbeddingAsync(id, keywords);
+  }
 }

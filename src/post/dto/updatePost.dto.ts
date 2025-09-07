@@ -1,4 +1,4 @@
-import { IsOptional } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { Express } from 'express';
 
 export class UpdatePostDto {
@@ -14,4 +14,11 @@ export class UpdatePostDto {
   @IsOptional()
   keywords?: string;
 
+}
+
+
+
+export class UpdateKeywordsDto {
+  @IsString()
+  keywords: string;
 }

@@ -16,6 +16,13 @@ export class EmbeddingService {
     constructor() {
         try {
             this.hf = new HfInference(process.env.HF_API_TOKEN);
+            console.log('token la:', process.env.HF_API_TOKEN);
+
+            if (!process.env.HF_API_TOKEN) {
+                console.error('❌ HF_API_TOKEN không được set trong environment');
+                return;
+            }
+
             this.logger.log('EmbeddingService initialized successfully');
         } catch (error) {
             this.logger.error('Failed to initialize EmbeddingService:', error);
@@ -48,6 +55,7 @@ export class EmbeddingService {
             try {
                 this.logger.log(`Generating embedding (attempt ${attempt}/${this.maxRetries}) for text: ${truncatedText.substring(0, 50)}...`);
 
+                this.logger.log('HF_API_TOKEN:', process.env.HF_API_TOKEN);
                 // Phương pháp 1: Sử dụng Hugging Face SDK
                 if (this.hf && process.env.HF_API_TOKEN) {
                     try {
@@ -97,9 +105,13 @@ export class EmbeddingService {
             inputs: text,
         });
 
-        // Kiểm tra response có đúng format không (array với 384 phần tử)
-        if (Array.isArray(response) && response.length === this.embeddingDimensions) {
-            return response as number[];
+        // Hugging Face trả về [ [384 số] ], nên cần unwrap
+        if (Array.isArray(response)) {
+            const vector = Array.isArray(response[0]) ? response[0] : response;
+
+            if (Array.isArray(vector) && vector.length === this.embeddingDimensions) {
+                return vector as number[];
+            }
         }
 
         throw new Error('Invalid response format from Hugging Face API');
@@ -124,9 +136,14 @@ export class EmbeddingService {
         );
 
         // Validate response format
-        if (response.data && Array.isArray(response.data) && response.data.length === this.embeddingDimensions) {
-            return response.data as number[];
+        if (response.data && Array.isArray(response.data)) {
+            const vector = Array.isArray(response.data[0]) ? response.data[0] : response.data;
+
+            if (Array.isArray(vector) && vector.length === this.embeddingDimensions) {
+                return vector as number[];
+            }
         }
+
 
         throw new Error('Invalid response format from direct request');
     }
