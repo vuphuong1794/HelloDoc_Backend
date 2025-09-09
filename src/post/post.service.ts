@@ -13,6 +13,7 @@ import * as dayjs from 'dayjs';
 import { EmbeddingService } from 'src/embedding/embedding.service';
 import { VectorSearchService } from 'src/vector-db/vector-db.service';
 import { title } from 'process';
+import { use } from 'passport';
 
 @Injectable()
 export class PostService {
@@ -156,30 +157,30 @@ export class PostService {
         ownerId: string,
         limit: number,
         skip: number
-        ): Promise<{ posts: Post[]; hasMore: boolean; total: number }> {
+    ): Promise<{ posts: Post[]; hasMore: boolean; total: number }> {
         try {
             await this.findOwnerById(ownerId);
 
             const filter = {
-            user: ownerId,
-            $or: [{ isHidden: false }, { isHidden: { $exists: false } }],
+                user: ownerId,
+                $or: [{ isHidden: false }, { isHidden: { $exists: false } }],
             };
 
             const total = await this.postModel.countDocuments(filter);
 
             const posts = await this.postModel
-            .find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .populate({
-                path: 'user',
-                select: 'name imageUrl avatarURL',
-            })
-            .exec();
+                .find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .populate({
+                    path: 'user',
+                    select: 'name imageUrl avatarURL',
+                })
+                .exec();
 
             const hasMore = skip + posts.length < total;
-            console.log( posts, hasMore, total);
+            console.log(posts, hasMore, total);
             return { posts, hasMore, total };
         } catch (error) {
             this.logger.error('Error getting posts by owner:', error);
@@ -468,6 +469,8 @@ export class PostService {
                     title: 1,
                     content: 1,
                     keywords: 1,
+                    //user: 1,
+                    media: 1,
                     score: { $meta: 'vectorSearchScore' },
                 },
             },
