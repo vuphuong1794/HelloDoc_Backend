@@ -452,52 +452,53 @@ export class PostService {
         }
     }
 
-async searchPosts(query: string) {
-  const queryVector = await this.embeddingService.generateEmbedding(query);
+    async searchPosts(query: string) {
+        const queryVector = await this.embeddingService.generateEmbedding(query);
 
-  const results = await this.postModel.aggregate([
-    {
-      $vectorSearch: {
-        index: 'vector_index',
-        path: 'embedding', // field chứa embedding
-        queryVector: queryVector,
-        numCandidates: 100,
-        limit: 10,
-      },
-    },
-    {
-      $lookup: {
-        from: 'users',              // tên collection MongoDB (chữ thường, số nhiều)
-        localField: 'user',         // field trong post
-        foreignField: '_id',        // field trong user
-        as: 'user',
-      },
-    },
-    {
-      $unwind: {
-        path: '$user',
-        preserveNullAndEmptyArrays: true, // tránh lỗi nếu không có user
-      },
-    },
-    {
-      $project: {
-        title: 1,
-        content: 1,
-        keywords: 1,
-        media: 1,
-        user: {
-          _id: 1,
-          name: 1,
-          email: 1,
-          avatar: 1,
-        },
-        score: { $meta: 'vectorSearchScore' },
-      },
-    },
-  ]);
+        const results = await this.postModel.aggregate([
+            {
+                $vectorSearch: {
+                    index: 'vector_index',
+                    path: 'embedding', // field chứa embedding
+                    queryVector: queryVector,
+                    numCandidates: 100,
+                    limit: 10,
+                },
+            },
+            {
+                $lookup: {
+                    from: 'users',              // tên collection MongoDB (chữ thường, số nhiều)
+                    localField: 'user',         // field trong post
+                    foreignField: '_id',        // field trong user
+                    as: 'user',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$user',
+                    preserveNullAndEmptyArrays: true, // tránh lỗi nếu không có user
+                },
+            },
+            {
+                $project: {
+                    title: 1,
+                    content: 1,
+                    keywords: 1,
+                    media: 1,
+                    user: {
+                        _id: 1,
+                        name: 1,
+                        email: 1,
+                        avatar: 1,
+                    },
+                    score: { $meta: 'vectorSearchScore' },
+                },
+            },
+            { $match: { score: { $gte: 0.6 } } }, // lọc kết quả score thấp
+        ]);
 
-  return results;
-}
+        return results;
+    }
 
 
     //hàm kiểm tra bài viết có keyword hay chưa
