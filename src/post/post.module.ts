@@ -7,6 +7,9 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { Doctor, DoctorSchema } from 'src/schemas/doctor.schema';
 import { CacheService } from 'src/cache.service';
+import { EmbeddingService } from 'src/embedding/embedding.service';
+import { VectorSearchService } from 'src/vector-db/vector-db.service';
+import { HuggingFaceService } from 'src/huggingFace/huggingface.service';
 
 @Module({
   imports: [
@@ -18,6 +21,6 @@ import { CacheService } from 'src/cache.service';
 
     ])],
   controllers: [PostController],
-  providers: [PostService, CacheService],
+  providers: [PostService, CacheService, EmbeddingService, VectorSearchService, HuggingFaceService],
 })
 export class PostModule { }
