@@ -69,16 +69,16 @@ export class EmbeddingService {
                     }
                 }
 
-                // Phương pháp 2: Sử dụng HTTP request trực tiếp (fallback)
-                try {
-                    const response = await this.generateWithDirectRequest(truncatedText);
-                    if (this.isValidEmbedding(response)) {
-                        this.logger.log('BUOC 2: Successfully generated embedding with direct request');
-                        return response;
-                    }
-                } catch (directError) {
-                    this.logger.warn(`Direct request failed on attempt ${attempt}:`, directError.message);
-                }
+                // // Phương pháp 2: Sử dụng HTTP request trực tiếp (fallback)
+                // try {
+                //     const response = await this.generateWithDirectRequest(truncatedText);
+                //     if (this.isValidEmbedding(response)) {
+                //         this.logger.log('BUOC 2: Successfully generated embedding with direct request');
+                //         return response;
+                //     }
+                // } catch (directError) {
+                //     this.logger.warn(`Direct request failed on attempt ${attempt}:`, directError.message);
+                // }
 
                 // Chờ trước khi thử lại (exponential backoff)
                 if (attempt < this.maxRetries) {
