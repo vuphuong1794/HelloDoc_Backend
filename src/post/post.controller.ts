@@ -52,8 +52,14 @@ export class PostController {
   }
 
   @Get('get-by-user-id/:id')
-  async getByUserId(@Param('id') id: string) {
-    return this.postService.getByUserId(id);
+  async getByUserId(
+    @Param('id') id: string,
+    @Query('limit') limit = '10',
+    @Query('skip') skip = '0',
+  ) {
+    const limitNum = parseInt(limit);
+    const skipNum = parseInt(skip);
+    return this.postService.getByUserId(id, limitNum, skipNum);
   }
 
   @Patch(':id')

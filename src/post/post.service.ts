@@ -152,30 +152,41 @@ export class PostService {
         }
     }
 
-    async getByUserId(ownerId: string): Promise<Post[]> {
+    async getByUserId(
+        ownerId: string,
+        limit: number,
+        skip: number
+        ): Promise<{ posts: Post[]; hasMore: boolean; total: number }> {
         try {
             await this.findOwnerById(ownerId);
-            const posts = await this.postModel
-                .find({
-                    user: ownerId,
-                    $or: [
-                        { isHidden: false },
-                        { isHidden: { $exists: false } }
-                    ]
-                })
-                .sort({ createdAt: -1 })
-                .populate({
-                    path: 'user',
-                    select: 'name imageUrl avatarURL',
-                })
-                .exec();
 
-            return posts;
+            const filter = {
+            user: ownerId,
+            $or: [{ isHidden: false }, { isHidden: { $exists: false } }],
+            };
+
+            const total = await this.postModel.countDocuments(filter);
+
+            const posts = await this.postModel
+            .find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate({
+                path: 'user',
+                select: 'name imageUrl avatarURL',
+            })
+            .exec();
+
+            const hasMore = skip + posts.length < total;
+            console.log( posts, hasMore, total);
+            return { posts, hasMore, total };
         } catch (error) {
             this.logger.error('Error getting posts by owner:', error);
             throw new InternalServerErrorException('Lỗi khi lấy bài viết của người dùng');
         }
     }
+
 
     async update(id: string, updatePostDto: UpdatePostDto) {
         let updatedPost: Post;
@@ -276,8 +287,7 @@ export class PostService {
 
             // Nếu chưa có embedding thì generate trước (trả về rỗng tạm thời)
             if (!post.embedding || !Array.isArray(post.embedding) || post.embedding.length === 0) {
-                this.generateEmbeddingAsync(postId, post.keywords);
-                return [];
+                await this.generateEmbeddingAsync(postId, post.keywords);
             }
 
             return await this.vectorSearchService.findSimilarPosts(
