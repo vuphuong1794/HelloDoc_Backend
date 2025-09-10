@@ -92,7 +92,6 @@ export class EmbeddingService {
             //     break; // Hết số lần thử, chuyển sang fallback
             // }
         }
-        //}
 
         // Bước 4: Nếu tất cả phương pháp đều thất bại, sử dụng fallback embedding
         this.logger.warn('All embedding generation methods failed, using fallback');
