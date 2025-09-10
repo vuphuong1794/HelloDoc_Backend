@@ -13,6 +13,7 @@ import * as dayjs from 'dayjs';
 import { EmbeddingService } from 'src/embedding/embedding.service';
 import { VectorSearchService } from 'src/vector-db/vector-db.service';
 import { title } from 'process';
+import { use } from 'passport';
 
 @Injectable()
 export class PostService {
@@ -156,30 +157,30 @@ export class PostService {
         ownerId: string,
         limit: number,
         skip: number
-        ): Promise<{ posts: Post[]; hasMore: boolean; total: number }> {
+    ): Promise<{ posts: Post[]; hasMore: boolean; total: number }> {
         try {
             await this.findOwnerById(ownerId);
 
             const filter = {
-            user: ownerId,
-            $or: [{ isHidden: false }, { isHidden: { $exists: false } }],
+                user: ownerId,
+                $or: [{ isHidden: false }, { isHidden: { $exists: false } }],
             };
 
             const total = await this.postModel.countDocuments(filter);
 
             const posts = await this.postModel
-            .find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .populate({
-                path: 'user',
-                select: 'name imageUrl avatarURL',
-            })
-            .exec();
+                .find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .populate({
+                    path: 'user',
+                    select: 'name imageUrl avatarURL',
+                })
+                .exec();
 
             const hasMore = skip + posts.length < total;
-            console.log( posts, hasMore, total);
+            console.log(posts, hasMore, total);
             return { posts, hasMore, total };
         } catch (error) {
             this.logger.error('Error getting posts by owner:', error);
@@ -453,6 +454,7 @@ export class PostService {
 
     async searchPosts(query: string) {
         const queryVector = await this.embeddingService.generateEmbedding(query);
+
         const results = await this.postModel.aggregate([
             {
                 $vectorSearch: {
@@ -464,13 +466,35 @@ export class PostService {
                 },
             },
             {
+                $lookup: {
+                    from: 'users',              // tên collection MongoDB (chữ thường, số nhiều)
+                    localField: 'user',         // field trong post
+                    foreignField: '_id',        // field trong user
+                    as: 'user',
+                },
+            },
+            {
+                $unwind: {
+                    path: '$user',
+                    preserveNullAndEmptyArrays: true, // tránh lỗi nếu không có user
+                },
+            },
+            {
                 $project: {
                     title: 1,
                     content: 1,
                     keywords: 1,
+                    media: 1,
+                    user: {
+                        _id: 1,
+                        name: 1,
+                        email: 1,
+                        avatar: 1,
+                    },
                     score: { $meta: 'vectorSearchScore' },
                 },
             },
+            { $match: { score: { $gte: 0.6 } } }, // lọc kết quả score thấp
         ]);
 
         return results;

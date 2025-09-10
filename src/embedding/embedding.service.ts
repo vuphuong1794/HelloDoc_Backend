@@ -51,47 +51,48 @@ export class EmbeddingService {
             : cleanText;
 
         // Bước 3: Thử tạo embedding với retry mechanism
-        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-            try {
-                this.logger.log(`Generating embedding (attempt ${attempt}/${this.maxRetries}) for text: ${truncatedText.substring(0, 50)}...`);
+        //for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+        try {
+            //this.logger.log(`Generating embedding (attempt ${attempt}/${this.maxRetries}) for text: ${truncatedText.substring(0, 50)}...`);
 
-                this.logger.log('HF_API_TOKEN:', process.env.HF_API_TOKEN);
-                // Phương pháp 1: Sử dụng Hugging Face SDK
-                if (this.hf && process.env.HF_API_TOKEN) {
-                    try {
-                        const response = await this.generateWithHuggingFace(truncatedText);
-                        if (this.isValidEmbedding(response)) {
-                            this.logger.log('BUOC 1: Successfully generated embedding with Hugging Face API');
-                            return response;
-                        }
-                    } catch (hfError) {
-                        this.logger.warn(`Hugging Face API failed on attempt ${attempt}:`, hfError.message);
-                    }
-                }
-
-                // Phương pháp 2: Sử dụng HTTP request trực tiếp (fallback)
+            this.logger.log('HF_API_TOKEN:', process.env.HF_API_TOKEN);
+            // Phương pháp 1: Sử dụng Hugging Face SDK
+            if (this.hf && process.env.HF_API_TOKEN) {
                 try {
-                    const response = await this.generateWithDirectRequest(truncatedText);
+                    const response = await this.generateWithHuggingFace(truncatedText);
                     if (this.isValidEmbedding(response)) {
-                        this.logger.log('BUOC 2: Successfully generated embedding with direct request');
+                        this.logger.log('BUOC 1: Successfully generated embedding with Hugging Face API');
                         return response;
                     }
-                } catch (directError) {
-                    this.logger.warn(`Direct request failed on attempt ${attempt}:`, directError.message);
-                }
-
-                // Chờ trước khi thử lại (exponential backoff)
-                if (attempt < this.maxRetries) {
-                    await this.sleep(this.retryDelay * attempt);
-                }
-
-            } catch (error) {
-                this.logger.error(`Embedding generation attempt ${attempt} failed:`, error.message);
-                if (attempt === this.maxRetries) {
-                    break; // Hết số lần thử, chuyển sang fallback
+                } catch (hfError) {
+                    //this.logger.warn(`Hugging Face API failed on attempt ${attempt}:`, hfError.message);
+                    this.logger.error(`Hugging Face API error on attempt 1:`, hfError);
                 }
             }
+
+            // // Phương pháp 2: Sử dụng HTTP request trực tiếp (fallback)
+            // try {
+            //     const response = await this.generateWithDirectRequest(truncatedText);
+            //     if (this.isValidEmbedding(response)) {
+            //         this.logger.log('BUOC 2: Successfully generated embedding with direct request');
+            //         return response;
+            //     }
+            // } catch (directError) {
+            //     this.logger.warn(`Direct request failed on attempt ${attempt}:`, directError.message);
+            // }
+
+            // Chờ trước khi thử lại (exponential backoff)
+            // if (attempt < this.maxRetries) {
+            //     await this.sleep(this.retryDelay * attempt);
+            // }
+
+        } catch (error) {
+            //this.logger.error(`Embedding generation attempt ${attempt} failed:`, error.message);
+            // if (attempt === this.maxRetries) {
+            //     break; // Hết số lần thử, chuyển sang fallback
+            // }
         }
+        //}
 
         // Bước 4: Nếu tất cả phương pháp đều thất bại, sử dụng fallback embedding
         this.logger.warn('All embedding generation methods failed, using fallback');
