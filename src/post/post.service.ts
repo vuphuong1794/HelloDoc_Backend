@@ -89,7 +89,7 @@ export class PostService {
             this.logger.log(`Post created successfully with ID: ${savedPost._id}`);
 
             // Tạo embedding async (không block quá trình create)
-            this.generateEmbeddingAsync(savedPost._id.toString(), savedPost.keywords);
+            this.generateEmbeddingAsync(savedPost._id.toString(), savedPost.keywords, savedPost.content);
 
             return savedPost;
         } catch (error) {
@@ -366,16 +366,16 @@ export class PostService {
 
 
     //Hàm tạo embedding async cho post (nhằm tránh block quá trình tạo post chính)
-    async generateEmbeddingAsync(postId: string, keywords?: string): Promise<void> {
+    async generateEmbeddingAsync(postId: string, keywords?: string, content?:string): Promise<void> {
         try {
-            await this.generateAndStoreEmbedding(postId, keywords);
+            await this.generateAndStoreEmbedding(postId, keywords, content);
         } catch (error) {
             this.logger.error(`Failed to generate embedding for post ${postId}: ${error.message}`);
         }
     }
 
     // tạo embedding và lưu vào DB
-    async generateAndStoreEmbedding(postId: string, keywords?: string): Promise<void> {
+    async generateAndStoreEmbedding(postId: string, keywords?: string, content?:string): Promise<void> {
         try {
             const existingPost = await this.postModel.findById(postId).select('_id content keywords embedding');
             if (!existingPost) {
@@ -389,7 +389,7 @@ export class PostService {
                 return;
             }
 
-            const textForEmbedding = `${keywords || ''}`.trim();
+            const textForEmbedding = `${keywords || ''}`.trim() + ` ${content || ''}`.trim();
 
             if (textForEmbedding && textForEmbedding.length > 0) {
                 this.logger.log(`Generating embedding for post ${postId}`);
@@ -494,7 +494,7 @@ export class PostService {
                     score: { $meta: 'vectorSearchScore' },
                 },
             },
-            { $match: { score: { $gte: 0.6 } } }, // lọc kết quả score thấp
+            { $match: { score: { $gte: 0.7 } } }, // lọc kết quả score thấp
         ]);
 
         return results;
@@ -520,6 +520,7 @@ export class PostService {
 
             post.keywords = keywords;
             await post.save();
+            this.generateAndStoreEmbedding(postId, keywords, post.content);
             this.logger.log(`Updated keywords for post ${postId}`);
         } catch (error) {
             this.logger.error(`Error updating keywords for post ${postId}: ${error.message}`);
