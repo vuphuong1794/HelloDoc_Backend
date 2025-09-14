@@ -518,6 +518,7 @@ export class PostService {
     //     return results;
     // }
 
+
     async searchPosts(query: string) {
         const queryVector = await this.embeddingService.generateEmbedding(query);
 
@@ -527,12 +528,14 @@ export class PostService {
         const ids = results.map(r => r.postId);
         const posts = await this.postModel.find({ _id: { $in: ids } }).populate('user', 'name avatarURL');
 
-        // Ghép similarity score vào
-        return results.map(r => ({
-            post: posts.find(p => p._id.toString() === r.postId),
-            similarity: r.similarity
-        }));
-
+        // Trả về post trực tiếp với similarity score được thêm vào
+        return results.map(r => {
+            const post = posts.find(p => p._id.toString() === r.postId);
+            return {
+                ...post?.toObject(), // Spread post data directly
+                similarity: r.similarity
+            };
+        }).filter(item => item._id); // Filter out any null posts
     }
 
 
