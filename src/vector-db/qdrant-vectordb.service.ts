@@ -158,7 +158,7 @@ async upsertPost(postId: string, vector: any, payload: any) {
 }
 
 
-  async findSimilarPosts(
+  async findSimilarPostsQdrant(
     queryVector: number[],
     limit = 5,
     minSimilarity = 0.5,
@@ -173,7 +173,7 @@ async upsertPost(postId: string, vector: any, payload: any) {
         ? { must_not: [{ key: 'postId', match: { value: excludeId } }] }
         : undefined,
     });
-
+    console.log('Qdrant search results:', results);
     return results.map((r) => ({
       postId: r.payload?.postId,
       similarity: r.score,

@@ -521,20 +521,21 @@ export class PostService {
     async searchPosts(query: string) {
         const queryVector = await this.embeddingService.generateEmbedding(query);
 
-        const results = await this.qdrantService.findSimilarPosts(queryVector, 10, 0.5);
+        const results = await this.qdrantService.findSimilarPostsQdrant(queryVector, 10, 0.25);
 
         // Lấy detail từ Mongo bằng id
         const ids = results.map(r => r.postId);
         const posts = await this.postModel.find({ _id: { $in: ids } }).populate('user', 'name avatarURL');
 
-        // Ghép similarity score vào
-        return results.map(r => ({
-            post: posts.find(p => p._id.toString() === r.postId),
-            similarity: r.similarity
-        }));
+        // Trả về post trực tiếp với similarity score được thêm vào
+        return results.map(r => {
+            const post = posts.find(p => p._id.toString() === r.postId);
+            return {
+                ...post?.toObject(), // Spread post data directly
+                similarity: r.similarity
+            };
+        }).filter(item => item._id); // Filter out any null posts
     }
-
-
 
     //hàm kiểm tra bài viết có keyword hay chưa
     async hasKeywords(post: Post) {
