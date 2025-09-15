@@ -522,7 +522,7 @@ export class PostService {
     async searchPosts(query: string) {
         const queryVector = await this.embeddingService.generateEmbedding(query);
 
-        const results = await this.qdrantService.findSimilarPostsQdrant(queryVector, 10, 0.25);
+        const results = await this.qdrantService.findSimilarPostsQdrant(queryVector, 10, 0.35);
 
         // Lấy detail từ Mongo bằng id
         const ids = results.map(r => r.postId);
