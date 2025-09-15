@@ -10,6 +10,7 @@ import { CacheService } from 'src/cache.service';
 import { EmbeddingService } from 'src/embedding/embedding.service';
 import { VectorSearchService } from 'src/vector-db/vector-db.service';
 import { HuggingFaceService } from 'src/huggingFace/huggingface.service';
+import { QdrantService } from 'src/vector-db/qdrant-vectordb.service';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { HuggingFaceService } from 'src/huggingFace/huggingface.service';
 
     ])],
   controllers: [PostController],
-  providers: [PostService, CacheService, EmbeddingService, VectorSearchService, HuggingFaceService],
+  providers: [PostService, CacheService, EmbeddingService, VectorSearchService, HuggingFaceService, QdrantService],
 })
 export class PostModule { }
