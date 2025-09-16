@@ -522,11 +522,11 @@ export class PostService {
     async searchPosts(query: string) {
         const queryVector = await this.embeddingService.generateEmbedding(query);
 
-        const results = await this.qdrantService.findSimilarPostsQdrant(queryVector, 10, 0.35);
+        const results = await this.qdrantService.findSimilarPostsQdrant(queryVector, 10, 0.27);
 
         // Lấy detail từ Mongo bằng id
         const ids = results.map(r => r.postId);
-        const posts = await this.postModel.find({ _id: { $in: ids } }).populate('user', 'name avatarURL');
+        const posts = await this.postModel.find({ _id: { $in: ids } }, { embedding: 0 }).populate('user', 'name avatarURL');
 
         // Trả về post trực tiếp với similarity score được thêm vào
         return results.map(r => {
