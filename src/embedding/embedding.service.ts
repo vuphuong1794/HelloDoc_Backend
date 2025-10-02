@@ -8,7 +8,7 @@ export class EmbeddingService {
     private hf: HfInference; // Client để gọi Hugging Face API
 
     // Cấu hình model và embedding
-    private readonly embeddingModel = 'sentence-transformers/all-MiniLM-L6-v2'; // Model tạo embedding
+    private readonly embeddingModel = 'BAAI/bge-m3'; // Model tạo embedding
     private readonly embeddingDimensions = 384; // Số chiều của vector embedding
     private readonly maxRetries = 3; // Số lần thử lại khi API lỗi
     private readonly retryDelay = 1000; // Thời gian chờ giữa các lần thử 

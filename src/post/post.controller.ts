@@ -101,7 +101,7 @@ export class PostController {
   async findSimilarPosts(
     @Param('id') id: string,
     @Query('limit') limit: number = 10,
-    @Query('minSimilarity') minSimilarity: number = 0.6
+    @Query('minSimilarity') minSimilarity: number = 0.7
   ) {
     return this.postService.findSimilarPosts(id, Number(limit), Number(minSimilarity));
   }

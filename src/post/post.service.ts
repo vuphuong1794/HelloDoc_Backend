@@ -390,7 +390,7 @@ export class PostService {
                 return;
             }
 
-            const textForEmbedding = `${keywords || ''}`.trim() + ` ${content || ''}`.trim();
+            const textForEmbedding = `${keywords || ''}`.trim();
 
             if (!textForEmbedding) return;
 
@@ -470,73 +470,73 @@ export class PostService {
         }
     }
 
-    async searchPosts(query: string) {
-        const queryVector = await this.embeddingService.generateEmbedding(query);
-
-        const results = await this.postModel.aggregate([
-            {
-                $vectorSearch: {
-                    index: 'vector_index',
-                    path: 'embedding', // field chứa embedding
-                    queryVector: queryVector,
-                    numCandidates: 100,
-                    limit: 10,
-                },
-            },
-            {
-                $lookup: {
-                    from: 'users',              // tên collection MongoDB (chữ thường, số nhiều)
-                    localField: 'user',         // field trong post
-                    foreignField: '_id',        // field trong user
-                    as: 'user',
-                },
-            },
-            {
-                $unwind: {
-                    path: '$user',
-                    preserveNullAndEmptyArrays: true, // tránh lỗi nếu không có user
-                },
-            },
-            {
-                $project: {
-                    title: 1,
-                    content: 1,
-                    keywords: 1,
-                    media: 1,
-                    user: {
-                        _id: 1,
-                        name: 1,
-                        email: 1,
-                        avatar: 1,
-                    },
-                    score: { $meta: 'vectorSearchScore' },
-                },
-            },
-            { $match: { score: { $gte: 0.7 } } }, // lọc kết quả score thấp
-        ]);
-
-        return results;
-    }
-
-
     // async searchPosts(query: string) {
     //     const queryVector = await this.embeddingService.generateEmbedding(query);
 
-    //     const results = await this.qdrantService.findSimilarPostsQdrant(queryVector, 10, 0.5);
+    //     const results = await this.postModel.aggregate([
+    //         {
+    //             $vectorSearch: {
+    //                 index: 'vector_index',
+    //                 path: 'embedding', // field chứa embedding
+    //                 queryVector: queryVector,
+    //                 numCandidates: 100,
+    //                 limit: 10,
+    //             },
+    //         },
+    //         {
+    //             $lookup: {
+    //                 from: 'users',              // tên collection MongoDB (chữ thường, số nhiều)
+    //                 localField: 'user',         // field trong post
+    //                 foreignField: '_id',        // field trong user
+    //                 as: 'user',
+    //             },
+    //         },
+    //         {
+    //             $unwind: {
+    //                 path: '$user',
+    //                 preserveNullAndEmptyArrays: true, // tránh lỗi nếu không có user
+    //             },
+    //         },
+    //         {
+    //             $project: {
+    //                 title: 1,
+    //                 content: 1,
+    //                 keywords: 1,
+    //                 media: 1,
+    //                 user: {
+    //                     _id: 1,
+    //                     name: 1,
+    //                     email: 1,
+    //                     avatar: 1,
+    //                 },
+    //                 score: { $meta: 'vectorSearchScore' },
+    //             },
+    //         },
+    //         { $match: { score: { $gte: 0.7 } } }, // lọc kết quả score thấp
+    //     ]);
 
-    //     // Lấy detail từ Mongo bằng id
-    //     const ids = results.map(r => r.postId);
-    //     const posts = await this.postModel.find({ _id: { $in: ids } }, { embedding: 0 }).populate('user', 'name avatarURL');
-
-    //     // Trả về post trực tiếp với similarity score được thêm vào
-    //     return results.map(r => {
-    //         const post = posts.find(p => p._id.toString() === r.postId);
-    //         return {
-    //             ...post?.toObject(), // Spread post data directly
-    //             similarity: r.similarity
-    //         };
-    //     }).filter(item => item._id); // Filter out any null posts
+    //     return results;
     // }
+
+
+    async searchPosts(query: string) {
+        const queryVector = await this.embeddingService.generateEmbedding(query);
+
+        const results = await this.qdrantService.findSimilarPostsQdrant(queryVector, 10, 0.5);
+
+        // Lấy detail từ Mongo bằng id
+        const ids = results.map(r => r.postId);
+        const posts = await this.postModel.find({ _id: { $in: ids } }, { embedding: 0 }).populate('user', 'name avatarURL');
+
+        // Trả về post trực tiếp với similarity score được thêm vào
+        return results.map(r => {
+            const post = posts.find(p => p._id.toString() === r.postId);
+            return {
+                ...post?.toObject(), // Spread post data directly
+                similarity: r.similarity
+            };
+        }).filter(item => item._id); // Filter out any null posts
+    }
 
     //hàm kiểm tra bài viết có keyword hay chưa
     async hasKeywords(post: Post) {
