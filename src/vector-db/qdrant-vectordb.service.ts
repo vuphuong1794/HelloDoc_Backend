@@ -147,7 +147,7 @@ export class QdrantService implements OnModuleInit {
 
         const vec = this.normalizeVector(vector);
         const safePayload = this.sanitizePayload(payload);
-
+        //upsert la pdate + insert
         return await this.client.upsert(this.collectionName, {
             points: [
                 {
