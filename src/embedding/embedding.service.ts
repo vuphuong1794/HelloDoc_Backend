@@ -34,7 +34,7 @@ export class EmbeddingService {
      * Ví dụ: "đau đầu" -> "dau dau"
      */
     private removeVietnameseAccents(text: string): string {
-        if (!text || typeof text !== 'string') {
+        if (text || typeof text !== 'string') {
             return text;
         }
 

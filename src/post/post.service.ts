@@ -290,7 +290,7 @@ export class PostService {
 
             // Nếu chưa có embedding thì generate trước (trả về rỗng tạm thời)
             if (!post.embedding || !Array.isArray(post.embedding) || post.embedding.length === 0) {
-                await this.generateEmbeddingAsync(postId, post.keywords);
+                await this.generateEmbeddingAsync(postId, post.keywords, post.content);
             }
 
             return await this.vectorSearchService.findSimilarPosts(
@@ -390,7 +390,7 @@ export class PostService {
                 return;
             }
 
-            const textForEmbedding = `${keywords || ''}`.trim() + ` ${content || ''}`.trim();
+            const textForEmbedding = `${keywords || ''}`.trim();
 
             if (!textForEmbedding) return;
 
@@ -522,7 +522,7 @@ export class PostService {
     async searchPosts(query: string) {
         const queryVector = await this.embeddingService.generateEmbedding(query);
 
-        const results = await this.qdrantService.findSimilarPostsQdrant(queryVector, 10, 0.27);
+        const results = await this.qdrantService.findSimilarPostsQdrant(queryVector, 10, 0.70);
 
         // Lấy detail từ Mongo bằng id
         const ids = results.map(r => r.postId);
